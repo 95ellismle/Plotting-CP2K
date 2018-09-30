@@ -22,7 +22,7 @@ Loading works well, plotting the values still needs work. Need to put labels on 
 
 
 
-folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/200Rep_2mol') 
+folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/200Rep_3mol') 
 params = {
     'at_num'    : 'all',        # Which atom number to plot
     'lk'        : (2,1),            # Which state, l, to plot
