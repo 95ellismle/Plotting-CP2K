@@ -158,43 +158,49 @@ class LoadData(object):
         if 'adiab_states' in self.plot_params:
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
 
-
 class Plot_Norm(object):
     """
     Will plot the normalisation graph.
+    
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the 
+                 widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):
         self.widget_ax = axes[0]
         self.plot_ax = axes[1]
         
-        self.all_reps_norm = False
+        #Setting initial default values
         self.avg_reps_norm = True
+        self.all_reps_norm = False
         
+        #Plotting
         self.all_rep_lines_norm = []
         self._plot_all_rep_norm()
         self._plot_norm_graph()
-
+        
+        #Connect checkboxes to plot control
         self._set_norm_control()
         
         self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
     
-    def _check_settings(self, label):
+    def _check_settings_norm(self, label):
+        print(label)
         if label == 'all replicas': #Pressed the all replicas button
             for line in self.all_rep_lines_norm:
-                line.set_visible(self.all_reps_norm)
-            self.all_reps_norm = not self.all_reps_norm                
+                line.set_visible(not line.get_visible())
+                
         elif label == 'average':
-            self.avg_reps_norm = not self.avg_reps_norm
-            self.avg_line_norm.set_visible(self.avg_reps_norm)
+            self.avg_line_norm.set_visible(not self.avg_line_norm.get_visible())
+        plt.draw()
             
     #Will set the control panel for norm graph
     def _set_norm_control(self):
-        self.check = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_norm, self.avg_reps_norm))
-        self.check.on_clicked(self._check_settings)
+        self.check_norm = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_norm, self.avg_reps_norm))
+        self.check_norm.on_clicked(self._check_settings_norm)
         
     #Will plot the all replica norms
     def _plot_all_rep_norm(self):
-        self.all_reps_norm = True
         self.all_rep_lines_norm = []
         for Dfilename in self.all_Dcoeff_data:
             coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
@@ -211,11 +217,83 @@ class Plot_Norm(object):
         Will plot the normal of the diabatic coefficients. Will sum the 
         populations and plot on the norm axis.
         """
-        self.avg_reps_norm = True
         coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
         norms = np.sum(pops, axis=1)
         self.avg_line_norm, = self.plot_ax.plot(timesteps, norms, lw=2, color='g')
+        
         self.avg_line_norm.set_visible(self.avg_reps_norm)
+
+class plot_coeff(object):
+    """
+    To act as a template for plotting the coefficient data. 
+        
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the 
+                 widget axis the second will be the axis to plot the data.  
+    """
+    def __init__(self, axes):
+        self.widget_ax = axes[0]
+        self.plot_ax   = axes[1]
+        
+        self.all_reps_coeff = False
+        self.avg_reps_coeff = True
+        
+        self._set_coeff_data()
+        
+        self._plot_all_reps_coeff()
+        self._plot_avg_reps_coeff()
+        
+    def _set_coeff_data(self):
+        """
+        Will set which data is being used (adiabatic or diabatic)
+        """
+        self.coeff_data = None
+        self.all_coeff_data_avg = self.all_Dcoeff_data_avg
+        self.num_states = 0
+        self.ylabel     = ""
+        
+    def _plot_all_reps_coeff(self):
+        """
+        Will plot the graph showing all the replicas
+        """
+        self.all_coeff_lines = []
+        for filename in self.coeff_data:
+            coeffs, cols, timesteps, pops = self.coeff_data[filename]
+            for i in range(self.num_states):
+                self.all_coeff_lines.append(self.plot_ax.plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)[0])
+        
+        # Set initial visibility
+        for line in self.all_coeff_lines:
+            line.set_visible(self.all_reps_coeff)
+
+    def _plot_avg_reps_coeff(self):
+        """
+        Will plot the average coefficient lines for each state.
+        """
+        self.avg_coeff_lines = []
+        coeffs, cols, timesteps, pops = self.all_coeff_data_avg
+        for i in range(self.num_states):                    
+            self.avg_coeff_lines.append(self.plot_ax.plot(timesteps, pops[:,i], color=self.colors[i])[0])
+                
+    def _set_coeff_control(self):
+        """
+        Will set the control panel for the coeff graphs
+        """
+        self.check_coeff = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_coeff, self.avg_reps_coeff))
+        self.check_coeff.on_clicked(self._check_settings_coeff)
+
+    def _check_settings_norm(self, label):
+        """
+        Will handle the switching on and off for the coeff graphs.
+        """
+        if label == 'all replicas': #Pressed the all replicas button
+            for line in self.all_coeff_lines:
+                line.set_visible(not line.get_visible())
+                
+        elif label == 'average':
+            for line in self.avg_coeff_lines:
+                line.set_visible(not line.get_visible())
+        plt.draw()        
 
 
 class Plot(LoadData, Params, Plot_Norm):
@@ -225,7 +303,15 @@ class Plot(LoadData, Params, Plot_Norm):
     and this class should plot them
     
     Inputs:
-        plot_params    =>  a list containing the parameters needing plotting.    
+        plot_params    =>  A list containing the parameters needing plotting. 
+                           Possible parameters are:
+                               * |u|^2        = Diabatic populations
+                               * |C|^2        = Adiabatic populations
+                               * norm         = The norm of the diabatic coeffs
+                               * qm           = The Quantum Momentum
+                               * adiab_states = The adiabatic energy levels
+        folder         =>  The folder containing the data
+        reps           =>  Which replica numbers to plot (can be 'all')
     """
     
     def __init__(self, plot_params, folder, reps):
@@ -263,26 +349,15 @@ class Plot(LoadData, Params, Plot_Norm):
                 a = []
                 a.append( plt.subplot2grid((len(self.plot_params),9),(i,0), colspan=1) )
                 a.append( plt.subplot2grid((len(self.plot_params),9),(i,1), colspan=9) )
+                # Design the widget axis
                 a[0].set_xticks([])                
                 a[0].set_yticks([])                
+                for side in ['top','bottom','left','right']:
+                    a[0].spines[side].set_visible(False)
                 self.axes[param] = a
         else:
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
-                
-#            ax1 = plt.subplot2grid((4, 2), (2, 2))
-#            ax2 = plt.subplot2grid((4, 2), (2, 1), colspan=1)
-#            ax3 = plt.subplot2grid((3, 3), (1, 0), colspan=2, rowspan=2)
-#            ax4 = plt.subplot2grid((3, 3), (1, 2), rowspan=2)
-
-#        elif len(self.plot_params) <= 3:        self.f,a = plt.subplots(len(self.plot_params), figsize=figsize)
-#        elif len(self.plot_params) == 4:           
-#            self.f,a = plt.subplots(2,2, figsize=figsize)
-#            a = a.flatten()
-#        else: raise SystemExit("Sorry no rule has been set for a arrangement of more than 4 axes!")
-#        self.axes = {param:a[i] for i,param in enumerate(self.plot_params)}
-    
-
 
     #Will plot site energy difference.
     def _plot_site_ener(self):
@@ -428,7 +503,5 @@ class Plot(LoadData, Params, Plot_Norm):
         
         self.f.tight_layout()
         
-#folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
-folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/200Rep_2mol/')
-p = Plot(['norm'], folder, 'all')
-#plt.subplots_adjust(hspace=0.1)
+folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
+p = Plot(['|u|^2','norm', '|c|^2'], folder, 'all')
