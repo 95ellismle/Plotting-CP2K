@@ -182,8 +182,7 @@ class Plot_Norm(object):
         if label == 'all replicas': #Pressed the all replicas button
             for line in self.all_rep_lines_norm:
                 line.set_visible(self.all_reps_norm)
-            self.all_reps_norm = not self.all_reps_norm
-                
+            self.all_reps_norm = not self.all_reps_norm                
         elif label == 'average':
             self.avg_reps_norm = not self.avg_reps_norm
             self.avg_line_norm.set_visible(self.avg_reps_norm)
@@ -429,6 +428,7 @@ class Plot(LoadData, Params, Plot_Norm):
         
         self.f.tight_layout()
         
-folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
-p = Plot(['|u|^2','norm', '|c|^2'], folder, 'all')
+#folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
+folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/200Rep_2mol/')
+p = Plot(['norm'], folder, 'all')
 #plt.subplots_adjust(hspace=0.1)
