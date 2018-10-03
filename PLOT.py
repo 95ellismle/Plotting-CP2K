@@ -174,6 +174,7 @@ class LoadData(object):
         if 'adiab_states' in self.plot_params:
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
 
+
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
@@ -301,25 +302,47 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
         """
         Will plot the quantum momentum term
         """
+        self.sum_all_atoms_qm = True
         if 'qm' in self.plot_params:
             ax = self.axes['qm'][1]
             if self.plot_all_reps:
-#                for Qlk_filename in self.all_QM_data:
-                    Qlk_filename = 'run-QM-1.xyz'
-                    Qlk_data = self.all_QM_data[Qlk_filename]
-                    Qlk_timesteps = Qlk_data[1]
-                    Qlk_data = Qlk_data[0]
-                    num_atoms = np.shape(Qlk_data[0])[1]/3
-                    for iatom in range(1,num_atoms+1):
-#                        if any(iatom == j for j in (2,4,11,8,1)): continue
-                        QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                        QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                        QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+                if self.sum_all_atoms_qm:
+                    for Qlk_filename in self.all_QM_data:
+                        Qlk_data = self.all_QM_data[Qlk_filename]
+                        Qlk_timesteps = Qlk_data[1]
+                        Qlk_data = Qlk_data[0]
+                        num_atoms = np.shape(Qlk_data[0])[1]/3
+                        QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
+                        QM_mag = np.zeros(np.shape(QM_mag))
                         
-                        QM_mag = QMX**2 + QMY**2 + QMZ**2
-#                        QM_mag /= np.max(QM_mag)
-                        ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom)
-            ax.set_ylabel(r"|Q$_{lk}$|$^2$")
+                        for iatom in range(1,num_atoms+1):
+                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+                            
+                            QM_mag += QMX**2 + QMY**2 + QMZ**2
+                            
+                        ax.plot(Qlk_timesteps, QM_mag, lw=0.5, alpha=0.5)
+                        ylabel = r"$\sum_{v}$ |Q$_{lk, v}$|$^2$"
+                else:
+                    for Qlk_filename in self.all_QM_data:
+    #                    Qlk_filename = 'run-QM-1.xyz'
+                        Qlk_data = self.all_QM_data[Qlk_filename]
+                        Qlk_timesteps = Qlk_data[1]
+                        Qlk_data = Qlk_data[0]
+                        num_atoms = np.shape(Qlk_data[0])[1]/3
+                        for iatom in range(1,num_atoms+1):
+    #                        if any(iatom == j for j in (2,4,11,8,1)): continue
+                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+                            
+                            QM_mag = QMX**2 + QMY**2 + QMZ**2
+    #                        QM_mag /= np.max(QM_mag)
+                            ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, lw=0.5, alpha=0.5)
+                        ylabel = r"|Q$_{lk, v}$|$^2$"
+                        
+            ax.set_ylabel(ylabel)
 #            self.title = "Qlk has been normalised for each atom"
 #            ax.legend()
             
