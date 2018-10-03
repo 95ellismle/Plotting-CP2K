@@ -11,12 +11,13 @@ from load import load_ham
 from load import load_QM
 
 from Plot import plot_utils
+from Plot import plot_coeff
+from Plot import plot_norm
 
 from IO import Folders as fold
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-from matplotlib.widgets import CheckButtons
 import matplotlib.cm as cm
 import numpy as np
 import os
@@ -33,12 +34,15 @@ class Params(object):
         self.reps = reps
         self.plot_params = plot_params
         
+        self._set_coeff_params()
+        
         self._correct_plot_params()
         self._get_alpha()
 
         self.title = ""
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-        
+        self._use_control = True
+        if self.num_reps == 1: self._use_control = False
 
 #        if self.plot_all_reps: self.fill_between = False
         
@@ -75,7 +79,16 @@ class Params(object):
             self.plot_params = ['norm', '|c|^2', '|u|^2', 'adiab_states', 'qm', 'norm_traj']
         else:    
             self.plot_params = [i.strip().lower() for i in self.plot_params]
+            
+        self.plot_paramsC = [i for i in self.plot_params if any(i == j for j in ('|u|^2', '|c|^2'))]
         # Want to add some typo checking using difflib.SequenceMatcher later
+
+    def _set_coeff_params(self):
+        self.check_control_coeff = {}
+        self.all_coeff_lines = {}
+        self.avg_coeff_lines = {}
+        self.coeff_widg_axes = {}
+        self.coeff_plot_axes = {}
 
 class LoadData(object):
     """
@@ -89,6 +102,9 @@ class LoadData(object):
                             - '|u|^2'
                             - 'adiab_states'
                             - 'QM'
+                            - 'site_ener'
+    
+    NOTE: Should be in plot_utils
     """
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
         self.folder = folder
@@ -158,145 +174,7 @@ class LoadData(object):
         if 'adiab_states' in self.plot_params:
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
 
-class Plot_Norm(object):
-    """
-    Will plot the normalisation graph.
-    
-    Inputs:
-        axes  => a list of the axes to plot on. The first item should be the 
-                 widget axis the second will be the axis to plot the data.
-    """
-    def __init__(self, axes):
-        self.widget_ax = axes[0]
-        self.plot_ax = axes[1]
-        
-        #Setting initial default values
-        self.avg_reps_norm = True
-        self.all_reps_norm = False
-        
-        #Plotting
-        self.all_rep_lines_norm = []
-        self._plot_all_rep_norm()
-        self._plot_norm_graph()
-        
-        #Connect checkboxes to plot control
-        self._set_norm_control()
-        
-        self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
-    
-    def _check_settings_norm(self, label):
-        print(label)
-        if label == 'all replicas': #Pressed the all replicas button
-            for line in self.all_rep_lines_norm:
-                line.set_visible(not line.get_visible())
-                
-        elif label == 'average':
-            self.avg_line_norm.set_visible(not self.avg_line_norm.get_visible())
-        plt.draw()
-            
-    #Will set the control panel for norm graph
-    def _set_norm_control(self):
-        self.check_norm = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_norm, self.avg_reps_norm))
-        self.check_norm.on_clicked(self._check_settings_norm)
-        
-    #Will plot the all replica norms
-    def _plot_all_rep_norm(self):
-        self.all_rep_lines_norm = []
-        for Dfilename in self.all_Dcoeff_data:
-            coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
-            norms = np.sum(pops, axis=1)
-            self.all_rep_lines_norm.append(self.plot_ax.plot(timesteps, norms, alpha=self.alpha, color='r', lw=1)[0])
-        
-        #Initialise the replica lines
-        for line in self.all_rep_lines_norm:
-            line.set_visible(self.all_reps_norm)
-
-    #Will plot normal of diabatic coeffs
-    def _plot_norm_graph(self):
-        """
-        Will plot the normal of the diabatic coefficients. Will sum the 
-        populations and plot on the norm axis.
-        """
-        coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
-        norms = np.sum(pops, axis=1)
-        self.avg_line_norm, = self.plot_ax.plot(timesteps, norms, lw=2, color='g')
-        
-        self.avg_line_norm.set_visible(self.avg_reps_norm)
-
-class plot_coeff(object):
-    """
-    To act as a template for plotting the coefficient data. 
-        
-    Inputs:
-        axes  => a list of the axes to plot on. The first item should be the 
-                 widget axis the second will be the axis to plot the data.  
-    """
-    def __init__(self, axes):
-        self.widget_ax = axes[0]
-        self.plot_ax   = axes[1]
-        
-        self.all_reps_coeff = False
-        self.avg_reps_coeff = True
-        
-        self._set_coeff_data()
-        
-        self._plot_all_reps_coeff()
-        self._plot_avg_reps_coeff()
-        
-    def _set_coeff_data(self):
-        """
-        Will set which data is being used (adiabatic or diabatic)
-        """
-        self.coeff_data = None
-        self.all_coeff_data_avg = self.all_Dcoeff_data_avg
-        self.num_states = 0
-        self.ylabel     = ""
-        
-    def _plot_all_reps_coeff(self):
-        """
-        Will plot the graph showing all the replicas
-        """
-        self.all_coeff_lines = []
-        for filename in self.coeff_data:
-            coeffs, cols, timesteps, pops = self.coeff_data[filename]
-            for i in range(self.num_states):
-                self.all_coeff_lines.append(self.plot_ax.plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)[0])
-        
-        # Set initial visibility
-        for line in self.all_coeff_lines:
-            line.set_visible(self.all_reps_coeff)
-
-    def _plot_avg_reps_coeff(self):
-        """
-        Will plot the average coefficient lines for each state.
-        """
-        self.avg_coeff_lines = []
-        coeffs, cols, timesteps, pops = self.all_coeff_data_avg
-        for i in range(self.num_states):                    
-            self.avg_coeff_lines.append(self.plot_ax.plot(timesteps, pops[:,i], color=self.colors[i])[0])
-                
-    def _set_coeff_control(self):
-        """
-        Will set the control panel for the coeff graphs
-        """
-        self.check_coeff = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_coeff, self.avg_reps_coeff))
-        self.check_coeff.on_clicked(self._check_settings_coeff)
-
-    def _check_settings_norm(self, label):
-        """
-        Will handle the switching on and off for the coeff graphs.
-        """
-        if label == 'all replicas': #Pressed the all replicas button
-            for line in self.all_coeff_lines:
-                line.set_visible(not line.get_visible())
-                
-        elif label == 'average':
-            for line in self.avg_coeff_lines:
-                line.set_visible(not line.get_visible())
-        plt.draw()        
-
-
-class Plot(LoadData, Params, Plot_Norm):
+class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_states
@@ -323,11 +201,19 @@ class Plot(LoadData, Params, Plot_Norm):
         
         self._create_ax_fig_layout()
         
+        ### REMOVE WHEN ALL CLASS PLOTS ARE CREATED ###
+        self.plot_all_reps = True
+        self.avg_on = True
+        self.fill_between = True
+        ###############################################
+        
         if 'norm' in self.plot_params:
-            Plot_Norm.__init__(self, self.axes['norm'])
+            plot_norm.Plot_Norm.__init__(self, self.axes['norm'])
+        if '|u|^2' in self.plot_params:
+            plot_coeff.Plot_Coeff.__init__(self, self.axes['|u|^2'])
+        if '|c|^2' in self.plot_params:
+            plot_coeff.Plot_Coeff.__init__(self, self.axes['|c|^2'])            
         self._plot_site_ener()
-        self._plot_diab_pops()
-        self._plot_adiab_pops()
         self._plot_adiab_states()
         self._plot_QM()
         
@@ -342,18 +228,23 @@ class Plot(LoadData, Params, Plot_Norm):
         The self.axes variable is a dictionary with the plot parameter as a key
         and the axis that has been assigned to it as the value.
         """
-        self.f = plt.figure(figsize=(50,50))
+        self.f = plt.figure()
         self.axes = {}
-        if len(self.plot_params) <= 3:   
+        if len(self.plot_params) <= 4:   
             for i,param in enumerate(self.plot_params):
                 a = []
-                a.append( plt.subplot2grid((len(self.plot_params),9),(i,0), colspan=1) )
-                a.append( plt.subplot2grid((len(self.plot_params),9),(i,1), colspan=9) )
-                # Design the widget axis
-                a[0].set_xticks([])                
-                a[0].set_yticks([])                
-                for side in ['top','bottom','left','right']:
-                    a[0].spines[side].set_visible(False)
+                if self._use_control:
+                    a.append( plt.subplot2grid((len(self.plot_params),8),(i,0), colspan=1) )
+                    a.append( plt.subplot2grid((len(self.plot_params),8),(i,1), colspan=7) )
+                
+                    # Design the widget axis
+                    a[0].set_xticks([])                
+                    a[0].set_yticks([])                
+                    for side in ['top','bottom','left','right']:
+                        a[0].spines[side].set_visible(False)
+                else:
+                    a.append('')
+                    a.append(plt.subplot2grid( (len(self.plot_params),1), (i,0)) )
                 self.axes[param] = a
         else:
             plt.close()
@@ -370,49 +261,6 @@ class Plot(LoadData, Params, Plot_Norm):
             ax.set_ylabel(r"$\Delta$E (Ha)")
             if self.avg_on:
                 ax.plot(self.Stimesteps, self.avg_site_ener)
-            
-    #Will plot diab pops
-    def _plot_diab_pops(self):
-        """
-        Will plot the diabatic populations on the |u|^2 axis.
-        """
-        if '|u|^2' in self.plot_params:
-            ax = self.axes['|u|^2'][1]
-            num_states = len(self.all_Dcoeff_data_avg[3][0])
-            
-            #Plot averages
-#            if self.avg_on:
-            coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
-            for i in range(num_states):                    
-                ax.plot(timesteps, pops[:,i], color=self.colors[i])
-                    
-            #Plot faded reps
-#            if self.plot_all_reps:
-            for Dfilename in self.all_Dcoeff_data:
-                coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
-                for i in range(num_states):
-                    ax.plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)
-            
-            
-            ax.set_ylabel(r"$|u_l|^2$")
-        
-    #Will plot adiab pops
-    def _plot_adiab_pops(self):
-        """
-        Will plot the adiabatic populations on the |C|^2 axis.
-        """
-        if '|c|^2' in self.plot_params:
-            ax = self.axes['|c|^2'][1]
-#            if self.avg_on:
-            coeffs, cols, timesteps, pops = self.all_Acoeff_data_avg
-            for i in range(len(pops[0])):
-                ax.plot(timesteps, pops[:,i], color=self.colors[i])
-#            if self.plot_all_reps:
-            for Afilename in self.all_Acoeff_data:
-                coeffs, cols, timesteps, pops = self.all_Acoeff_data[Afilename]
-                for i in range(len(pops[0])):
-                    ax.plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=1)
-            ax.set_ylabel(r"$|C_l|^2$")
     
     #Will plot the adiabatic states
     def _plot_adiab_states(self):
@@ -444,7 +292,7 @@ class Plot(LoadData, Params, Plot_Norm):
                         y2 = self.all_ad_ener_data_avg[state_cols[i+1]].iloc[[dt, dt+1]]
                         diffy = 1-normed_diffs[dt]
                         color = cm.hot(diffy*2)
-                        ax.fill_between(T, y1, y2, alpha=0.1, color=color, lw=0)
+                        ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
 
             ax.set_ylabel(r"$E^{ad}_{l}$")
     
@@ -456,7 +304,8 @@ class Plot(LoadData, Params, Plot_Norm):
         if 'qm' in self.plot_params:
             ax = self.axes['qm'][1]
             if self.plot_all_reps:
-                for Qlk_filename in self.all_QM_data:
+#                for Qlk_filename in self.all_QM_data:
+                    Qlk_filename = 'run-QM-1.xyz'
                     Qlk_data = self.all_QM_data[Qlk_filename]
                     Qlk_timesteps = Qlk_data[1]
                     Qlk_data = Qlk_data[0]
@@ -468,9 +317,10 @@ class Plot(LoadData, Params, Plot_Norm):
                         QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
                         
                         QM_mag = QMX**2 + QMY**2 + QMZ**2
-                        QM_mag /= np.max(QM_mag)
+#                        QM_mag /= np.max(QM_mag)
                         ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom)
             ax.set_ylabel(r"|Q$_{lk}$|$^2$")
+#            self.title = "Qlk has been normalised for each atom"
 #            ax.legend()
             
     #Will finish off the plots
@@ -502,6 +352,8 @@ class Plot(LoadData, Params, Plot_Norm):
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
         
         self.f.tight_layout()
-        
-folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
-p = Plot(['|u|^2','norm', '|c|^2'], folder, 'all')
+
+#/scratch/flavoured-cptk/200Rep_3mol
+folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
+#folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.05fs') #The folder to look in for the data
+p = Plot(['norm', 'qm', 'adiab_states'], folder, 'all')
