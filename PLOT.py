@@ -311,6 +311,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
                         Qlk_data = self.all_QM_data[Qlk_filename]
                         Qlk_timesteps = Qlk_data[1]
                         Qlk_data = Qlk_data[0]
+                        
                         num_atoms = np.shape(Qlk_data[0])[1]/3
                         QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
                         QM_mag = np.zeros(np.shape(QM_mag))
@@ -322,8 +323,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
                             
                             QM_mag += QMX**2 + QMY**2 + QMZ**2
                             
-                        ax.plot(Qlk_timesteps, QM_mag, lw=0.5, alpha=0.5)
-                        ylabel = r"$\sum_{v}$ |Q$_{lk, v}$|$^2$"
+                        ax.plot(Qlk_timesteps, QM_mag/num_atoms, lw=0.5, alpha=0.5)
+                        ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
                 else:
                     for Qlk_filename in self.all_QM_data:
     #                    Qlk_filename = 'run-QM-1.xyz'
@@ -341,7 +342,29 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
     #                        QM_mag /= np.max(QM_mag)
                             ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, lw=0.5, alpha=0.5)
                         ylabel = r"|Q$_{lk, v}$|$^2$"
+            if self.avg_on:
+                Qlk_data = self.all_QM_data[self.all_QM_data.keys()[0]][0]
+                QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
+                QM_mag = np.zeros(np.shape(QM_mag))
+                if self.sum_all_atoms_qm:
+                    num_atoms = np.shape(Qlk_data[0])[1]/3
+                    for Qlk_filename in self.all_QM_data:
+                        Qlk_data = self.all_QM_data[Qlk_filename]
+                        Qlk_timesteps = Qlk_data[1]
+                        Qlk_data = Qlk_data[0]
                         
+                        for iatom in range(1,num_atoms+1):
+                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+                            
+                            QM_mag += QMX**2 + QMY**2 + QMZ**2
+                            
+                    QM_mag = QM_mag/(self.num_reps*num_atoms)
+                    ax.plot(Qlk_timesteps, QM_mag, lw=1)
+                    ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
+                else:
+                    pass
             ax.set_ylabel(ylabel)
 #            self.title = "Qlk has been normalised for each atom"
 #            ax.legend()
@@ -379,4 +402,4 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
 #/scratch/flavoured-cptk/200Rep_3mol
 folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
 #folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.05fs') #The folder to look in for the data
-p = Plot(['norm', 'qm', 'adiab_states'], folder, 'all')
+p = Plot(['norm'], folder, 'all')
