@@ -13,12 +13,12 @@ from load import load_QM
 from Plot import plot_utils
 from Plot import plot_coeff
 from Plot import plot_norm
+from Plot import plot_ener
 
 from IO import Folders as fold
 
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
-import matplotlib.cm as cm
 import numpy as np
 import os
 
@@ -175,7 +175,7 @@ class LoadData(object):
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
 
 
-class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
+class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_ener.Adiab_States):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_states
@@ -215,7 +215,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
         if '|c|^2' in self.plot_params:
             plot_coeff.Plot_Coeff.__init__(self, self.axes['|c|^2'])            
         self._plot_site_ener()
-        self._plot_adiab_states()
+        if 'adiab_states' in self.plot_params:
+            plot_ener.Adiab_States.__init__(self, self.axes['adiab_states'])
         self._plot_QM()
         
         self.__finalise()
@@ -263,39 +264,39 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
             if self.avg_on:
                 ax.plot(self.Stimesteps, self.avg_site_ener)
     
-    #Will plot the adiabatic states
-    def _plot_adiab_states(self):
-        """
-        Will plot the adiabatic energy levels.
-        """
-        if 'adiab_states' in self.plot_params:
-            ax = self.axes['adiab_states'][1]
-            state_cols = [i for i in self.all_ad_ener_data_avg.columns if 'State' in i]
-            
-            if self.avg_on:
-                for i, col in enumerate(state_cols):
-                    ax.plot(self.all_ad_ener_data_avg['Time'], self.all_ad_ener_data_avg[col], color=self.colors[i])
-            
-            if self.plot_all_reps:
-                for Efilename in self.all_ad_ener_data:
-                    ad_ener_data = self.all_ad_ener_data[Efilename]
-                    for i, col in enumerate(state_cols):
-                        ax.plot(ad_ener_data['Time'], ad_ener_data[col], alpha=self.alpha, lw=0.7, color=self.colors[i])
-            
-            if self.fill_between:
-                for i, state in enumerate(state_cols[:-1]):
-                    y1_y2 = self.all_ad_ener_data_avg[state] - self.all_ad_ener_data_avg[state_cols[i+1]]
-                    max_diff, min_diff = np.max(y1_y2), np.min(y1_y2)
-                    normed_diffs = (y1_y2 - min_diff)/(max_diff - min_diff)
-                    for dt, timestep in enumerate(self.all_ad_ener_data_avg['Time'][:-1]):
-                        T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
-                        y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
-                        y2 = self.all_ad_ener_data_avg[state_cols[i+1]].iloc[[dt, dt+1]]
-                        diffy = 1-normed_diffs[dt]
-                        color = cm.hot(diffy*2)
-                        ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
-
-            ax.set_ylabel(r"$E^{ad}_{l}$")
+#    #Will plot the adiabatic states
+#    def _plot_adiab_states(self):
+#        """
+#        Will plot the adiabatic energy levels.
+#        """
+#        if 'adiab_states' in self.plot_params:
+#            ax = self.axes['adiab_states'][1]
+#            state_cols = [i for i in self.all_ad_ener_data_avg.columns if 'State' in i]
+#            
+#            if self.avg_on:
+#                for i, col in enumerate(state_cols):
+#                    ax.plot(self.all_ad_ener_data_avg['Time'], self.all_ad_ener_data_avg[col], color=self.colors[i])
+#            
+#            if self.plot_all_reps:
+#                for Efilename in self.all_ad_ener_data:
+#                    ad_ener_data = self.all_ad_ener_data[Efilename]
+#                    for i, col in enumerate(state_cols):
+#                        ax.plot(ad_ener_data['Time'], ad_ener_data[col], alpha=self.alpha, lw=0.7, color=self.colors[i])
+#            
+#            if self.fill_between:
+#                for i, state in enumerate(state_cols[:-1]):
+#                    y1_y2 = self.all_ad_ener_data_avg[state] - self.all_ad_ener_data_avg[state_cols[i+1]]
+#                    max_diff, min_diff = np.max(y1_y2), np.min(y1_y2)
+#                    normed_diffs = (y1_y2 - min_diff)/(max_diff - min_diff)
+#                    for dt, timestep in enumerate(self.all_ad_ener_data_avg['Time'][:-1]):
+#                        T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
+#                        y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
+#                        y2 = self.all_ad_ener_data_avg[state_cols[i+1]].iloc[[dt, dt+1]]
+#                        diffy = 1-normed_diffs[dt]
+#                        color = cm.hot(diffy*2)
+#                        ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
+#
+#            ax.set_ylabel(r"$E^{ad}_{l}$")
     
     #Will plot the Quantum Momentum term
     def _plot_QM(self):
@@ -379,7 +380,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
         if any(j in self.plot_params for j in ('|u|^2', '|c|^2')):
             # Set legend
             if '|u|^2' in self.plot_params: num_states = len(self.all_Dcoeff_data_avg[3][0])
-            if '|c|^2' in self.plot_params: num_states = len(self.all_Acoeff_data_avg[3][0])
+            elif '|c|^2' in self.plot_params: num_states = len(self.all_Acoeff_data_avg[3][0])
+            elif 'adiab_states' in self.plot_params: num_states = len(self.state_cols_AS)
             leg_dict = {'State %i'%i:self.colors[i] for i in range(num_states)}
             patches = [mpatches.Patch(color=leg_dict[i], label=i) for i in leg_dict]
             self.f.legend(handles=patches, fontsize=20, labels=leg_dict.keys())
@@ -400,6 +402,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff):
         self.f.tight_layout()
 
 #/scratch/flavoured-cptk/200Rep_3mol
-folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
+#folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
 #folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.05fs') #The folder to look in for the data
-p = Plot(['norm'], folder, 'all')
+folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
+p = Plot(['adiab_states'], folder, 'all')
