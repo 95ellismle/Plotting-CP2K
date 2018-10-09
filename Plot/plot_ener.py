@@ -8,6 +8,7 @@ Created on Thu Oct  4 09:30:31 2018
 import numpy as np
 import matplotlib.cm as cm
 from matplotlib.widgets import CheckButtons
+import matplotlib.pyplot as plt
 
 
 
@@ -30,7 +31,7 @@ class Adiab_States(object):
         # Set defaults
         self.plot_all_AS = False
         self.plot_avg_AS = True
-        self.fill_between_AS = True
+        self.fill_between_AS = False
         
         # Plot everything
         self._plot_all_reps_AS()
@@ -117,12 +118,13 @@ class Adiab_States(object):
         """
         Will handle button presses from the check buttons
         """
-        if label == 'all replicas':
+        if label == 'all rep':
             for line in self.AS_all_lines:
                 line.set_visible(not line.get_visible())
-        elif label == 'average':
+        elif label == 'avg':
             for line in self.AS_avg_lines:
                 line.set_visible(not line.get_visible())
-        elif label == 'fill between':
+        elif label == 'fill':
             for line in self.all_fill_bars:
                 line.set_visible(not line.get_visible())
+        plt.draw()

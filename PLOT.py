@@ -9,6 +9,7 @@ from load import load_coeff
 from load import load_ener
 from load import load_ham
 from load import load_QM
+from load import load_inp
 
 from Plot import plot_utils
 from Plot import plot_coeff
@@ -38,14 +39,16 @@ class Params(object):
         
         self._correct_plot_params()
         self._get_alpha()
+        self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
 
-        self.title = ""
-        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
-        self._use_control = True
-        if self.num_reps == 1: self._use_control = False
-
-#        if self.plot_all_reps: self.fill_between = False
+        self.title = r""
+        self.colors = ['r','g','b','#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        self.colors = [i for j in range(50) for i in self.colors]
         
+        self._use_control = True
+#        if self.num_reps == 1: self._use_control = False
+        
+        self.max_time = 100
         
     # Will get the number of replicas and the transparency of the lines.
     def _get_alpha(self):
@@ -59,7 +62,7 @@ class Params(object):
             else:                     self.num_reps = len(self.reps)
             if self.num_reps == 0: raise SystemExit("Sorry I can't seem to find any replicas! (self.num_reps = %i)"%self.num_reps)
             
-            alphas = {1: 1, 2: 0.5, 3: 0.4, 10: 0.2, 50: 0.15, 100: 0.125, 200: 0.1, 500: 0.01, 10000:0}
+            alphas = {1: 1, 2: 0.8, 3: 0.6, 10: 0.4, 50: 0.15, 100: 0.125, 200: 0.1, 500: 0.01, 10000:0}
             self.all_alphas = {}
             keys = sorted(alphas.keys())
             for i in range(len(alphas)-1):
@@ -189,6 +192,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
                                * norm         = The norm of the diabatic coeffs
                                * qm           = The Quantum Momentum
                                * adiab_states = The adiabatic energy levels
+                               * site_ener    = The site energies vs time
         folder         =>  The folder containing the data
         reps           =>  Which replica numbers to plot (can be 'all')
     """
@@ -236,8 +240,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             for i,param in enumerate(self.plot_params):
                 a = []
                 if self._use_control:
-                    a.append( plt.subplot2grid((len(self.plot_params),8),(i,0), colspan=1) )
-                    a.append( plt.subplot2grid((len(self.plot_params),8),(i,1), colspan=7) )
+                    a.append( plt.subplot2grid((len(self.plot_params),7),(i,0), colspan=1) )
+                    a.append( plt.subplot2grid((len(self.plot_params),7),(i,1), colspan=6) )
                 
                     # Design the widget axis
                     a[0].set_xticks([])                
@@ -263,41 +267,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             ax.set_ylabel(r"$\Delta$E (Ha)")
             if self.avg_on:
                 ax.plot(self.Stimesteps, self.avg_site_ener)
-    
-#    #Will plot the adiabatic states
-#    def _plot_adiab_states(self):
-#        """
-#        Will plot the adiabatic energy levels.
-#        """
-#        if 'adiab_states' in self.plot_params:
-#            ax = self.axes['adiab_states'][1]
-#            state_cols = [i for i in self.all_ad_ener_data_avg.columns if 'State' in i]
-#            
-#            if self.avg_on:
-#                for i, col in enumerate(state_cols):
-#                    ax.plot(self.all_ad_ener_data_avg['Time'], self.all_ad_ener_data_avg[col], color=self.colors[i])
-#            
-#            if self.plot_all_reps:
-#                for Efilename in self.all_ad_ener_data:
-#                    ad_ener_data = self.all_ad_ener_data[Efilename]
-#                    for i, col in enumerate(state_cols):
-#                        ax.plot(ad_ener_data['Time'], ad_ener_data[col], alpha=self.alpha, lw=0.7, color=self.colors[i])
-#            
-#            if self.fill_between:
-#                for i, state in enumerate(state_cols[:-1]):
-#                    y1_y2 = self.all_ad_ener_data_avg[state] - self.all_ad_ener_data_avg[state_cols[i+1]]
-#                    max_diff, min_diff = np.max(y1_y2), np.min(y1_y2)
-#                    normed_diffs = (y1_y2 - min_diff)/(max_diff - min_diff)
-#                    for dt, timestep in enumerate(self.all_ad_ener_data_avg['Time'][:-1]):
-#                        T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
-#                        y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
-#                        y2 = self.all_ad_ener_data_avg[state_cols[i+1]].iloc[[dt, dt+1]]
-#                        diffy = 1-normed_diffs[dt]
-#                        color = cm.hot(diffy*2)
-#                        ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
-#
-#            ax.set_ylabel(r"$E^{ad}_{l}$")
-    
+        
     #Will plot the Quantum Momentum term
     def _plot_QM(self):
         """
@@ -307,26 +277,26 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
         if 'qm' in self.plot_params:
             ax = self.axes['qm'][1]
             if self.plot_all_reps:
-                if self.sum_all_atoms_qm:
-                    for Qlk_filename in self.all_QM_data:
-                        Qlk_data = self.all_QM_data[Qlk_filename]
-                        Qlk_timesteps = Qlk_data[1]
-                        Qlk_data = Qlk_data[0]
-                        
-                        num_atoms = np.shape(Qlk_data[0])[1]/3
-                        QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
-                        QM_mag = np.zeros(np.shape(QM_mag))
-                        
-                        for iatom in range(1,num_atoms+1):
-                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-                            
-                            QM_mag += QMX**2 + QMY**2 + QMZ**2
-                            
-                        ax.plot(Qlk_timesteps, QM_mag/num_atoms, lw=0.5, alpha=0.5)
-                        ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
-                else:
+#                if self.sum_all_atoms_qm:
+#                    for Qlk_filename in self.all_QM_data:
+#                        Qlk_data = self.all_QM_data[Qlk_filename]
+#                        Qlk_timesteps = Qlk_data[1]
+#                        Qlk_data = Qlk_data[0]
+#                        
+#                        num_atoms = np.shape(Qlk_data[0])[1]/3
+#                        QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
+#                        QM_mag = np.zeros(np.shape(QM_mag))
+#                        
+#                        for iatom in range(1,num_atoms+1):
+#                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+#                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+#                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+#                            
+#                            QM_mag += QMX**2 + QMY**2 + QMZ**2
+#                            
+#                        ax.plot(Qlk_timesteps, QM_mag/num_atoms, lw=0.5, alpha=self.alpha)
+#                        ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
+##                else:
                     for Qlk_filename in self.all_QM_data:
     #                    Qlk_filename = 'run-QM-1.xyz'
                         Qlk_data = self.all_QM_data[Qlk_filename]
@@ -340,32 +310,32 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
                             QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
                             
                             QM_mag = QMX**2 + QMY**2 + QMZ**2
-    #                        QM_mag /= np.max(QM_mag)
-                            ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, lw=0.5, alpha=0.5)
+                            if len(QM_mag):
+                                ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, lw=0.5, alpha=0.5, color=self.colors[iatom])
                         ylabel = r"|Q$_{lk, v}$|$^2$"
-            if self.avg_on:
-                Qlk_data = self.all_QM_data[self.all_QM_data.keys()[0]][0]
-                QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
-                QM_mag = np.zeros(np.shape(QM_mag))
-                if self.sum_all_atoms_qm:
-                    num_atoms = np.shape(Qlk_data[0])[1]/3
-                    for Qlk_filename in self.all_QM_data:
-                        Qlk_data = self.all_QM_data[Qlk_filename]
-                        Qlk_timesteps = Qlk_data[1]
-                        Qlk_data = Qlk_data[0]
-                        
-                        for iatom in range(1,num_atoms+1):
-                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-                            
-                            QM_mag += QMX**2 + QMY**2 + QMZ**2
-                            
-                    QM_mag = QM_mag/(self.num_reps*num_atoms)
-                    ax.plot(Qlk_timesteps, QM_mag, lw=1)
-                    ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
-                else:
-                    pass
+#            if self.avg_on:
+#                Qlk_data = self.all_QM_data[self.all_QM_data.keys()[0]][0]
+#                QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
+#                QM_mag = np.zeros(np.shape(QM_mag))
+#                if self.sum_all_atoms_qm:
+#                    num_atoms = np.shape(Qlk_data[0])[1]/3
+#                    for Qlk_filename in self.all_QM_data:
+#                        Qlk_data = self.all_QM_data[Qlk_filename]
+#                        Qlk_timesteps = Qlk_data[1]
+#                        Qlk_data = Qlk_data[0]
+#                        
+#                        for iatom in range(1,num_atoms+1):
+#                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+#                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+#                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+#                            
+#                            QM_mag += QMX**2 + QMY**2 + QMZ**2
+#                            
+##                    QM_mag = QM_mag/(self.num_reps*num_atoms)
+#                    ax.plot(Qlk_timesteps, QM_mag, lw=1)
+#                    ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
+#                else:
+#                    pass
             ax.set_ylabel(ylabel)
 #            self.title = "Qlk has been normalised for each atom"
 #            ax.legend()
@@ -382,27 +352,38 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             if '|u|^2' in self.plot_params: num_states = len(self.all_Dcoeff_data_avg[3][0])
             elif '|c|^2' in self.plot_params: num_states = len(self.all_Acoeff_data_avg[3][0])
             elif 'adiab_states' in self.plot_params: num_states = len(self.state_cols_AS)
-            leg_dict = {'State %i'%i:self.colors[i] for i in range(num_states)}
-            patches = [mpatches.Patch(color=leg_dict[i], label=i) for i in leg_dict]
-            self.f.legend(handles=patches, fontsize=20, labels=leg_dict.keys())
+            labels = ["State %i"%(i+1) for i in range(num_states)]
+            patches = [mpatches.Patch(color=self.colors[i], label=lab) for i, lab in enumerate(labels)]
+            self.f.legend(handles=patches, fontsize=20, labels=labels)
         self.f.suptitle(self.title, fontsize=20)
         
         # For all axes
         for ax in self.axes:
-            self.axes[ax][1].spines['top'].set_visible(False)
-            self.axes[ax][1].spines['right'].set_visible(False)
-            self.axes[ax][1].spines['bottom'].set_visible(False)
-            self.axes[ax][1].spines['left'].set_visible(True)
-            self.axes[ax][1].grid('on', alpha=0.5)
-
+            AX = self.axes[ax][1]
+            AX.spines['top'].set_visible(False)
+            AX.spines['right'].set_visible(False)
+            AX.spines['bottom'].set_visible(False)
+            AX.spines['left'].set_visible(True)
+            AX.grid('on', alpha=0.5)
+            
         # For last axis
         self.axes[self.plot_params[-1]][1].set_xlabel("Time (fs)")
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
         
+        
         self.f.tight_layout()
+        plt.show()
 
-#/scratch/flavoured-cptk/200Rep_3mol
+#/scratch/mellis/flavoured-cptk/200Rep_3mol
 #folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
 #folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.05fs') #The folder to look in for the data
-folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
-p = Plot(['adiab_states'], folder, 'all')
+#folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
+#folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/fail-16')
+
+#Ehrenfest
+folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-0') #The folder to look in for the data
+p = Plot(['|C|^2'], folder, 'all')
+#Quantum Momentum
+#folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/fail-0') #The folder to look in for the data
+#p = Plot(['|C|^2'], folder, 'all')
+#plt.close()

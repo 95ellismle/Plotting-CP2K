@@ -11,6 +11,31 @@ import pandas as pd
 from load import load_coeff
 
 
+def calc_U_matrix(H):
+    """
+    Calculates the U matrix for each replica according to the hamiltonian.
+    
+    Inputs:
+        * all_ham_data  => all the hamiltonian data in a dictionary with 
+                           filenames as keys
+    """
+    H = -H
+    
+    E, U = np.linalg.eigh(H) #get eigenvectors
+
+    # Sort eigenvectors by eigenvalues        
+    idx = E.argsort() #Sort by absolute energy
+    E = E[idx]
+    U = U[:,idx]
+    
+#    U_T_1 = np.matrix(np.linalg.inv(U).T)
+#    # To check the unitary transformation matrix
+#    if np.max(U_T_1 - U).real > 1e-14:
+#        raise SystemExit("""Something is wrong with the transformation matrix U
+#
+#Max deviation from U^{\dagger} - U = %.2g"""%(np.max(np.transpose(np.linalg.inv(U)) - U).real))
+    return U
+
 # Will transform the diabatic coefficients with the hamiltonian
 def transform_di_2_ad(udata, ucols, utimesteps, hdata, htimesteps):
     hmask = [h in utimesteps for h in htimesteps]
@@ -21,8 +46,9 @@ def transform_di_2_ad(udata, ucols, utimesteps, hdata, htimesteps):
     ucols = ucols[umask]
     utimesteps = utimesteps[umask]
     
-    Us = np.linalg.eigh(hdata)[1]
-    C = np.array([np.dot(U, u) for U, u in zip(Us, udata)])
+    Us = np.array([calc_U_matrix(H) for H in hdata])
+    
+    C = np.array([np.dot(U.T, u) for U, u in zip(Us, udata)])
     pops = np.array([np.array([np.linalg.norm(j)**2 for j in i]) for i in C])
     return C, ucols, utimesteps, pops
 
