@@ -5,23 +5,44 @@ Created on Mon Sep 24 16:47:13 2018
 
 @author: mellis
 """
+# Own modules
 from load import load_coeff
 from load import load_ener
 from load import load_ham
 from load import load_QM
+from load import load_pos
 from load import load_inp
 
 from Plot import plot_utils
 from Plot import plot_coeff
 from Plot import plot_norm
+from Plot import plot_QM
+from Plot import plot_ham
 from Plot import plot_ener
 
 from IO import Folders as fold
 
+# External Modules
 import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
-import os
+import datetime
+
+
+
+
+###############
+
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_3mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
+plotting_parameters = ['qm']
+replicas            = range(2)
+
+###############
+
+
+
+
+
 
 
 class Params(object):
@@ -38,10 +59,10 @@ class Params(object):
         self._set_coeff_params()
         
         self._correct_plot_params()
-        self._get_alpha()
+#        self._get_alpha()
         self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
 
-        self.title = r""
+        self.title = r"Dimer adiab coeff convergence Ehrenfest -100 reps (without commutator)"
         self.colors = ['r','g','b','#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
         self.colors = [i for j in range(50) for i in self.colors]
         
@@ -53,25 +74,19 @@ class Params(object):
     # Will get the number of replicas and the transparency of the lines.
     def _get_alpha(self):
         """
-        Will get the number of replicas in the folder. Will just count how many 
-        position files there are. Will also set the transparency of the replica
-        lines.
+        Will change the alpha value depending on how many reps were used in the 
+        simulation.
         """
-        if self.folder:
-            if self.reps == 'all':    self.num_reps = len([i for i in os.listdir(self.folder) if 'n-pos-' in i])
-            else:                     self.num_reps = len(self.reps)
-            if self.num_reps == 0: raise SystemExit("Sorry I can't seem to find any replicas! (self.num_reps = %i)"%self.num_reps)
-            
-            alphas = {1: 1, 2: 0.8, 3: 0.6, 10: 0.4, 50: 0.15, 100: 0.125, 200: 0.1, 500: 0.01, 10000:0}
-            self.all_alphas = {}
-            keys = sorted(alphas.keys())
-            for i in range(len(alphas)-1):
-                curr_key = keys[i]
-                next_key = keys[i+1]
-                fit = np.polyfit([curr_key, next_key], [alphas[curr_key], alphas[next_key]],1)
-                for i in range(curr_key, next_key):
-                    self.all_alphas[i] = np.polyval(fit, i)
-            self.alpha = self.all_alphas[self.num_reps]
+        alphas = {1: 1, 2: 0.8, 3: 0.6, 10: 0.4, 50: 0.15, 100: 0.125, 200: 0.1, 500: 0.01, 10000:0}
+        self.all_alphas = {}
+        keys = sorted(alphas.keys())
+        for i in range(len(alphas)-1):
+            curr_key = keys[i]
+            next_key = keys[i+1]
+            fit = np.polyfit([curr_key, next_key], [alphas[curr_key], alphas[next_key]],1)
+            for i in range(curr_key, next_key):
+                self.all_alphas[i] = np.polyval(fit, i)
+        self.alpha = self.all_alphas[self.num_reps]
             
     def _correct_plot_params(self):
         """
@@ -82,8 +97,11 @@ class Params(object):
             self.plot_params = ['norm', '|c|^2', '|u|^2', 'adiab_states', 'qm', 'norm_traj']
         else:    
             self.plot_params = [i.strip().lower() for i in self.plot_params]
-            
+        
+        self.plot_params = ['coup' if 'coup' in i else i for i in self.plot_params]
+        
         self.plot_paramsC = [i for i in self.plot_params if any(i == j for j in ('|u|^2', '|c|^2'))]
+        
         # Want to add some typo checking using difflib.SequenceMatcher later
 
     def _set_coeff_params(self):
@@ -134,6 +152,8 @@ class LoadData(object):
         self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data, ham_key) for ham_key in self.all_ham_data]
         self.all_site_ener = [[i[0], i[3]] for i in self.all_site_ener]
 
+        self.num_reps = len(self.all_ham_data)
+        self._get_alpha()
     
     def load_all_di_coeffs(self):
         """ 
@@ -163,7 +183,8 @@ class LoadData(object):
         Will load the quantum momentum file into the format in load_QM.
         """
         if 'qm' in self.plot_params:
-            self.all_QM_data = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
+            self.all_QM_data  = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
+            self.all_pos_data = load_pos.load_all_pos_in_folder(folder, reps=self.reps)
         
     # Will average the coefficient data (ham is averaged by default)
     def _average_data(self):
@@ -178,7 +199,8 @@ class LoadData(object):
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
 
 
-class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_ener.Adiab_States):
+class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, 
+           plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_states
@@ -218,10 +240,16 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             plot_coeff.Plot_Coeff.__init__(self, self.axes['|u|^2'])
         if '|c|^2' in self.plot_params:
             plot_coeff.Plot_Coeff.__init__(self, self.axes['|c|^2'])            
-        self._plot_site_ener()
         if 'adiab_states' in self.plot_params:
             plot_ener.Adiab_States.__init__(self, self.axes['adiab_states'])
-        self._plot_QM()
+        if 'coup' in self.plot_params:
+            plot_ham.Coupling.__init__(self, self.axes['coup'])
+        if 'qm' in self.plot_params:
+            plot_QM.QM.__init__(self, self.axes['qm'])
+        
+        #TODO: These need moving into their own filess
+        self._plot_site_ener()
+#        self._plot_QM()
         
         self.__finalise()
   
@@ -256,6 +284,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
 
+    #TODO: Move this into it's own file.
     #Will plot site energy difference.
     def _plot_site_ener(self):
         """
@@ -268,6 +297,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             if self.avg_on:
                 ax.plot(self.Stimesteps, self.avg_site_ener)
         
+        
+    #TODO: Move this into it's own file and fix it up so it isn't such a mess!    
     #Will plot the Quantum Momentum term
     def _plot_QM(self):
         """
@@ -339,7 +370,58 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
             ax.set_ylabel(ylabel)
 #            self.title = "Qlk has been normalised for each atom"
 #            ax.legend()
+    
+    def print_final_info(self):
+        """
+        Will print some information about the data just plotted. This will 
+        include stuff from the input file such as whether the commutator was 
+        used, whether the run was Ehrenfest or not, the data/time of the plot
+        , how many replicas were used and how many molecules.
+        """
+        
+        
+        
+        # Build the strs list
+        str_sections = {'Date/Time':[], 'Ehrenfest':[], 'CTMQC':[]}
+        
+        strs = str_sections['Date/Time']
+        strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Time of plot = %H:%M"))
+        strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Date = %d/%m/%Y"))
+        
+        if not self.run_inp_params['USE_QM']:
+            strs = str_sections['Ehrenfest']
+            if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
+            else: strs.append("Commutator was OFF")
+            strs.append("Num Replicas = %i"%self.num_reps)
+        
+        else:
+            strs = str_sections['CTMQC']
+            if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
+            else: strs.append("Commutator was OFF")
+            strs.append("Num Replicas = %i"%self.num_reps)
+            strs.append("Initial Width = %.3g"%self.run_inp_params['INITIAL_SIGMA'])
             
+        # Find max len of string and add a hash to the end of each line
+        max_len_str = np.max([len(i) for j in str_sections for i in str_sections[j]]) + 4
+        str_sections = {sect: [i+ ' '*(max_len_str-len(i))+'#' for i in str_sections[sect]] 
+                               for sect in str_sections}
+        
+        # Do the printing
+        tabN = 6
+        tab = " "*tabN
+        for i in str_sections:
+            if not str_sections[i]: continue
+            strs = str_sections[i]
+            print("\n"+'#'*tabN+'#'*max_len_str+'#')
+            print(i + ' '*(max_len_str-len(i))+tab+'#')
+            print('-'*len(i) + ' '*(max_len_str-len(i))+tab+'#')
+            for line in strs:
+                print(tab+" "*max_len_str+'#')
+                print(tab+line)
+                
+            print(tab+" "*max_len_str+'#')
+            print('#'*tabN+'#'*max_len_str+'#')
+    
     #Will finish off the plots
     def __finalise(self):
         """
@@ -369,21 +451,26 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, plot_en
         # For last axis
         self.axes[self.plot_params[-1]][1].set_xlabel("Time (fs)")
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
-        
-        
+                        
         self.f.tight_layout()
+        self.print_final_info()
+#        plt.close()
         plt.show()
 
 #/scratch/mellis/flavoured-cptk/200Rep_3mol
-#folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.1fs') #The folder to look in for the data
-#folder = fold.make_fold_abs('/scratch/mellis/flavoured-cptk/diff_timesteps/0.05fs') #The folder to look in for the data
-#folder = fold.make_fold_abs('../Data/200Rep_3mol') #The folder to look in for the data
-#folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/fail-16')
+folder = fold.make_fold_abs(folder)
 
-#Ehrenfest
-folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-0') #The folder to look in for the data
-p = Plot(['|C|^2'], folder, 'all')
-#Quantum Momentum
-#folder = fold.make_fold_abs('/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/fail-0') #The folder to look in for the data
-#p = Plot(['|C|^2'], folder, 'all')
-#plt.close()
+
+p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
+
+
+## Will plot many variations of replica number
+#for i in range(2,100,1):
+#    replicas = range(1,i)    
+#    filename = "/homes/mellis/Documents/Graphs/Testing_Ehrenfest/New/Pop_convergence/Dimer/Diff_reps_to_stitch_w_comm/"
+#    if p.run_inp_params['FAST_EHRENFEST']:
+#        filename += "%i.png"%(p.num_reps)
+#    else:
+#        filename += "%i_comm.png"%(p.num_reps)
+#    p.f.savefig(filename)
+

@@ -53,9 +53,23 @@ It's length after processing and being split by ' ' is not 2 or 1."""%line)
     for i in ['MD','FORMAT','UNIT']:
         if variables.get(i): variables.pop(i)
         
-    return variables
+    return translate_run_inp_settings(variables)
 
-
+def translate_run_inp_settings(run_inp_params):
+    for setting, param in run_inp_params.iteritems():
+        if type(param) == str:
+            if param.upper() == 'T':
+                run_inp_params[setting] = True
+            elif param.upper() == 'F':
+                run_inp_params[setting] = False
+            try:
+                run_inp_params[setting] = int(param)
+            except:
+                try:
+                    run_inp_params[setting] = float(param)
+                except:
+                    pass
+    return run_inp_params
 
 def get_run_inp_in_folder(folder):
     """
