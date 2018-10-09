@@ -86,7 +86,7 @@ class Plot_Coeff(object):
         self.avg_coeff_lines[self.di_or_ad] = []
         coeffs, cols, timesteps, pops = self.all_coeff_data_avg
         for i in range(self.num_states):                    
-            self.avg_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], color=self.colors[i])[0])
+            self.avg_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], '.', color=self.colors[i])[0])
         
         # Set initial visibility
         for line in self.avg_coeff_lines[self.di_or_ad]:

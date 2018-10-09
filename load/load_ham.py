@@ -32,7 +32,7 @@ def load_ham(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
                                               max_step=max_step, 
                                               stride=stride, 
                                               ignore_steps=ignore_steps)
-    return data*27000, cols, timesteps
+    return data, cols, timesteps
 
 
 # Reads all the Qlk files from a given folder
