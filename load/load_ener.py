@@ -65,8 +65,8 @@ def load_all_ener_time_in_folder(folder, reps):
         * dictionary of each file with parse energy data. Filename is key and 
           data is value.
     """
-    return Utils.load_all_in_folder(folder, 
-                                    load_ener_time_data, 
-                                    filename_must_contain=['csv', 'ener'], 
-                                    filename_must_not_contain['ad'], 
-                                    reps=reps)
+    return Utils.load_all_in_folder(folder = folder, 
+                                    func = load_ener_time_data, 
+                                    filename_must_contain = ['csv', 'ener'], 
+                                    filename_must_not_contain = ['ad'], 
+                                    reps = reps)
