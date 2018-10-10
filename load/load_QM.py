@@ -64,6 +64,17 @@ def _get_all_Qlk_col_vals_(cols, ind):
 
 # Will help in picking out certain parts of the Qlk data
 def find_in_Qlk(Qlk_data, params):
+    """
+    Will find data corresponding to the params entered.
+    
+    Inputs:
+        Qlk_data  =>  the qlk to search in
+        params    =>  A dictionary with the parameters to search for. 
+                      The optional key labels are:
+                          * at_num    [int]
+                          * cart_dim  [int]
+                          * lk        [list or tuple <int> dimension 2]
+    """
     data, cols = Qlk_data
     if params.get('at_num'):
         data, cols = _get_in_Qlk_int_(data, cols, 0, params['at_num'])
