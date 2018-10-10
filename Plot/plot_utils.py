@@ -122,6 +122,51 @@ def avg_H_data_dict(all_ham_data):
                        np.mean(all_hams[2], axis=0)]}   
     return avg_hams
 
+def avg_pos_data(all_pos_data):
+    """
+    Will average the postition data.
+    
+    Inputs:
+        * all_pos_data => dictionary containing all the position data (filenames as keys)
+    
+    Outputs:
+        * avg position data (same format dictionary as input)
+    """
+    min_len = np.min([[len(all_pos_data[f][0][0]), len(all_pos_data[f][0][1]), len(all_pos_data[f][1])] for f in all_pos_data])
+    all_pos = [[all_pos_data[f][0][0][:min_len] for f in all_pos_data ],
+                '',
+                [all_pos_data[f][1][:min_len] for f in all_pos_data ]]
+    avg_pos = {}
+    if all_pos[0]:
+        # Should return in same format as input
+        avg_pos = {'avg_pos':[(np.mean(all_pos[0], axis=0),
+                               np.zeros(len(all_pos[0][0]))), 
+                       np.mean(all_pos[2], axis=0)]}   
+    return avg_pos
+
+def avg_Qlk_data(all_Qlk_data):
+    """
+    Will average the Qlk data and return a dictionary with the data.
+    
+    Inputs:
+        * all_Qlk_data  =>  A dictionary containing all the data to be averaged
+    
+    Outputs:
+        The averaged Qlk_data in the same format as the inputted dictionary.
+    """
+    avg_Qlk_data = np.mean([all_Qlk_data[rep][0][0] for rep in all_Qlk_data], axis=0)
+    avg_Qlk_timesteps = np.mean([all_Qlk_data[rep][1] for rep in all_Qlk_data], axis=0)
+    
+    avg_Qlk_data = np.array(avg_Qlk_data)
+    avg_Qlk_timesteps = np.array(avg_Qlk_timesteps)
+    
+    Qkeys = all_Qlk_data.keys()
+    avg_Qlk_data = {'avg_Qlk':
+                              [ [avg_Qlk_data,
+                                 all_Qlk_data[Qkeys[0]][0][1]],
+                               avg_Qlk_timesteps]}
+    return avg_Qlk_data
+
 # Will average the energy data
 def avg_E_data_dict(all_ener_data):
     cols_dict = {col:[] for col in all_ener_data[list(all_ener_data.keys())[0]]}

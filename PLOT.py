@@ -27,14 +27,16 @@ import matplotlib.pyplot as plt
 import matplotlib.patches as mpatches
 import numpy as np
 import datetime
+from matplotlib.widgets import MultiCursor
+
 
 
 
 
 ###############
 
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_3mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
-plotting_parameters = ['qm']
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
+plotting_parameters = ['norm', 'qm']
 replicas            = range(2)
 
 ###############
@@ -55,6 +57,7 @@ class Params(object):
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
+        self.non_qlk_params = [i for i in self.plot_params if 'qm' not in i]
         
         self._set_coeff_params()
         
@@ -63,7 +66,9 @@ class Params(object):
         self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
 
         self.title = r"Dimer adiab coeff convergence Ehrenfest -100 reps (without commutator)"
-        self.colors = ['r','g','b','#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf']
+        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+                       '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
+                       'r','g','b',]
         self.colors = [i for j in range(50) for i in self.colors]
         
         self._use_control = True
@@ -143,7 +148,7 @@ class LoadData(object):
         
     def load_all_ham_data(self):
         """
-        Will load all the hamiltonian data that can be found in the folder 
+        Will load all the hamiltonian data that can be foun_set_Qlk_controld in the folder 
         specified (dependent on which reps are requested)
         """
         self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, reps=self.reps)
@@ -183,7 +188,7 @@ class LoadData(object):
         Will load the quantum momentum file into the format in load_QM.
         """
         if 'qm' in self.plot_params:
-            self.all_QM_data  = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
+            self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
             self.all_pos_data = load_pos.load_all_pos_in_folder(folder, reps=self.reps)
         
     # Will average the coefficient data (ham is averaged by default)
@@ -197,7 +202,9 @@ class LoadData(object):
             self.all_Acoeff_data_avg = plot_utils.avg_coeff_data(self.all_Acoeff_data)
         if 'adiab_states' in self.plot_params:
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
-
+        if 'qm' in self.plot_params:
+            self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
+            self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
 
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, 
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM):
@@ -225,6 +232,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         Params.__init__(self, folder, reps, self.plot_params)
         LoadData.__init__(self, folder, reps, self.plot_params)
         self.reps = reps
+        self.xlabel = "Time (fs)"
         
         self._create_ax_fig_layout()
         
@@ -253,6 +261,38 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         
         self.__finalise()
   
+    def _clean_widget_axes(self, axis):
+        """
+        Will remove spines and ticks from an axis
+        
+        Inputs:
+            * axis  =>  a plt.axis
+        
+        Outpus:
+            axis (plt.axis)
+        """
+        # Remove the ticks
+        axis.set_xticks([])
+        axis.set_yticks([])
+        for side in ['top','bottom','left','right']:
+            axis.spines[side].set_visible(False)
+        
+        return axis
+    
+    def _Qlk_axis_special_case(self):
+        if 'qm' in self.plot_params:
+            self.axes['qm'] = [  [plt.subplot2grid( (len(self.plot_params)*2,7),
+                                                  (self.plot_params.index('qm')*2,0), 
+                                                  colspan=1),
+                                  plt.subplot2grid( (len(self.plot_params)*2,7),
+                                                  (self.plot_params.index('qm')*2+1,0), 
+                                                  colspan=1)],
+                               plt.subplot2grid( (len(self.plot_params),7),
+                                                  (self.plot_params.index('qm'),1), 
+                                                  colspan=6)]
+            self.axes['qm'][0][0] = self._clean_widget_axes(self.axes['qm'][0][0])
+            self.axes['qm'][0][1] = self._clean_widget_axes(self.axes['qm'][0][1])
+        
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):
         """
@@ -270,12 +310,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 if self._use_control:
                     a.append( plt.subplot2grid((len(self.plot_params),7),(i,0), colspan=1) )
                     a.append( plt.subplot2grid((len(self.plot_params),7),(i,1), colspan=6) )
-                
-                    # Design the widget axis
-                    a[0].set_xticks([])                
-                    a[0].set_yticks([])                
-                    for side in ['top','bottom','left','right']:
-                        a[0].spines[side].set_visible(False)
+                    a[0] = self._clean_widget_axes(a[0])
                 else:
                     a.append('')
                     a.append(plt.subplot2grid( (len(self.plot_params),1), (i,0)) )
@@ -283,7 +318,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         else:
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
-
+        self._Qlk_axis_special_case()
+    
     #TODO: Move this into it's own file.
     #Will plot site energy difference.
     def _plot_site_ener(self):
@@ -297,80 +333,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             if self.avg_on:
                 ax.plot(self.Stimesteps, self.avg_site_ener)
         
-        
-    #TODO: Move this into it's own file and fix it up so it isn't such a mess!    
-    #Will plot the Quantum Momentum term
-    def _plot_QM(self):
-        """
-        Will plot the quantum momentum term
-        """
-        self.sum_all_atoms_qm = True
-        if 'qm' in self.plot_params:
-            ax = self.axes['qm'][1]
-            if self.plot_all_reps:
-#                if self.sum_all_atoms_qm:
-#                    for Qlk_filename in self.all_QM_data:
-#                        Qlk_data = self.all_QM_data[Qlk_filename]
-#                        Qlk_timesteps = Qlk_data[1]
-#                        Qlk_data = Qlk_data[0]
-#                        
-#                        num_atoms = np.shape(Qlk_data[0])[1]/3
-#                        QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
-#                        QM_mag = np.zeros(np.shape(QM_mag))
-#                        
-#                        for iatom in range(1,num_atoms+1):
-#                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-#                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-#                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-#                            
-#                            QM_mag += QMX**2 + QMY**2 + QMZ**2
-#                            
-#                        ax.plot(Qlk_timesteps, QM_mag/num_atoms, lw=0.5, alpha=self.alpha)
-#                        ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
-##                else:
-                    for Qlk_filename in self.all_QM_data:
-    #                    Qlk_filename = 'run-QM-1.xyz'
-                        Qlk_data = self.all_QM_data[Qlk_filename]
-                        Qlk_timesteps = Qlk_data[1]
-                        Qlk_data = Qlk_data[0]
-                        num_atoms = np.shape(Qlk_data[0])[1]/3
-                        for iatom in range(1,num_atoms+1):
-    #                        if any(iatom == j for j in (2,4,11,8,1)): continue
-                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-                            
-                            QM_mag = QMX**2 + QMY**2 + QMZ**2
-                            if len(QM_mag):
-                                ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, lw=0.5, alpha=0.5, color=self.colors[iatom])
-                        ylabel = r"|Q$_{lk, v}$|$^2$"
-#            if self.avg_on:
-#                Qlk_data = self.all_QM_data[self.all_QM_data.keys()[0]][0]
-#                QM_mag = load_QM.find_in_Qlk(Qlk_data, params={'at_num':1, 'lk':(1,2), 'cart_dim':1})
-#                QM_mag = np.zeros(np.shape(QM_mag))
-#                if self.sum_all_atoms_qm:
-#                    num_atoms = np.shape(Qlk_data[0])[1]/3
-#                    for Qlk_filename in self.all_QM_data:
-#                        Qlk_data = self.all_QM_data[Qlk_filename]
-#                        Qlk_timesteps = Qlk_data[1]
-#                        Qlk_data = Qlk_data[0]
-#                        
-#                        for iatom in range(1,num_atoms+1):
-#                            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-#                            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-#                            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-#                            
-#                            QM_mag += QMX**2 + QMY**2 + QMZ**2
-#                            
-##                    QM_mag = QM_mag/(self.num_reps*num_atoms)
-#                    ax.plot(Qlk_timesteps, QM_mag, lw=1)
-#                    ylabel = r"$\frac{1}{N_{n}} \sum_{v}$ |Q$_{lk, v}$|$^2$"
-#                else:
-#                    pass
-            ax.set_ylabel(ylabel)
-#            self.title = "Qlk has been normalised for each atom"
-#            ax.legend()
-    
     def print_final_info(self):
         """
         Will print some information about the data just plotted. This will 
@@ -449,11 +411,13 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             AX.grid('on', alpha=0.5)
             
         # For last axis
-        self.axes[self.plot_params[-1]][1].set_xlabel("Time (fs)")
+        self.axes[self.plot_params[-1]][1].set_xlabel(self.xlabel)
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
                         
         self.f.tight_layout()
         self.print_final_info()
+        if 'qm' not in self.plot_params and len(self.non_qlk_params) > 1:
+            self.multi = MultiCursor(self.f.canvas, [i[1] for i in self.axes.values()], color='r', lw=1)
 #        plt.close()
         plt.show()
 
