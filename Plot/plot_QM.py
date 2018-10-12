@@ -29,6 +29,9 @@ class QM(object):
         self._plot_avg_qm_vs_pos()
         
         self._set_Qlk_control()
+        
+        self.qm_plot_ax.set_xlabel("R [au]")
+        self.qm_plot_ax.set_ylabel(r"$\langle$ Q$_{lk, \nu}^{J}$ $\rangle_{J}$")
     
     def _match_timesteps_Qlk_pos(self, all_Qlk_data, all_pos_data):
         """
@@ -107,7 +110,6 @@ class QM(object):
             if self.Qlk_cart_dims[cart_dim]:
                 self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(True)
         
-        self.xlabel = "R [au]"
     
     def _set_Qlk_control(self):
         """
@@ -118,7 +120,7 @@ class QM(object):
         self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
         self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
         
-        self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'dt', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
+        self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
         self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
         
         self.Qlk_vlines = [self.axes[param][1].axvline(self.current_dt*self.MD_dt) for param in self.non_qlk_params]
@@ -147,9 +149,10 @@ class QM(object):
         for cart_dim, cart_val in enumerate(self.Qlk_cart_dims):
             self.Qlk_pos_avg_lines[cart_dim][val].set_visible(cart_val)
             self.current_dt = val
-            
+        
         # Draw the time lines
         for line in self.Qlk_vlines: line.remove()
         self.Qlk_vlines = [self.axes[param][1].axvline(val*self.MD_dt) for param in self.non_qlk_params]
         
+        plt.figure(self.f.number)
         plt.draw()

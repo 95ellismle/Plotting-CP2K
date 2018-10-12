@@ -35,9 +35,9 @@ from matplotlib.widgets import MultiCursor
 
 ###############
 
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_3mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
-plotting_parameters = ['|C|^2', 'qm_r']
-replicas            = range(70)
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
+plotting_parameters = ['norm', '|C|^2', 'qm_r']
+replicas            = 'all'
 
 ###############
 
@@ -65,7 +65,7 @@ class Params(object):
 #        self._get_alpha()
         self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
 
-        self.title = r"Dimer adiab coeff convergence Ehrenfest -100 reps (without commutator)"
+        self.title = r''#r"Dimer adiab coeff convergence Ehrenfest -100 reps (without commutator)"
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r','g','b',]
@@ -282,10 +282,18 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
     def _Qlk_axis_special_case(self):
         if 'qm_r' in self.plot_params:
             self.Qlk_widg_f, ax = plt.subplots(2)
-            self.axes['qm_r'] = [  ax,
-                               plt.subplot2grid( (len(self.plot_params),7),
-                                                  (self.plot_params.index('qm_r'),1), 
-                                                  colspan=6)]
+            self.axes['qm_r'] = [0,0] 
+            self.axes['qm_r'][0] = ax #[plt.subplot2grid( (len(self.plot_params)*2,7),
+                                   #               (self.plot_params.index('qm_r')*2,0), 
+                                   #               colspan=1),
+                                   #plt.subplot2grid( (len(self.plot_params)*2,7),
+                                   #               (self.plot_params.index('qm_r')*2+1,0), 
+                                   #               colspan=1)]
+            plt.figure(self.f.number)
+            self.axes['qm_r'][1] =  plt.subplot2grid( (len(self.plot_params),7),
+                                                  (self.plot_params.index('qm_r'),0), 
+                                                  colspan=7)
+            
             self.axes['qm_r'][0][0] = self._clean_widget_axes(self.axes['qm_r'][0][0])
             self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
         
@@ -298,7 +306,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         The self.axes variable is a dictionary with the plot parameter as a key
         and the axis that has been assigned to it as the value.
         """
-        self._Qlk_axis_special_case()
         self.f = plt.figure()
         self.axes = {}
         if len(self.plot_params) <= 4:   
@@ -315,6 +322,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         else:
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
+        self._Qlk_axis_special_case()
     
     #TODO: Move this into it's own file.
     #Will plot site energy difference.
@@ -407,7 +415,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             AX.grid('on', alpha=0.5)
             
         # For last axis
-        self.axes[self.plot_params[-1]][1].set_xlabel(self.xlabel)
+        self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)")
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
                         
         self.f.tight_layout()
