@@ -36,7 +36,7 @@ from matplotlib.widgets import MultiCursor
 ###############
 
 folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
-plotting_parameters = ['norm', '|C|^2', 'qm_r']
+plotting_parameters = ['norm', '|C|^2']
 replicas            = 'all'
 
 ###############
