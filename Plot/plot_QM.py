@@ -24,6 +24,7 @@ class QM(object):
         self.qm_widg_ax, self.qm_plot_ax = axes
         
         self.current_dt = 0
+        self.Qlk_cart_dims  = [True, True, True]
         
         self._plot_avg_qm_vs_pos()
         
@@ -78,22 +79,33 @@ class QM(object):
         
         cart_dim = 1
         self.Qlk_ntimesteps = len(self.avg_QM_data['avg_Qlk'][0][0])
+        print(self.Qlk_ntimesteps)
         natom = np.max(self.avg_Qlk_data['avg_Qlk'][0][1][0,:,0])
-        self.Qlk_pos_avg_lines = []
+        self.Qlk_pos_avg_lines = [[],[],[]]
         
-        for timestep in range(self.Qlk_ntimesteps):
-        # Find all the QM_data for each atom
-            QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], params={'at_num':at_num, 
-                                                            'cart_dim':cart_dim,
-                                                            'lk':(1,2)})[timestep][0]
-                                for at_num in range(natom)]
+        cart_cols = ['r','g','b']
         
-            line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], QM_data, 'bo')
-            self.Qlk_pos_avg_lines.append(line)
+        all_QM_data = [[],[],[]]
+        for cart_dim in range(3):
+            for timestep in range(self.Qlk_ntimesteps):
+                # Find all the QM_data for each atom
+                QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], params={'at_num':at_num, 
+                                                                'cart_dim':cart_dim,
+                                                                'lk':(1,2)})[timestep][0]
+                                    for at_num in range(natom)]
+                line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], 
+                                             QM_data, 'o', color=cart_cols[cart_dim])
+                self.Qlk_pos_avg_lines[cart_dim].append(line)
+                all_QM_data[cart_dim].append(QM_data)
+            
+#        self.qm_plot_ax.set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
+#        self.qm_plot_ax.autoscale()#set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
         
-        for line in self.Qlk_pos_avg_lines:
-            line.set_visible(False)
-        self.Qlk_pos_avg_lines[self.current_dt].set_visible(True)
+        for cart_dim in range(3):
+            for line in self.Qlk_pos_avg_lines[cart_dim]:
+                line.set_visible(False)
+            if self.Qlk_cart_dims[cart_dim]:
+                self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(True)
         
         self.xlabel = "R [au]"
     
@@ -103,12 +115,25 @@ class QM(object):
         """
         self.MD_dt = self.run_inp_params['NUCLEAR_TIMESTEP']
         
-        self.Qlk_cart_dim  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], [True, True, True])
+        self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
+        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
         
         self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'dt', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
         self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
         
         self.Qlk_vlines = [self.axes[param][1].axvline(self.current_dt*self.MD_dt) for param in self.non_qlk_params]
+    
+    def _Qlk_cart_dim_control(self, label):
+        """
+        Will control which cartesian dimensions are plotted. 
+        (see plt.CheckButton docs)
+        
+        Inputs:
+            *label   =>  The label of the checkbutton pressed
+        """
+        for i, dim in enumerate(["X","Y","Z"]):
+            if label == dim: self.Qlk_cart_dims[i] = not self.Qlk_cart_dims[i]
+        self._set_Qlk_slider_control(self.Qlk_dt_slider.val)
     
     def _set_Qlk_slider_control(self, val):
         """
@@ -116,15 +141,14 @@ class QM(object):
         """
         # Need to be an int as it indexes
         val = int(val)
-        
         # Set the required timestep to be visible
-        self.Qlk_pos_avg_lines[self.current_dt].set_visible(False)
-        self.Qlk_pos_avg_lines[val].set_visible(True)
-        self.current_dt = val
-        self.qm_plot_ax.relim()
-        self.qm_plot_ax.autoscale()
-        
-        # Draw the lines
+        for cart_dim in range(3):
+            self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(False)
+        for cart_dim, cart_val in enumerate(self.Qlk_cart_dims):
+            self.Qlk_pos_avg_lines[cart_dim][val].set_visible(cart_val)
+            self.current_dt = val
+            
+        # Draw the time lines
         for line in self.Qlk_vlines: line.remove()
         self.Qlk_vlines = [self.axes[param][1].axvline(val*self.MD_dt) for param in self.non_qlk_params]
         

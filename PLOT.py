@@ -35,9 +35,9 @@ from matplotlib.widgets import MultiCursor
 
 ###############
 
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
-plotting_parameters = ['norm', 'qm']
-replicas            = range(2)
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_3mol'  #'/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-1'
+plotting_parameters = ['|C|^2', 'qm_r']
+replicas            = range(70)
 
 ###############
 
@@ -57,7 +57,7 @@ class Params(object):
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
-        self.non_qlk_params = [i for i in self.plot_params if 'qm' not in i]
+        self.non_qlk_params = [i for i in self.plot_params if 'qm_r' not in i]
         
         self._set_coeff_params()
         
@@ -99,7 +99,7 @@ class Params(object):
         """
         # Will handle the 'all' keyword in plot params
         if self.plot_params == 'all':
-            self.plot_params = ['norm', '|c|^2', '|u|^2', 'adiab_states', 'qm', 'norm_traj']
+            self.plot_params = ['norm', '|c|^2', '|u|^2', 'adiab_states', 'qm_r', 'norm_traj']
         else:    
             self.plot_params = [i.strip().lower() for i in self.plot_params]
         
@@ -127,7 +127,7 @@ class LoadData(object):
                             - '|C|^2'
                             - '|u|^2'
                             - 'adiab_states'
-                            - 'QM'
+                            - 'qm_r'
                             - 'site_ener'
     
     NOTE: Should be in plot_utils
@@ -187,7 +187,7 @@ class LoadData(object):
         """
         Will load the quantum momentum file into the format in load_QM.
         """
-        if 'qm' in self.plot_params:
+        if 'qm_r' in self.plot_params:
             self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
             self.all_pos_data = load_pos.load_all_pos_in_folder(folder, reps=self.reps)
         
@@ -202,7 +202,7 @@ class LoadData(object):
             self.all_Acoeff_data_avg = plot_utils.avg_coeff_data(self.all_Acoeff_data)
         if 'adiab_states' in self.plot_params:
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
-        if 'qm' in self.plot_params:
+        if 'qm_r' in self.plot_params:
             self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
 
@@ -252,8 +252,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plot_ener.Adiab_States.__init__(self, self.axes['adiab_states'])
         if 'coup' in self.plot_params:
             plot_ham.Coupling.__init__(self, self.axes['coup'])
-        if 'qm' in self.plot_params:
-            plot_QM.QM.__init__(self, self.axes['qm'])
+        if 'qm_r' in self.plot_params:
+            plot_QM.QM.__init__(self, self.axes['qm_r'])
         
         #TODO: These need moving into their own filess
         self._plot_site_ener()
@@ -280,18 +280,14 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         return axis
     
     def _Qlk_axis_special_case(self):
-        if 'qm' in self.plot_params:
-            self.axes['qm'] = [  [plt.subplot2grid( (len(self.plot_params)*2,7),
-                                                  (self.plot_params.index('qm')*2,0), 
-                                                  colspan=1),
-                                  plt.subplot2grid( (len(self.plot_params)*2,7),
-                                                  (self.plot_params.index('qm')*2+1,0), 
-                                                  colspan=1)],
+        if 'qm_r' in self.plot_params:
+            self.Qlk_widg_f, ax = plt.subplots(2)
+            self.axes['qm_r'] = [  ax,
                                plt.subplot2grid( (len(self.plot_params),7),
-                                                  (self.plot_params.index('qm'),1), 
+                                                  (self.plot_params.index('qm_r'),1), 
                                                   colspan=6)]
-            self.axes['qm'][0][0] = self._clean_widget_axes(self.axes['qm'][0][0])
-            self.axes['qm'][0][1] = self._clean_widget_axes(self.axes['qm'][0][1])
+            self.axes['qm_r'][0][0] = self._clean_widget_axes(self.axes['qm_r'][0][0])
+            self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
         
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):
@@ -302,6 +298,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         The self.axes variable is a dictionary with the plot parameter as a key
         and the axis that has been assigned to it as the value.
         """
+        self._Qlk_axis_special_case()
         self.f = plt.figure()
         self.axes = {}
         if len(self.plot_params) <= 4:   
@@ -318,7 +315,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         else:
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
-        self._Qlk_axis_special_case()
     
     #TODO: Move this into it's own file.
     #Will plot site energy difference.
@@ -416,7 +412,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                         
         self.f.tight_layout()
         self.print_final_info()
-        if 'qm' not in self.plot_params and len(self.non_qlk_params) > 1:
+        if 'qm_r' not in self.plot_params and len(self.non_qlk_params) > 1:
             self.multi = MultiCursor(self.f.canvas, [i[1] for i in self.axes.values()], color='r', lw=1)
 #        plt.close()
         plt.show()
