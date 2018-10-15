@@ -12,7 +12,7 @@ import numpy as np
 
 from load import load_QM
 
-class QM(object):
+class QM_R(object):
     """
     Will plot the Quantum Momentum.
             
@@ -156,3 +156,99 @@ class QM(object):
         
         plt.figure(self.f.number)
         plt.draw()
+
+
+class QM_t(object):
+    """
+    Will plot the Qlk against time graph.
+    
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the 
+                 widget axis the second will be the axis to plot the data.
+    """
+    def __init__(self, axes):
+        self.widget_ax = axes[0]
+        self.plot_ax = axes[1]
+        
+        #Setting initial default values
+        self.avg_reps_Qlk_t = True
+        self.all_reps_Qlk_t = False
+        
+        #Plotting
+        self._plot_all_rep_Qlk_t()
+        self._plot_avg_QM_t()
+        
+        #Connect checkboxes to plot control
+        if self._use_control:    self._set_Qlk_t_control()
+        
+        self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
+    
+    def _check_settings_Qlk_t(self, label):
+        if label == 'all replicas': #Pressed the all replicas button
+            for line in self.all_Qlk_t_lines:
+                line.set_visible(not line.get_visible())
+                
+        elif label == 'average':
+            for line in self.avg_qlk_t_lines:
+                line.set_visible(not line.get_visible())
+        plt.draw()
+            
+    #Will set the control panel for Qlk_t graph
+    def _set_Qlk_t_control(self):
+        self.check_Qlk_t = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_Qlk_t, self.avg_reps_Qlk_t))
+        self.check_Qlk_t.on_clicked(self._check_settings_Qlk_t)
+        
+    #Will plot the all replica Qlk_ts
+    def _plot_all_rep_Qlk_t(self):
+        """
+        Will plot all the Qlk vs time lines for each replica
+        """
+        self.all_Qlk_t_lines = []
+        
+        ax = self.axes['qm_t'][1]
+        for Qlk_filename in self.all_Qlk_data:
+#                Qlk_filename = 'run-QM-1.xyz'
+            Qlk_data = self.all_Qlk_data[Qlk_filename]
+            Qlk_timesteps = Qlk_data[1]
+            Qlk_data = Qlk_data[0]
+            num_atoms = np.shape(Qlk_data[0])[1]/3
+            for iatom in range(1,num_atoms+1):
+#                        if any(iatom == j for j in (2,4,11,8,1)): continue
+                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+                
+                QM_mag = QMX**2 + QMY**2 + QMZ**2
+#                        QM_mag /= np.max(QM_mag)
+                ln, = ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, color=self.colors[iatom])
+                self.all_Qlk_t_lines.append(ln)
+            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
+            
+        #Initialise the replica lines
+        for line in self.all_Qlk_t_lines:
+            line.set_visible(self.all_reps_Qlk_t)
+
+    #Will plot the Quantum Momentum term
+    def _plot_avg_QM_t(self):
+        """
+        Will plot the Qlk vs time for the average replica
+        """
+        self.avg_qlk_t_lines = []
+        ax = self.axes['qm_t'][1]
+        Qlk_filename = "avg_Qlk"
+        Qlk_data = self.avg_Qlk_data[Qlk_filename]
+        Qlk_timesteps = Qlk_data[1]
+        Qlk_data = Qlk_data[0]
+        num_atoms = np.shape(Qlk_data[0])[1]/3
+        for iatom in range(1,num_atoms+1):
+#                        if any(iatom == j for j in (2,4,11,8,1)): continue
+            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+            
+            QM_mag = QMX**2 + QMY**2 + QMZ**2
+#                        QM_mag /= np.max(QM_mag)
+            ln, = ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, color=self.colors[iatom])
+            self.avg_qlk_t_lines.append(ln)
+
+
