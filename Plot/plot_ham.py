@@ -11,6 +11,54 @@ from matplotlib.widgets import CheckButtons
 
 import numpy as np
 
+class Site_Ener(object):
+    """
+    Will plot the Qlk against time graph.
+    
+    Inputs:
+        axes  => a list of the axes to plot on. The first item_plot_site_ener should be the 
+                 widget axis the second will be the axis to plot the data.
+    """
+    def __init__(self, axes):
+        self.widget_ax = axes[0]
+        self.plot_ax = axes[1]
+        
+        #Setting initial default values
+        self.avg_reps_site_ener = True
+        self.all_reps_site_ener = False
+        
+        #Plotting
+        self._plot_all_rep_site_ener()
+        self._plot_avg_site_ener()
+        
+        #Connect checkboxes to plot control
+        if self._use_control:    self._set_site_ener_control()
+        
+        self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
+    
+    def _check_settings_site_ener(self, label):
+        if label == 'all replicas': #Pressed the all replicas button
+            for line in self.all_site_ener_lines:
+                line.set_visible(not line.get_visible())
+                
+        elif label == 'average':
+            for line in self.avg_site_ener_lines:
+                line.set_visible(not line.get_visible())
+        plt.draw()
+            
+    #Will set the control panel for site_ener graph
+    def _set_site_ener_control(self):
+        self.check_site_ener = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_site_ener, self.avg_reps_site_ener))
+        self.check_site_ener.on_clicked(self._check_settings_site_ener)
+  
+    def _plot_all_reps_site_ener(self):
+       """
+       Will plot all replicas site energies
+       """
+       pass
+#       for Hrep in self.all_h
+       
+
 
 class Coupling(object):
     """
