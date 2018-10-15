@@ -7,6 +7,7 @@ Created on Tue Aug  7 15:42:51 2018
 """
 import numpy as np
 import pandas as pd
+import collections
 
 from load import load_coeff
 
@@ -211,3 +212,33 @@ def load_Acoeff_data(folder, reps, all_ham_data):
     else:
         all_Acoeff_data = all_coeff_data
     return all_Acoeff_data
+
+
+def print_timings(timings_dict, ntabs=0, max_len=50):
+    """
+    Will print timing data in a pretty way.
+    
+    Inputs:
+        * timings_dict  =>  A dictionary containing all the timings data
+        * ntabs         =>  OPTIONAL (not recommended to change). Number of 
+                            tabs in the printout.
+    Ouputs:
+        None
+    """
+    def print_line(line):
+        line = "|"+line+" "*(max_len-len(line))+"|"
+        print(line)
+    
+    tab = "    "
+    for Tkey in timings_dict:
+        if type(timings_dict[Tkey]) == dict or type(timings_dict[Tkey]) == collections.OrderedDict:
+            print("|" + " "*max_len + "|")
+            line = "%s"%(Tkey)
+            print_line(line)
+            print_timings(timings_dict[Tkey], ntabs+2)
+        else:
+            line = "%s* %s:"%(tab*ntabs, Tkey)
+            str_num = "%.0e s"%timings_dict[Tkey]
+            line = line + " "*(max_len-26 - (len(line) + len(str_num)) + ntabs*5) + str_num
+            print_line(line)
+    return 
