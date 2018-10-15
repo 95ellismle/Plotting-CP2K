@@ -118,7 +118,7 @@ class QM_R(object):
         self.MD_dt = self.run_inp_params['NUCLEAR_TIMESTEP']
         
         self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
-        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
+        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_c_plot_site_enerontrol)
         
         self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
         self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
@@ -163,7 +163,7 @@ class QM_t(object):
     Will plot the Qlk against time graph.
     
     Inputs:
-        axes  => a list of the axes to plot on. The first item should be the 
+        axes  => a list of the axes to plot on. The first item_plot_site_ener should be the 
                  widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):

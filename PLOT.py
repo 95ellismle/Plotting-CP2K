@@ -35,9 +35,9 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/CTMQC_low_coup_2mol'  
-plotting_parameters = ["|C|^2", 'adiab_states']
-replicas            = range(47,49)
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
+plotting_parameters = ["|c|^2", 'adiab_states']
+replicas            = range(2)
 
 ###############
 
@@ -276,7 +276,7 @@ class LoadData(object):
 
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, 
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R, 
-           plot_QM.QM_t):
+           plot_QM.QM_t, plot_ham.Site_Ener):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_states
@@ -324,9 +324,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'qm_r' in self.plot_params:
             plot_QM.QM_R.__init__(self, self.axes['qm_r'])
         if 'qm_t' in self.plot_params:
-            plot_QM.QM_t.__init__(self, self.axes['qm_t'])        
-        #TODO: These need moving into their own filess
-        self._plot_site_ener()
+            plot_QM.QM_t.__init__(self, self.axes['qm_t'])
+        if 'site_ener' in self.plot_params:
+            plot_ham.Site_Ener.__init__(self, self.axes['site_ener'])
         
         self.__finalise()
   
@@ -393,18 +393,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
         self._Qlk_axis_special_case()
     
-    #TODO: Move this into it's own file.
-    #Will plot site energy difference.
-    def _plot_site_ener(self):
-        """
-        Will plot the site energy difference on the site_ener axis
-        """
-        if 'site_ener' in self.plot_params:
-            ax = self.axes['site_ener'][1]
-            #Plot 1: Site Ener
-            ax.set_ylabel(r"$\Delta$E (Ha)")
-            if self.avg_on:
-                ax.plot(self.Stimesteps, self.avg_site_ener)
         
     def print_final_info(self):
         """
