@@ -45,10 +45,10 @@ class fl_fk(object):
         for Trep in self.all_tintf_data:
             (data, cols), timesteps = self.all_tintf_data[Trep]
             nstates = max(cols[0,:,1].astype(int))
-            natom   = int(len(data[0])/nstates)
+            fl_fk.natom   = int(len(data[0])/nstates)
             all_combs = IT.combinations(range(nstates), 2)
             for l, k in all_combs:
-                for iat in range(natom):
+                for iat in range(fl_fk.natom):
                     fk = data[cols[:,:,1] == str(k+1)]
                     fl = data[cols[:,:,1] == str(l+1)]
                     
@@ -68,10 +68,10 @@ class fl_fk(object):
         for Trep in self.avg_tintf_data:
             (data, cols), timesteps = self.avg_tintf_data[Trep]
             nstates = max(cols[0,:,1].astype(int))
-            natom   = int(len(data[0])/nstates)
+            fl_fk.natom   = int(len(data[0])/nstates)
             all_combs = IT.combinations(range(nstates), 2)
             for l, k in all_combs:
-                for iat in range(natom):
+                for iat in range(fl_fk.natom):
                     fk = data[cols[:,:,1] == str(k+1)]
                     fl = data[cols[:,:,1] == str(l+1)]
                     
@@ -105,6 +105,19 @@ class fl_fk(object):
 #        fl_fk.widget_ax[1].set_title("Color by:", fontsize=15)
         fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['XYZ', 'atom'], [True, False])
         fl_fk.color_control.on_clicked(fl_fk._color_control)
+        
+        fl_fk.atom_control = CheckButtons(fl_fk.widget_ax[2], 
+                                          ['atom %i'%(i+1) for i in range(fl_fk.natom)], 
+                                          [True]*fl_fk.natom)
+        fl_fk.atom_control.on_clicked(fl_fk._atom_control)
+        
+    
+    @staticmethod
+    def _atom_control(label):
+        atom_num = int(label.replace("atom", ""))
+        for lines in fl_fk.sum_rep_lines:
+            lines[atom_num-1].set_visible(not lines[atom_num-1].get_visible())            
+        plt.draw()
         
     @staticmethod
     def _color_control(label):
