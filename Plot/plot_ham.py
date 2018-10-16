@@ -9,7 +9,8 @@ Created on Tue Oct  9 12:23:18 2018
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 
-import numpy as np
+#import numpy as np
+import itertools as IT
 
 class Site_Ener(object):
     """
@@ -24,8 +25,8 @@ class Site_Ener(object):
         self.plot_ax = axes[1]
         
         #Setting initial default values
-        self.avg_reps_site_ener = True
-        self.all_reps_site_ener = False
+        Site_Ener.avg_reps = True
+        Site_Ener.all_reps = True
         
         #Plotting
         self._plot_all_rep_site_ener()
@@ -34,7 +35,7 @@ class Site_Ener(object):
         #Connect checkboxes to plot control
         if self._use_control:    self._set_site_ener_control()
         
-        self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
+        self.plot_ax.set_ylabel(r"$\Delta E_{i,j}$")
     
     def _check_settings_site_ener(self, label):
         if label == 'all replicas': #Pressed the all replicas button
@@ -48,15 +49,43 @@ class Site_Ener(object):
             
     #Will set the control panel for site_ener graph
     def _set_site_ener_control(self):
-        self.check_site_ener = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_site_ener, self.avg_reps_site_ener))
+        self.check_site_ener = CheckButtons(self.widget_ax, ('all replicas', 'average'), (Site_Ener.all_reps, Site_Ener.avg_reps))
         self.check_site_ener.on_clicked(self._check_settings_site_ener)
   
-    def _plot_all_reps_site_ener(self):
+    def _plot_all_rep_site_ener(self):
        """
        Will plot all replicas site energies
        """
-       pass
-#       for Hrep in self.all_h
+       Site_Ener.all_rep_lines = []
+       for Hrep in self.all_ham_data:
+           Hs, cols, timesteps = self.all_ham_data[Hrep]
+           all_combs = IT.combinations(range(len(Hs[0])),2)
+           for coli, (i,j) in enumerate(all_combs):
+               site_ener = Hs[:,i,i] - Hs[:,j,j]
+               ln, = self.plot_ax.plot(timesteps, site_ener, color=self.colors[coli], lw=0.7)
+               Site_Ener.all_rep_lines.append(ln)
+       
+       for line in Site_Ener.all_rep_lines:
+           line.set_visible(Site_Ener.all_reps)
+           line.set_visible(Site_Ener.all_reps)
+           
+    def _plot_avg_site_ener(self):
+        """
+        Will plot the average site energy for all replicas.
+        """
+        Site_Ener.avg_rep_lines = []
+        for Hrep in self.avg_ham_data:
+           Hs, cols, timesteps = self.avg_ham_data[Hrep]
+           all_combs = IT.combinations(range(len(Hs[0])),2)
+           for coli, (i,j) in enumerate(all_combs):
+               site_ener = Hs[:,i,i] - Hs[:,j,j]
+               ln, = self.plot_ax.plot(timesteps, site_ener, color=self.colors[coli], label="%i-%i"%(i,j), lw=1.5)
+               Site_Ener.avg_rep_lines.append(ln)
+       
+        for line in Site_Ener.all_rep_lines:
+           line.set_visible(Site_Ener.avg_reps)
+        self.plot_ax.legend()
+        
        
 
 

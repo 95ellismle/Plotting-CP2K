@@ -56,7 +56,7 @@ It's length after processing and being split by ' ' is not 2 or 1."""%line)
     return translate_run_inp_settings(variables)
 
 def translate_run_inp_settings(run_inp_params):
-    for setting, param in run_inp_params.iteritems():
+    for setting, param in run_inp_params.items():
         if type(param) == str:
             if param.upper() == 'T':
                 run_inp_params[setting] = True

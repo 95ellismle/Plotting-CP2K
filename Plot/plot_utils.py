@@ -161,7 +161,7 @@ def avg_Qlk_data(all_Qlk_data):
     avg_Qlk_data = np.array(avg_Qlk_data)
     avg_Qlk_timesteps = np.array(avg_Qlk_timesteps)
     
-    Qkeys = all_Qlk_data.keys()
+    Qkeys = list(all_Qlk_data.keys())
     avg_Qlk_data = {'avg_Qlk':
                               [ [avg_Qlk_data,
                                  all_Qlk_data[Qkeys[0]][0][1]],

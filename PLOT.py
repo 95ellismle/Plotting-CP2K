@@ -35,8 +35,8 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
-plotting_parameters = ["|c|^2", 'adiab_states']
+folder              = '../Data/200Rep_3mol/'  
+plotting_parameters = ["site_ener"]
 replicas            = range(2)
 
 ###############
@@ -84,12 +84,12 @@ class Params(object):
         """
         params_convert = {'|u|^2':'Diabatic Coefficients', 
                           '|c|^2':'Adiabatic Coefficients',
-                          'site_ener':'Site Energies', 
                           'qm_t':"Quantum Momentum", 
                           "adiab_states":"Adiabatic States", 
-                          "norm":"Diabatic Norm"}
+                          "norm":"Diabatic Norm",
+                          'site_ener':'site energy differences'}
         if len(self.plot_params) == 1:
-            params_joined = self.plot_params[0]
+            params_joined = params_convert[self.plot_params[0]]
         else:
             params_joined = ', '.join([params_convert[i] for i in self.plot_params[:-1]]) + " and " \
                                 + params_convert[self.plot_params[-1]]
@@ -268,7 +268,7 @@ class LoadData(object):
         """
         max_len = 50
         print(" "+"-"*max_len)
-        print("|"+" "*((max_len -len(title)-1)/2) +title+" "*((max_len -len(title))/2) + " |")
+        print("|"+" "*(max_len -int((len(title)-1)/2)) +title+" "*(max_len - int(len(title)/2)) + " |")
         print("|"+" "*max_len+"|")
         plot_utils.print_timings(timing_dict, max_len=max_len)
         print(" "+"-"*max_len)
@@ -470,11 +470,12 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         e.g. will put the time (fs) label on the lowest x axis.
         """
         self._fill_in_the_title()
-        if any(j in self.plot_params for j in ('|u|^2', '|c|^2')):
+        if any([j in self.plot_params for j in ('|u|^2', '|c|^2')]):
             # Set legend
             if '|u|^2' in self.plot_params: num_states = len(self.all_Dcoeff_data_avg[3][0])
             elif '|c|^2' in self.plot_params: num_states = len(self.all_Acoeff_data_avg[3][0])
             elif 'adiab_states' in self.plot_params: num_states = len(self.state_cols_AS)
+            elif "site_ener" in self.plot_params: num_states = len(self.avg_ham_data['avg_ham'][0][0])
             labels = ["State %i"%(i+1) for i in range(num_states)]
             patches = [mpatches.Patch(color=self.colors[i], label=lab) for i, lab in enumerate(labels)]
             self.f.legend(handles=patches, fontsize=20, labels=labels)
