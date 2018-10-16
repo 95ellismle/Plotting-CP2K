@@ -31,7 +31,7 @@ class QM_R(object):
         self._set_Qlk_control()
         
         self.qm_plot_ax.set_xlabel("R [au]")
-        self.qm_plot_ax.set_ylabel(r"$\langle$ Q$_{lk, \nu}^{J}$ $\rangle_{J}$")
+        self.qm_plot_ax.set_ylabel(r"$\langle$ Q$_{1,2, \nu}^{J}$ $\rangle_{J}$")
     
     def _match_timesteps_Qlk_pos(self, all_Qlk_data, all_pos_data):
         """
@@ -79,7 +79,6 @@ class QM_R(object):
         
         cart_dim = 1
         self.Qlk_ntimesteps = len(self.avg_QM_data['avg_Qlk'][0][0])
-        print(self.Qlk_ntimesteps)
         natom = np.max(self.avg_Qlk_data['avg_Qlk'][0][1][0,:,0])
         self.Qlk_pos_avg_lines = [[],[],[]]
         
@@ -179,7 +178,7 @@ class QM_t(object):
         #Connect checkboxes to plot control
         if self._use_control:    self._set_Qlk_t_control()
         
-        self.plot_ax.set_ylabel(r"$Q_{lk}^{(I)}$")
+        self.plot_ax.set_ylabel(r"$Q_{1,2,\nu}^{(I)}$")
     
     def _check_settings_Qlk_t(self, label):
         if label == 'all replicas': #Pressed the all replicas button

@@ -12,6 +12,7 @@ from load import load_ham
 from load import load_QM
 from load import load_pos
 from load import load_inp
+from load import load_tintf
 
 from Plot import plot_utils
 from Plot import plot_coeff
@@ -19,6 +20,7 @@ from Plot import plot_norm
 from Plot import plot_QM
 from Plot import plot_ham
 from Plot import plot_ener
+from Plot import plot_tintf
 
 from IO import Folders as fold
 
@@ -36,8 +38,8 @@ import time
 ###############
 #CTMQC_low_coup_2mol
 folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
-plotting_parameters = ['qm_r']
-replicas            = range(2)
+plotting_parameters = ['fl_fk', 'qm_t']
+replicas            = 'all'
 ###############
 
 
@@ -113,13 +115,14 @@ max_time, you can use all, or specify a maximum time in fs.""")
                           "adiab_states":"Adiabatic States", 
                           "norm":"Diabatic Norm",
                           'site_ener':'site energy differences',
-                          "qm_r":"",}
+                          "qm_r":"",
+                          "fl_fk":"history force state difference"}
         if len(self.plot_params) == 1:
-            params_joined = params_convert[self.plot_params[0]]
+            params_joined = str(params_convert.get(self.plot_params[0]))
         else:
-            params_joined = ', '.join([params_convert[i] for i in self.plot_params[:-1]]) + " and " \
-                                + params_convert[self.plot_params[-1]]
-            
+            params_joined = ', '.join([str(params_convert.get(i)) for i in self.plot_params[:-1]]) + " and " \
+                                + str(params_convert.get(self.plot_params[-1]))
+        params_joined = params_joined.replace("None", "???")
             
         if self.plot_params[0] != "qm_r":
             self.title = "Evolution of %s under **CT/Eh** with **irep** replicas"%(params_joined)
@@ -157,8 +160,6 @@ max_time, you can use all, or specify a maximum time in fs.""")
         
         self.plot_paramsC = [i for i in self.plot_params if any(i == j for j in ('|u|^2', '|c|^2'))]
         
-        # Want to add some typo checking using difflib.SequenceMatcher later
-
     def _set_coeff_params(self):
         self.check_control_coeff = {}
         self.all_coeff_lines = {}
@@ -179,6 +180,7 @@ class LoadData(object):
                             - 'adiab_states'
                             - 'qm'
                             - 'site_ener'
+                            - 'fk_fl' or 'fl_fk'
     
     NOTE: Should be in plot_utils
     """
@@ -195,6 +197,7 @@ class LoadData(object):
         self.load_all_ad_coeffs()
         self.load_ad_ener()
         self.load_qm()
+        self.load_hist_f()
         
         self._average_data()
         
@@ -236,7 +239,9 @@ class LoadData(object):
         """ 
         Loads all the adiabatic coefficients, no input. Saves adiabatic coeffs as self.all_Acoeff_data.
         """
-        if '|c|^2' in self.plot_params:
+        if '|c|^2' in self.plot_params or \
+           (any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params)):
+               
             self.load_timings['ad coeff'] = time.time()
             self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, 
                                                                self.reps, 
@@ -278,7 +283,21 @@ class LoadData(object):
                                                                 min_step=self.min_time, 
                                                                 stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
-        
+    
+    def load_hist_f(self):
+        """
+        Will load all the time-integrated history forces in a folder.
+        """
+        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+            self.load_timings['history forces'] = time.time()
+            self.all_tintf_data = load_tintf.load_all_tintf_in_folder(folder, 
+                                                                      reps=self.reps,
+                                                                      max_step=self.max_time,
+                                                                      min_step=self.min_time,
+                                                                      stride  = self.slow_stride)
+            self.load_timings['history forces'] = time.time() - self.load_timings['history forces']
+            
+    
     # Will average the coefficient data (ham is averaged by default)
     def _average_data(self):
         """
@@ -291,7 +310,8 @@ class LoadData(object):
             self.all_Dcoeff_data_avg = plot_utils.avg_coeff_data(self.all_Dcoeff_data)
             self.load_timings['Averaging: ']['di coeff'] = time.time() - self.load_timings['Averaging: ']['di coeff']
         
-        if "|c|^2" in self.plot_params and list(self.all_Acoeff_data.keys())[0] != 0:
+        if "|c|^2" in self.plot_params and list(self.all_Acoeff_data.keys())[0] != 0 or \
+          (any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params)):
             self.load_timings['Averaging: ']['ad coeff'] = time.time()
             self.all_Acoeff_data_avg = plot_utils.avg_coeff_data(self.all_Acoeff_data)
             self.load_timings['Averaging: ']['ad coeff'] = time.time() - self.load_timings['Averaging: ']['ad coeff']
@@ -306,6 +326,11 @@ class LoadData(object):
             self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - self.load_timings['Averaging: ']['qm']
+        
+        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+            self.load_timings['Averaging: ']['history forces'] = time.time()
+            self.avg_tintf_data = plot_utils.avg_hist_f_data(self.all_tintf_data)
+            self.load_timings['Averaging: ']['history forces'] = time.time() - self.load_timings['Averaging: ']['history forces']
 
     def print_timing_info(self, timing_dict, title=""):
         """
@@ -326,7 +351,7 @@ class LoadData(object):
 
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, 
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R, 
-           plot_QM.QM_t, plot_ham.Site_Ener):
+           plot_QM.QM_t, plot_ham.Site_Ener, plot_tintf.fl_fk):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_states
@@ -341,6 +366,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                * qm           = The Quantum Momentum
                                * adiab_states = The adiabatic energy levels
                                * site_ener    = The site energies vs time
+                               * fl_fk        = The difference in history force 
+                                                states.
+                               
         folder         =>  The folder containing the data
         reps           =>  Which replica numbers to plot (can be 'all')
     """
@@ -377,6 +405,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plot_QM.QM_t.__init__(self, self.axes['qm_t'])
         if 'site_ener' in self.plot_params:
             plot_ham.Site_Ener.__init__(self, self.axes['site_ener'])
+        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+            plot_tintf.fl_fk.__init__(self, self.axes['fl_fk'])
         
         self.__finalise()
   
@@ -416,6 +446,21 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.axes['qm_r'][0][0] = self._clean_widget_axes(self.axes['qm_r'][0][0])
             self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
         
+    def _flfk_axis_special_case(self):
+        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+            self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,7),
+                                                  (self.plot_params.index('fl_fk')*2,0), 
+                                                  colspan=1),
+                                   plt.subplot2grid( (len(self.plot_params)*2,7),
+                                                  (self.plot_params.index('fl_fk')*2+1,0), 
+                                                  colspan=1)],
+                                   plt.subplot2grid( (len(self.plot_params),7),
+                                                  (self.plot_params.index('fl_fk'),1), 
+                                                  colspan=6)]
+            
+            self.axes['fl_fk'][0][0] = self._clean_widget_axes(self.axes['fl_fk'][0][0])
+            self.axes['fl_fk'][0][1] = self._clean_widget_axes(self.axes['fl_fk'][0][1])
+    
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):
         """
@@ -442,6 +487,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
         self._Qlk_axis_special_case()
+        self._flfk_axis_special_case()
     
         
     def print_final_info(self):

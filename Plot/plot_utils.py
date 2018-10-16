@@ -168,6 +168,30 @@ def avg_Qlk_data(all_Qlk_data):
                                avg_Qlk_timesteps]}
     return avg_Qlk_data
 
+def avg_hist_f_data(all_tintf_data):
+    """
+    Will average all the time-integrated adiabatic forces.
+    
+    Inputs:
+        * all_tintf_data    =>  A dictionary containing all the history force 
+                                data.
+    
+    Ouputs:
+        * The averaged tintf data.
+    """
+    min_len = np.min([[len(all_tintf_data[f][0][0]), len(all_tintf_data[f][0][1]), len(all_tintf_data[f][1])] for f in all_tintf_data])
+    all_tintf = [[all_tintf_data[f][0][0][:min_len] for f in all_tintf_data ],
+                '',
+                [all_tintf_data[f][1][:min_len] for f in all_tintf_data ]]
+    avg_pos = {}#
+    Tkeys = list(all_tintf_data.keys())
+    if all_tintf[0]:
+        # Should return in same format as input
+        avg_pos = {'avg_pos':[(np.mean(all_tintf[0], axis=0),
+                               all_tintf_data[Tkeys[0]][0][1]), 
+                       np.mean(all_tintf[2], axis=0)]}   
+    return avg_pos    
+
 # Will average the energy data
 def avg_E_data_dict(all_ener_data):
     cols_dict = {col:[] for col in all_ener_data[list(all_ener_data.keys())[0]]}
