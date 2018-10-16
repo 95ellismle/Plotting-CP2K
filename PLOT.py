@@ -35,10 +35,9 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '../Data/200Rep_3mol/'  
-plotting_parameters = ["site_ener"]
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
+plotting_parameters = ['qm_r']
 replicas            = range(2)
-
 ###############
 
 
@@ -76,8 +75,34 @@ class Params(object):
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time = 100
-    
+        self.max_time      = 100    #(in fs)
+        self.min_time      = 0      #(in fs)
+        self.quick_stride  = 0.1    #(in fs)
+        self.slow_stride   = 0.1    #(in fs)
+        
+        self._fix_load_timings()
+        
+    def _fix_load_timings(self):
+        """
+        Will convert the times to load into step numbers to pass into the 
+        load_* functions.
+        """
+        dt = self.run_inp_params['NUCLEAR_TIMESTEP']
+        
+        if type(self.max_time) == str:
+            if self.max_time == 'all': pass
+            else: raise SystemExit("""Sorry I don't recognise the setting for 
+max_time, you can use all, or specify a maximum time in fs.""")
+        else: self.max_time = int(self.max_time/dt)
+        self.min_time = int(self.min_time/dt)
+        self.quick_stride = int(self.quick_stride/dt)
+        self.slow_stride = int(self.slow_stride/dt)
+        
+        if self.max_time < 1: self.max_time = 1 
+        if self.min_time < 0: self.min_time = 0
+        if self.quick_stride < 1: self.quick_stride = 1 
+        if self.slow_stride< 1: self.slow_stride = 1 
+        
     def _set_title(self):
         """
         Will set the title of the plot according to the parameters given.
@@ -87,7 +112,8 @@ class Params(object):
                           'qm_t':"Quantum Momentum", 
                           "adiab_states":"Adiabatic States", 
                           "norm":"Diabatic Norm",
-                          'site_ener':'site energy differences'}
+                          'site_ener':'site energy differences',
+                          "qm_r":"",}
         if len(self.plot_params) == 1:
             params_joined = params_convert[self.plot_params[0]]
         else:
@@ -180,7 +206,7 @@ class LoadData(object):
         specified (dependent on which reps are requested)
         """
         self.load_timings['H'] = time.time()
-        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, reps=self.reps)
+        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, reps=self.reps, max_step=self.max_time, min_step=self.min_time, stride=self.quick_stride)
         self.avg_ham_data = plot_utils.avg_H_data_dict(self.all_ham_data)
         self.avg_site_ener, self.avg_couplings, self.avg_avg_couplings, self.Stimesteps = plot_utils.get_coup_data(self.avg_ham_data, 'avg_ham')
         self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data, ham_key) for ham_key in self.all_ham_data]
@@ -197,7 +223,13 @@ class LoadData(object):
         """
         if any(j in i for j in ('norm','|u|^2') for i in self.plot_params):
             self.load_timings['di coeff'] = time.time()
-            self.all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(self.folder, filename_must_contain=['xyz','coeff'], filename_must_not_contain=['ad'], reps=self.reps)
+            self.all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(self.folder, 
+                                                                       filename_must_contain=['xyz','coeff'], 
+                                                                       filename_must_not_contain=['ad'], 
+                                                                       reps=self.reps,
+                                                                       max_step=self.max_time, 
+                                                                       min_step=self.min_time, 
+                                                                       stride=self.quick_stride)
             self.load_timings['di coeff'] = time.time() - self.load_timings['di coeff']
         
     def load_all_ad_coeffs(self):     
@@ -206,7 +238,12 @@ class LoadData(object):
         """
         if '|c|^2' in self.plot_params:
             self.load_timings['ad coeff'] = time.time()
-            self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, self.reps, self.all_ham_data)
+            self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, 
+                                                               self.reps, 
+                                                               self.all_ham_data,
+                                                               max_step=self.max_time, 
+                                                               min_step=self.min_time, 
+                                                               stride=self.quick_stride)
             self.load_timings['ad coeff'] = time.time() - self.load_timings['ad coeff']
     
     def load_ad_ener(self):
@@ -215,7 +252,11 @@ class LoadData(object):
         """
         if 'adiab_states' in self.plot_params:
             self.load_timings['adiab ener'] = time.time()
-            self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, reps=self.reps)
+            self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, 
+                                                               reps=self.reps,
+                                                               max_step=self.max_time, 
+                                                               min_step=self.min_time, 
+                                                               stride=self.quick_stride)
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
@@ -226,8 +267,16 @@ class LoadData(object):
         """
         if any('qm' in j  for j in self.plot_params):
             self.load_timings['QM'] = time.time()
-            self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, reps=self.reps)
-            self.all_pos_data = load_pos.load_all_pos_in_folder(folder, reps=self.reps)
+            self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, 
+                                                                reps=self.reps,
+                                                                max_step=self.max_time, 
+                                                                min_step=self.min_time, 
+                                                                stride=self.slow_stride)
+            self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
+                                                                reps=self.reps,
+                                                                max_step=self.max_time, 
+                                                                min_step=self.min_time, 
+                                                                stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
         
     # Will average the coefficient data (ham is averaged by default)
@@ -268,7 +317,8 @@ class LoadData(object):
         """
         max_len = 50
         print(" "+"-"*max_len)
-        print("|"+" "*(max_len -int((len(title)-1)/2)) +title+" "*(max_len - int(len(title)/2)) + " |")
+        num_spaces = (len(title)-1)*2
+        print("|"+" "*int(max_len - num_spaces) + title + " "*int(max_len - num_spaces) + " |")
         print("|"+" "*max_len+"|")
         plot_utils.print_timings(timing_dict, max_len=max_len)
         print(" "+"-"*max_len)
@@ -491,7 +541,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             AX.grid('on', alpha=0.5)
             
         # For last axis
-        self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)")
+        try:
+            self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)")
+        except IndexError:
+            pass
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
                         
         self.f.tight_layout()

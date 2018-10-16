@@ -132,6 +132,8 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
     all_data = collections.OrderedDict()
     for arg in args:
         all_data[arg[0][arg[0].rfind('/')+1:]] = func(*arg)
+    if not all_data:
+        raise SystemExit("Sorry there doesn't seem to be any data in the folder!")
     return all_data
 
 

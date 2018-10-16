@@ -118,8 +118,9 @@ def read_xyz_file(filename, num_data_cols, min_step=0, max_step='all', stride=1,
     num_data_cols = -num_data_cols
     ltxt = open_read(filename).split('\n')
     time_delim, time_ind, lines_in_step, num_title_lines = get_xyz_step_metadata(ltxt, filename)
-    if max_step == 'all':
-        max_step = int(len(ltxt)/lines_in_step)
+    abs_max_step = int(len(ltxt)/lines_in_step)
+    if max_step == 'all' or max_step > abs_max_step:
+        max_step = abs_max_step
     # The OrderedDict doesn't seem to have major overheads as dictionary access aren't the main bottleneck here.
     # It is also much easier to use!
     step_data = OrderedDict() # The OrderedDict keeps the order of the frames for saving etc...
