@@ -197,11 +197,23 @@ def get_coup_data(H_data, key):
 
 
 # Will load the Adiab coeff data or transform it from the diabatic coefficents.
-def load_Acoeff_data(folder, reps, all_ham_data):
-    all_coeff_data = load_coeff.load_all_coeff_in_folder(folder, filename_must_contain=['ad','xyz','coeff'], reps=reps)
+def load_Acoeff_data(folder, reps, all_ham_data, max_step='all', min_step=0, stride=1):
+    all_coeff_data = load_coeff.load_all_coeff_in_folder(folder, 
+                                                         filename_must_contain=['ad','xyz','coeff'], 
+                                                         reps=reps,
+                                                         max_step=max_step, 
+                                                         min_step=min_step, 
+                                                         stride=stride)
     # Transform Diabatic
     if not all_coeff_data:
-        all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(folder, filename_must_contain=['coeff','xyz'], filename_must_not_contain=['ad'], reps=reps)
+        all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(folder, 
+                                                              filename_must_contain=['coeff','xyz'], 
+                                                              filename_must_not_contain=['ad'], 
+                                                              reps=reps,
+                                                              max_step=max_step, 
+                                                              min_step=min_step, 
+                                                              stride=stride)
+        
         all_Acoeff_data = trans_all_diab_to_adiab(all_Dcoeff_data=all_Dcoeff_data,
                                                              all_ham_data = all_ham_data, 
                                                              reps=reps)

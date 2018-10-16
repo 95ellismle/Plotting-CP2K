@@ -68,13 +68,10 @@ class QM_R(object):
     def _plot_avg_qm_vs_pos(self):
         """
         Will plot the quantum momentum vs position.
-        """
-        
-        """
+
         1) Use masks to select Qlk and pos data that share same timesteps
         2) Find the pos and Qlk data corresponding to atom v
         3) Plot the pos (xyz) data vs Qlk (xyz) for each state. 
-    
         """
         
         # First get shared timesteps between Qlk and pos
@@ -92,10 +89,11 @@ class QM_R(object):
         for cart_dim in range(3):
             for timestep in range(self.Qlk_ntimesteps):
                 # Find all the QM_data for each atom
-                QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], params={'at_num':at_num, 
-                                                                'cart_dim':cart_dim,
+                QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], 
+                                               params   =      {'at_num':at_num, 
+                                                                'cart_dim':cart_dim+1,
                                                                 'lk':(1,2)})[timestep][0]
-                                    for at_num in range(natom)]
+                                    for at_num in range(1,natom+1)]
                 line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], 
                                              QM_data, 'o', color=cart_cols[cart_dim])
                 self.Qlk_pos_avg_lines[cart_dim].append(line)
@@ -118,7 +116,7 @@ class QM_R(object):
         self.MD_dt = self.run_inp_params['NUCLEAR_TIMESTEP']
         
         self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
-        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_c_plot_site_enerontrol)
+        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
         
         self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
         self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
@@ -181,7 +179,7 @@ class QM_t(object):
         #Connect checkboxes to plot control
         if self._use_control:    self._set_Qlk_t_control()
         
-        self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
+        self.plot_ax.set_ylabel(r"$Q_{lk}^{(I)}$")
     
     def _check_settings_Qlk_t(self, label):
         if label == 'all replicas': #Pressed the all replicas button
