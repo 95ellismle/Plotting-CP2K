@@ -37,7 +37,7 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
+folder              = '../Data/200Rep_2mol'  
 plotting_parameters = ['fl_fk', 'qm_t']
 replicas            = 'all'
 ###############
@@ -448,18 +448,22 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         
     def _flfk_axis_special_case(self):
         if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
-            self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,7),
+            self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,14),
                                                   (self.plot_params.index('fl_fk')*2,0), 
                                                   colspan=1),
-                                   plt.subplot2grid( (len(self.plot_params)*2,7),
+                                   plt.subplot2grid( (len(self.plot_params)*2,14),
                                                   (self.plot_params.index('fl_fk')*2+1,0), 
-                                                  colspan=1)],
+                                                  colspan=1), 
+                                   plt.subplot2grid( (len(self.plot_params)*2,14),
+                                                  (self.plot_params.index('fl_fk')*2,1), 
+                                                  colspan=1, rowspan=2),],
                                    plt.subplot2grid( (len(self.plot_params),7),
                                                   (self.plot_params.index('fl_fk'),1), 
                                                   colspan=6)]
             
             self.axes['fl_fk'][0][0] = self._clean_widget_axes(self.axes['fl_fk'][0][0])
             self.axes['fl_fk'][0][1] = self._clean_widget_axes(self.axes['fl_fk'][0][1])
+            self.axes['fl_fk'][0][2] = self._clean_widget_axes(self.axes['fl_fk'][0][2])
     
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):

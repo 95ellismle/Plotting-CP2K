@@ -208,7 +208,7 @@ class QM_t(object):
             Qlk_data = self.all_Qlk_data[Qlk_filename]
             Qlk_timesteps = Qlk_data[1]
             Qlk_data = Qlk_data[0]
-            num_atoms = np.shape(Qlk_data[0])[1]/3
+            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
             for iatom in range(1,num_atoms+1):
 #                        if any(iatom == j for j in (2,4,11,8,1)): continue
                 QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
@@ -236,7 +236,7 @@ class QM_t(object):
         Qlk_data = self.avg_Qlk_data[Qlk_filename]
         Qlk_timesteps = Qlk_data[1]
         Qlk_data = Qlk_data[0]
-        num_atoms = np.shape(Qlk_data[0])[1]/3
+        num_atoms = int(np.shape(Qlk_data[0])[1]/3)
         for iatom in range(1,num_atoms+1):
 #                        if any(iatom == j for j in (2,4,11,8,1)): continue
             QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
