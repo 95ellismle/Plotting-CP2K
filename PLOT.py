@@ -38,7 +38,7 @@ import time
 ###############
 #CTMQC_low_coup_2mol
 folder              = '../Data/200Rep_2mol'  
-plotting_parameters = ['fl_fk', 'qm_t']
+plotting_parameters = ['norm', 'qm_t']
 replicas            = 'all'
 ###############
 
@@ -240,7 +240,7 @@ class LoadData(object):
         Loads all the adiabatic coefficients, no input. Saves adiabatic coeffs as self.all_Acoeff_data.
         """
         if '|c|^2' in self.plot_params or \
-           (any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params)):
+           (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
                
             self.load_timings['ad coeff'] = time.time()
             self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, 
@@ -258,10 +258,7 @@ class LoadData(object):
         if 'adiab_states' in self.plot_params:
             self.load_timings['adiab ener'] = time.time()
             self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, 
-                                                               reps=self.reps,
-                                                               max_step=self.max_time, 
-                                                               min_step=self.min_time, 
-                                                               stride=self.quick_stride)
+                                                               reps=self.reps)
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
@@ -288,7 +285,7 @@ class LoadData(object):
         """
         Will load all the time-integrated history forces in a folder.
         """
-        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+        if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             self.load_timings['history forces'] = time.time()
             self.all_tintf_data = load_tintf.load_all_tintf_in_folder(folder, 
                                                                       reps=self.reps,
@@ -311,7 +308,7 @@ class LoadData(object):
             self.load_timings['Averaging: ']['di coeff'] = time.time() - self.load_timings['Averaging: ']['di coeff']
         
         if "|c|^2" in self.plot_params and list(self.all_Acoeff_data.keys())[0] != 0 or \
-          (any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params)):
+          (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
             self.load_timings['Averaging: ']['ad coeff'] = time.time()
             self.all_Acoeff_data_avg = plot_utils.avg_coeff_data(self.all_Acoeff_data)
             self.load_timings['Averaging: ']['ad coeff'] = time.time() - self.load_timings['Averaging: ']['ad coeff']
@@ -327,7 +324,7 @@ class LoadData(object):
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - self.load_timings['Averaging: ']['qm']
         
-        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+        if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             self.load_timings['Averaging: ']['history forces'] = time.time()
             self.avg_tintf_data = plot_utils.avg_hist_f_data(self.all_tintf_data)
             self.load_timings['Averaging: ']['history forces'] = time.time() - self.load_timings['Averaging: ']['history forces']
@@ -405,7 +402,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plot_QM.QM_t.__init__(self, self.axes['qm_t'])
         if 'site_ener' in self.plot_params:
             plot_ham.Site_Ener.__init__(self, self.axes['site_ener'])
-        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+        if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             plot_tintf.fl_fk.__init__(self, self.axes['fl_fk'])
         
         self.__finalise()
@@ -447,7 +444,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
         
     def _flfk_axis_special_case(self):
-        if any('fk' in j for j in self.plot_params) and any("fl" in j for j in self.plot_params):
+        if (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
             self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,14),
                                                   (self.plot_params.index('fl_fk')*2,0), 
                                                   colspan=1),
