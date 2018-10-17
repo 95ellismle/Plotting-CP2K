@@ -103,7 +103,7 @@ class fl_fk(object):
         fl_fk.xyz_control.on_clicked(fl_fk._cart_control)
         
 #        fl_fk.widget_ax[1].set_title("Color by:", fontsize=15)
-        fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['XYZ', 'atom'], [True, False])
+        fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['XYZ', 'atom'])
         fl_fk.color_control.on_clicked(fl_fk._color_control)
         
     @staticmethod

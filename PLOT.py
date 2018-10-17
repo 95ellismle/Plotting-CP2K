@@ -38,7 +38,7 @@ import time
 ###############
 #CTMQC_low_coup_2mol
 folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
-plotting_parameters = ['fl_fk', 'qm_t']
+plotting_parameters = ['qm_t', 'qm_r', 'fl_fk']
 replicas            = 'all'
 ###############
 
@@ -115,19 +115,22 @@ max_time, you can use all, or specify a maximum time in fs.""")
                           "adiab_states":"Adiabatic States", 
                           "norm":"Diabatic Norm",
                           'site_ener':'site energy differences',
-                          "qm_r":"",
+                          "qm_r":"Quantum Momentum",
                           "fl_fk":"history force state difference"}
-        if len(self.plot_params) == 1:
-            params_joined = str(params_convert.get(self.plot_params[0]))
+        name_plot_params = self.plot_params[:]
+        if 'qm_r' in name_plot_params and 'qm_t' in name_plot_params: 
+            name_plot_params.remove("qm_r")
+        if len(name_plot_params) == 1:
+            params_joined = str(params_convert.get(name_plot_params[0]))
         else:
-            params_joined = ', '.join([str(params_convert.get(i)) for i in self.plot_params[:-1]]) + " and " \
-                                + str(params_convert.get(self.plot_params[-1]))
+            params_joined = ', '.join([str(params_convert.get(i)) for i in name_plot_params[:-1]]) + " and " \
+                                + str(params_convert.get(name_plot_params[-1]))
         params_joined = params_joined.replace("None", "???")
             
         if self.plot_params[0] != "qm_r":
-            self.title = "Evolution of %s under **CT/Eh** with **irep** replicas"%(params_joined)
+            self.title = "Evolution of %s under **CT/Eh** with **irep** replica"%(params_joined)
         else:
-            self.title = "Spatial distribution of QM averaged over **irep** replicas"
+            self.title = "Spatial distribution of QM averaged over **irep** replica"
     
     # Will get the number of replicas and the transparency of the lines.
     def _get_alpha(self):
@@ -258,10 +261,7 @@ class LoadData(object):
         if 'adiab_states' in self.plot_params:
             self.load_timings['adiab ener'] = time.time()
             self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, 
-                                                               reps=self.reps,
-                                                               max_step=self.max_time, 
-                                                               min_step=self.min_time, 
-                                                               stride=self.quick_stride)
+                                                               reps=self.reps)
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
@@ -548,6 +548,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         """
         #Rep num
         self.title = self.title.replace("**irep**", str(self.num_reps))
+        if self.num_reps > 1: self.title = self.title.replace("replica", "replicas")
         
         #Using Comm
         if self.run_inp_params['FAST_EHRENFEST']:
