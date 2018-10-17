@@ -37,20 +37,21 @@ class Site_Ener(object):
         
         self.plot_ax.set_ylabel(r"$\Delta E_{i,j}$")
     
-    def _check_settings_site_ener(self, label):
+    @staticmethod
+    def _check_settings_site_ener(label):
         if label == 'all replicas': #Pressed the all replicas button
-            for line in self.all_site_ener_lines:
+            for line in Site_Ener.all_rep_lines:
                 line.set_visible(not line.get_visible())
                 
         elif label == 'average':
-            for line in self.avg_site_ener_lines:
+            for line in Site_Ener.avg_rep_lines:
                 line.set_visible(not line.get_visible())
         plt.draw()
             
     #Will set the control panel for site_ener graph
     def _set_site_ener_control(self):
         self.check_site_ener = CheckButtons(self.widget_ax, ('all replicas', 'average'), (Site_Ener.all_reps, Site_Ener.avg_reps))
-        self.check_site_ener.on_clicked(self._check_settings_site_ener)
+        self.check_site_ener.on_clicked(Site_Ener._check_settings_site_ener)
   
     def _plot_all_rep_site_ener(self):
        """
