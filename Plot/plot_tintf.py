@@ -24,6 +24,7 @@ class fl_fk(object):
         
         #Setting initial default values
         fl_fk.xyz = [True, False, False]
+        fl_fk.ats_to_plot = [True]
         fl_fk.all_reps = False
         
         #Plotting
@@ -34,7 +35,7 @@ class fl_fk(object):
         fl_fk.colors = self.colors
         if self._use_control:    fl_fk._set_control()
         
-        fl_fk.plot_ax.set_ylabel(r"$f_{k} - f_{l}$")
+        fl_fk.plot_ax.set_ylabel(r"$|C_{k}|^2 |C_{l}|^2 ( f_{k} - f_{l} )$")
     
     @staticmethod
     def _plot_all_rep(self):
@@ -98,7 +99,10 @@ class fl_fk(object):
     def _set_control():
         """
         Will connect the controls to the plotting
+        
         """
+        fl_fk.ats_to_plot = fl_fk.ats_to_plot*fl_fk.natom
+        
         fl_fk.xyz_control = CheckButtons(fl_fk.widget_ax[0], ['X','Y','Z'], fl_fk.xyz)
         fl_fk.xyz_control.on_clicked(fl_fk._cart_control)
         
@@ -108,15 +112,16 @@ class fl_fk(object):
         
         fl_fk.atom_control = CheckButtons(fl_fk.widget_ax[2], 
                                           ['atom %i'%(i+1) for i in range(fl_fk.natom)], 
-                                          [True]*fl_fk.natom)
+                                          fl_fk.ats_to_plot)
         fl_fk.atom_control.on_clicked(fl_fk._atom_control)
         
     
     @staticmethod
     def _atom_control(label):
-        atom_num = int(label.replace("atom", ""))
-        for lines in fl_fk.sum_rep_lines:
-            lines[atom_num-1].set_visible(not lines[atom_num-1].get_visible())            
+        atom_num = int(label.replace("atom", ""))-1
+        fl_fk.ats_to_plot[atom_num] = not fl_fk.ats_to_plot[atom_num]
+        for idim, lines in enumerate(fl_fk.sum_rep_lines):
+            lines[atom_num].set_visible(fl_fk.ats_to_plot[atom_num] and fl_fk.xyz[idim])            
         plt.draw()
         
     @staticmethod
@@ -141,13 +146,17 @@ class fl_fk(object):
         Will determine what coloring scheme to use in the plots
         """
         if label == 'X':
-            for line in fl_fk.sum_rep_lines[0]:
-                line.set_visible(not line.get_visible())
+            fl_fk.xyz[0] = not fl_fk.xyz[0]
+            fl_fk.xyz[0] = not fl_fk.xyz[0]
+            for iat, line in enumerate(fl_fk.sum_rep_lines[0]):
+                line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[0])
         elif label == 'Y':
-            for line in fl_fk.sum_rep_lines[1]:
-                line.set_visible(not line.get_visible())
+            fl_fk.xyz[1] = not fl_fk.xyz[1]
+            for iat, line in enumerate(fl_fk.sum_rep_lines[1]):
+                line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[1])
         elif label == 'Z':
-            for line in fl_fk.sum_rep_lines[2]:
-                line.set_visible(not line.get_visible())
+            fl_fk.xyz[2] = not fl_fk.xyz[2]
+            for iat, line in enumerate(fl_fk.sum_rep_lines[2]):
+                line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[2])
         plt.draw()
         
