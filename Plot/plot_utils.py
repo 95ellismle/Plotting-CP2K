@@ -8,6 +8,7 @@ Created on Tue Aug  7 15:42:51 2018
 import numpy as np
 import pandas as pd
 import collections
+import itertools as IT
 
 from load import load_coeff
 
@@ -170,7 +171,7 @@ def avg_Qlk_data(all_Qlk_data):
 
 def sum_hist_f_data(all_tintf_data):
     """
-    Will average all the time-integrated adiabatic forces.
+    Will sum all the time-integrated adiabatic forces.
     
     Inputs:
         * all_tintf_data    =>  A dictionary containing all the history force 
@@ -191,6 +192,89 @@ def sum_hist_f_data(all_tintf_data):
                                all_tintf_data[Tkeys[0]][0][1]), 
                        np.sum(all_tintf[2], axis=0)]}   
     return avg_pos    
+
+def match_timesteps(DCT1, DCT2):
+    """
+    Will return data with the same timesteps.
+    
+    Inputs:
+        * DCT1  =>  (data1, cols1, timesteps1)  [list]
+        * DCT2  =>  (data2, cols2, timesteps2)  [list]
+    
+    Outputs:
+        * DCT1 and DCT2 (same as inputs but spliced)
+    """
+    # Make sure that all data in data1 is in data2
+    mask1 = [i in DCT2[2] for i in DCT1[2]]
+    DCT1[0] = DCT1[0][mask1]
+    DCT1[1] = DCT1[1][mask1]
+    DCT1[2] = DCT1[2][mask1]
+    
+    #Make sure any data in data2 is in data1    
+    mask2 = [i in DCT1[2] for i in DCT2[2]]
+    DCT2[0] = DCT2[0][mask2]
+    DCT2[1] = DCT2[1][mask2]
+    DCT2[2] = DCT2[2][mask2]
+    
+    return DCT1, DCT2, mask1, mask2
+
+# There is a method in plot_QM.QM_R that also matches data. It probs belongs 
+# here.
+def match_timesteps_4col_2col(data_4col, data_2col):
+    """
+    Will return 2 sets of data which share the same timesteps
+    """
+    (data2, cols2), timesteps2 = data_2col
+    data4, cols4, timesteps4, populations4   = data_4col
+    DCT1, DCT2, mask1, mask2 = match_timesteps([data2, cols2, timesteps2], 
+                                               [data4, cols4, timesteps4])
+    populations4 = populations4[mask1]
+    
+    return [data4, cols4, timesteps4, populations4], [(data2, cols2), timesteps2]
+    
+
+def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
+    """
+    Will sum all the time-integrated adiabatic forces with the adiabatic 
+    populations.
+    
+    Inputs:
+        * all_tintf_data    =>  A dictionary containing all the history force 
+                                data.
+    
+    Ouputs:
+        * The averaged tintf data.
+    """
+    Tcols = all_tintf_data[list(all_tintf_data.keys())[0]][0][1]
+    nstates = max(Tcols[0,:,1].astype(int))
+    all_state_combs = list(IT.combinations(range(nstates), 2))
+    all_tintf_lk = {"%i%i"%(i,j):'' for i,j in all_state_combs}
+
+    #Match the timesteps for the 2 sets of data
+    for Akey, Tkey in zip(all_A_coeff_data, all_tintf_data):
+        all_A_coeff_data[Akey], all_tintf_data[Tkey] = match_timesteps_4col_2col( all_A_coeff_data[Akey],
+                                                                            all_tintf_data[Tkey])
+
+    Tdata = all_tintf_data[list(all_tintf_data.keys())[0]][0][0]
+    nsteps = len(Tdata)
+    natom = int(len(Tdata[0])/nstates)
+    for i,j in all_state_combs:
+        all_tintf_lk["%i%i"%(i,j)] = np.zeros((nsteps, natom, 3))
+    
+    for Akey, Tkey in zip(all_A_coeff_data, all_tintf_data):
+        #Multiply the tintf by Cpops correctly, then sum over replicas
+        (Tdata, Tcols), _ = all_tintf_data[Tkey]
+        _, _, _, pops  = all_A_coeff_data[Akey]
+        for istep in range(nsteps):
+            for l,k in all_state_combs:
+                Cl = pops[istep,l]
+                Ck = pops[istep,k]
+                fl = Tdata[istep][Tcols[0,:,1] == str(l+1)]
+                fk = Tdata[istep][Tcols[0,:,1] == str(k+1)]
+                all_tintf_lk['%i%i'%(l,k)][istep] =  (fk - fl)
+    
+    print(all_tintf_lk['01'][0])
+    return all_tintf_lk
 
 # Will average the energy data
 def avg_E_data_dict(all_ener_data):

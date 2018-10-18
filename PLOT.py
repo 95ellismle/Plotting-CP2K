@@ -37,8 +37,8 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
-plotting_parameters = ['qm_t', 'fl_fk']
+folder              = '../Data/200Rep_2mol'  
+plotting_parameters = ['fl_fk']
 replicas            = 'all'
 ###############
 
@@ -329,7 +329,7 @@ class LoadData(object):
         
         if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             self.load_timings['Averaging: ']['history forces'] = time.time()
-            self.sum_tintf_data = plot_utils.sum_hist_f_data(self.all_tintf_data)
+            self.sum_tintf_data = plot_utils.sum_hist_f_data(self.all_tintf_data)#, self.all_Acoeff_data)
             self.load_timings['Averaging: ']['history forces'] = time.time() - self.load_timings['Averaging: ']['history forces']
 
     def print_timing_info(self, timing_dict, title=""):
