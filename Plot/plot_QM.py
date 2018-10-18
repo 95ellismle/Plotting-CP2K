@@ -178,7 +178,7 @@ class QM_t(object):
         #Connect checkboxes to plot control
         if self._use_control:    self._set_Qlk_t_control()
         
-        self.plot_ax.set_ylabel(r"$Q_{1,2,\nu}^{(I)}$")
+        self.plot_ax.set_ylabel(r"$|Q_{12,\nu}^{(I)}|^{2}$")
     
     def _check_settings_Qlk_t(self, label):
         if label == 'all replicas': #Pressed the all replicas button
@@ -208,16 +208,16 @@ class QM_t(object):
             Qlk_data = self.all_Qlk_data[Qlk_filename]
             Qlk_timesteps = Qlk_data[1]
             Qlk_data = Qlk_data[0]
-            num_atoms = np.shape(Qlk_data[0])[1]/3
+            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
             for iatom in range(1,num_atoms+1):
 #                        if any(iatom == j for j in (2,4,11,8,1)): continue
                 QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
                 QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
                 QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
                 
-                QM_mag = QMX**2 + QMY**2 + QMZ**2
+                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
 #                        QM_mag /= np.max(QM_mag)
-                ln, = ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, color=self.colors[iatom])
+                ln, = ax.plot(Qlk_timesteps, QMX, label="atom %i"%iatom, color=self.colors[iatom])
                 self.all_Qlk_t_lines.append(ln)
             ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
             
@@ -236,16 +236,14 @@ class QM_t(object):
         Qlk_data = self.avg_Qlk_data[Qlk_filename]
         Qlk_timesteps = Qlk_data[1]
         Qlk_data = Qlk_data[0]
-        num_atoms = np.shape(Qlk_data[0])[1]/3
+        num_atoms = int(np.shape(Qlk_data[0])[1]/3)
         for iatom in range(1,num_atoms+1):
-#                        if any(iatom == j for j in (2,4,11,8,1)): continue
             QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
             QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
             QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-            
-            QM_mag = QMX**2 + QMY**2 + QMZ**2
+            QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
 #                        QM_mag /= np.max(QM_mag)
-            ln, = ax.plot(Qlk_timesteps, QM_mag, label="atom %i"%iatom, color=self.colors[iatom])
+            ln, = ax.plot(Qlk_timesteps, QMX, label="atom %i"%iatom, color=self.colors[iatom])
             self.avg_qlk_t_lines.append(ln)
 
 
