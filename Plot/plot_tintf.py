@@ -44,16 +44,16 @@ class fl_fk(object):
         fl_fk.sum_rep_lines = [[],[],[]]
         for Trep in self.sum_tintf_data:
             (data, cols), timesteps = self.sum_tintf_data[Trep]
+            timesteps /= self.num_reps
             nstates = max(cols[0,:,1].astype(int))
             fl_fk.natom   = int(len(data[0])/nstates)
             all_combs = IT.combinations(range(nstates), 2)
             for l, k in all_combs:
+                fk = np.array([i[cols[0,:,1] == str(k+1)] for i in data])
+                fl = np.array([i[cols[0,:,1] == str(l+1)] for i in data])
+                
+                self.Fl_Fk = (fl-fk)
                 for iat in range(fl_fk.natom):
-                    fk = np.array([i[cols[0,:,1] == str(k+1)] for i in data])
-                    fl = np.array([i[cols[0,:,1] == str(l+1)] for i in data])
-                    
-                    self.Fl_Fk = (fl-fk)
-#                    
 #                    cl_ck = self.all_Acoeff_data_avg[-1][:,l] \
 #                          * self.all_Acoeff_data_avg[-1][:,k] \
 #                          * len(self.all_tintf_data)
