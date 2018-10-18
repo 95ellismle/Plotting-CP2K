@@ -26,9 +26,9 @@ class fl_fk(object):
         fl_fk.xyz = [True, False, False]
         fl_fk.ats_to_plot = [True]
         fl_fk.all_reps = False
-        
+        fl_fk.get_metadata(self)
         #Plotting
-        fl_fk._plot_sum(self)
+        fl_fk._plot_sum_CC(self)
         
         #Connect checkboxes to plot control
         fl_fk.colors = self.colors
@@ -44,26 +44,51 @@ class fl_fk(object):
         fl_fk.sum_rep_lines = [[],[],[]]
         for Trep in self.sum_tintf_data:
             (data, cols), timesteps = self.sum_tintf_data[Trep]
-            timesteps /= self.num_reps
-            nstates = max(cols[0,:,1].astype(int))
-            fl_fk.natom   = int(len(data[0])/nstates)
-            all_combs = IT.combinations(range(nstates), 2)
+            all_combs = IT.combinations(range(fl_fk.nstates), 2)
             for l, k in all_combs:
                 fk = np.array([i[cols[0,:,1] == str(k+1)] for i in data])
                 fl = np.array([i[cols[0,:,1] == str(l+1)] for i in data])
                 
                 self.Fl_Fk = (fl-fk)
                 for iat in range(fl_fk.natom):
-#                    cl_ck = self.all_Acoeff_data_avg[-1][:,l] \
-#                          * self.all_Acoeff_data_avg[-1][:,k] \
-#                          * len(self.all_tintf_data)
-#                    
                     for idim in range(3):
                         ln, = fl_fk.plot_ax.plot(timesteps, 
                                              self.Fl_Fk[:,iat,idim], 
                                              color=self.colors[idim], 
                                              lw=1.2)
                         fl_fk.sum_rep_lines[idim].append(ln)
+        
+        for idim, lines in enumerate(fl_fk.sum_rep_lines):
+            for line in lines:
+                line.set_visible(fl_fk.xyz[idim])
+                
+    @staticmethod
+    def get_metadata(self):
+        """
+        Will get num atoms, num states etc...
+        """
+        for Trep in self.sum_tintf_data:
+            (data, cols), timesteps = self.sum_tintf_data[Trep]
+            fl_fk.nstates = max(cols[0,:,1].astype(int))
+            fl_fk.natom   = int(len(data[0])/fl_fk.nstates)
+            return 
+
+    @staticmethod
+    def _plot_sum_CC(self):
+        """
+        Will plot the \sum_{J}^{Nrep} C_k C_l *(f_l - f_k) term
+        """
+        data_dict, timesteps = self.sum_tintf_CC_data
+        fl_fk.sum_rep_lines = [[],[],[]]
+        for Tkey in data_dict:
+            data = data_dict[Tkey]
+            for iat in range(fl_fk.natom):
+                for idim in range(3):
+                    ln, = fl_fk.plot_ax.plot(timesteps, 
+                                             data[:,iat,idim], 
+                                             color=self.colors[idim], 
+                                             lw=1.2)
+                    fl_fk.sum_rep_lines[idim].append(ln)
         
         for idim, lines in enumerate(fl_fk.sum_rep_lines):
             for line in lines:
@@ -121,7 +146,6 @@ class fl_fk(object):
         """
         if label == 'X':
             fl_fk.xyz[0] = not fl_fk.xyz[0]
-            fl_fk.xyz[0] = not fl_fk.xyz[0]
             for iat, line in enumerate(fl_fk.sum_rep_lines[0]):
                 line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[0])
         elif label == 'Y':
@@ -144,9 +168,9 @@ class fl_fk(object):
 #        fl_fk.all_rep_lines = [[],[],[]]
 #        for Trep in self.all_tintf_data:
 #            (data, cols), timesteps = self.all_tintf_data[Trep]
-#            nstates = max(cols[0,:,1].astype(int))
-#            fl_fk.natom   = int(len(data[0])/nstates)
-#            all_combs = IT.combinations(range(nstates), 2)
+#            fl_fk.nstates = max(cols[0,:,1].astype(int))
+#            fl_fk.natom   = int(len(data[0])/fl_fk.nstates)
+#            all_combs = IT.combinations(range(fl_fk.nstates), 2)
 #            for l, k in all_combs:
 #                for iat in range(fl_fk.natom):
 #                    fk = data[cols[:,:,1] == str(k+1)]
