@@ -168,7 +168,7 @@ def avg_Qlk_data(all_Qlk_data):
                                avg_Qlk_timesteps]}
     return avg_Qlk_data
 
-def avg_hist_f_data(all_tintf_data):
+def sum_hist_f_data(all_tintf_data):
     """
     Will average all the time-integrated adiabatic forces.
     
@@ -187,9 +187,9 @@ def avg_hist_f_data(all_tintf_data):
     Tkeys = list(all_tintf_data.keys())
     if all_tintf[0]:
         # Should return in same format as input
-        avg_pos = {'avg_pos':[(np.mean(all_tintf[0], axis=0),
+        avg_pos = {'sum_tintf':[(np.sum(all_tintf[0], axis=0),
                                all_tintf_data[Tkeys[0]][0][1]), 
-                       np.mean(all_tintf[2], axis=0)]}   
+                       np.sum(all_tintf[2], axis=0)]}   
     return avg_pos    
 
 # Will average the energy data
