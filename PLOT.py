@@ -37,9 +37,9 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '../Data/200Rep_2mol'  
-plotting_parameters = ['fl_fk']
-replicas            = 'all'
+folder              = '../Data/200Rep_2mol_QM_tint_0'  
+plotting_parameters = ['fl_fk', 'qm_t']
+replicas            = range(3,4)
 ###############
 
 
@@ -77,7 +77,7 @@ class Params(object):
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time      = 100    #(in fs)
+        self.max_time      = 'all'    #(in fs)
         self.min_time      = 0      #(in fs)
         self.quick_stride  = 0.1    #(in fs)
         self.slow_stride   = 0.1    #(in fs)
@@ -100,7 +100,7 @@ max_time, you can use all, or specify a maximum time in fs.""")
         self.quick_stride = int(self.quick_stride/dt)
         self.slow_stride = int(self.slow_stride/dt)
         
-        if self.max_time < 1: self.max_time = 1 
+        if type(self.max_time) != str and self.max_time < 1: self.max_time = 1 
         if self.min_time < 0: self.min_time = 0
         if self.quick_stride < 1: self.quick_stride = 1 
         if self.slow_stride< 1: self.slow_stride = 1 
@@ -270,18 +270,19 @@ class LoadData(object):
         """
         Will load the quantum momentum file into the format in load_QM.
         """
-        if any('qm' in j  for j in self.plot_params):
+        if any(['qm' in j  for j in self.plot_params]):
             self.load_timings['QM'] = time.time()
             self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, 
                                                                 reps=self.reps,
                                                                 max_step=self.max_time, 
                                                                 min_step=self.min_time, 
                                                                 stride=self.slow_stride)
-            self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
-                                                                reps=self.reps,
-                                                                max_step=self.max_time, 
-                                                                min_step=self.min_time, 
-                                                                stride=self.slow_stride)
+            if 'qm_r' in self.plot_params:
+                self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
+                                                                    reps=self.reps,
+                                                                    max_step=self.max_time, 
+                                                                    min_step=self.min_time, 
+                                                                    stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
     
     def load_hist_f(self):
@@ -321,9 +322,10 @@ class LoadData(object):
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
             self.load_timings['Averaging: ']['adiab_ener'] = time.time() - self.load_timings['Averaging: ']['adiab_ener']
         
-        if any('qm' in j for j in self.plot_params):
+        if any(['qm' in j  for j in self.plot_params]):
             self.load_timings['Averaging: ']['qm'] = time.time()
-            self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
+            if 'qm_r' in self.plot_params:
+                self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - self.load_timings['Averaging: ']['qm']
         
@@ -556,7 +558,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 
             print(tab+" "*max_len_str+'#')
             print('#'*tabN+'#'*max_len_str+'#')
-    'all'
+
     def _fill_in_the_title(self):
         """
         Will replace certain words in the title with parameters used in the
@@ -602,10 +604,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             AX.spines['bottom'].set_visible(False)
             AX.spines['left'].set_visible(True)
             AX.grid('on', alpha=0.5)
-            
+#            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis
         try:
-            self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)")
+            self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)", fontsize=27)
         except IndexError:
             pass
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
