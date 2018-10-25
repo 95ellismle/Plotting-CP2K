@@ -28,10 +28,11 @@ class QM_R(object):
         
         self._plot_avg_qm_vs_pos()
         
-        self._set_Qlk_control()
+#        self._set_Qlk_control()
         
-        self.qm_plot_ax.set_xlabel("R [au]")
-        self.qm_plot_ax.set_ylabel(r"$\langle$ Q$_{1,2, \nu}^{J}$ $\rangle_{J}$")
+        self.qm_plot_ax.set_xlabel("R [au]", fontsize=28)
+        self.qm_plot_ax.set_ylabel(r"${Q^{J}_{12, \nu}}$",
+                                   fontsize=28)
     
     def _match_timesteps_Qlk_pos(self, all_Qlk_data, all_pos_data):
         """
@@ -75,37 +76,59 @@ class QM_R(object):
         """
         
         # First get shared timesteps between Qlk and pos
-        self.avg_QM_data, avg_pos = self._match_timesteps_Qlk_pos(self.avg_Qlk_data, self.avg_pos_data)
+        all_QM_data, all_pos = self._match_timesteps_Qlk_pos(self.all_Qlk_data, self.all_pos_data)
         
+        Qkeys = list(self.all_Qlk_data.keys())
         cart_dim = 1
-        self.Qlk_ntimesteps = len(self.avg_QM_data['avg_Qlk'][0][0])
-        natom = np.max(self.avg_Qlk_data['avg_Qlk'][0][1][0,:,0])
-        self.Qlk_pos_avg_lines = [[],[],[]]
-        
+        self.Qlk_ntimesteps = len(self.all_Qlk_data[Qkeys[0]][0][0])
+        natom = np.max(self.all_Qlk_data[Qkeys[0]][0][1][0,:,0])
+        self.cart_lines = [[],[],[]]
+        self.at_lines   = [[] for i in range(natom)]
         cart_cols = ['r','g','b']
         
-        all_QM_data = [[],[],[]]
-        for cart_dim in range(3):
-            for timestep in range(self.Qlk_ntimesteps):
-                # Find all the QM_data for each atom
-                QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], 
-                                               params   =      {'at_num':at_num, 
-                                                                'cart_dim':cart_dim+1,
-                                                                'lk':(1,2)})[timestep][0]
-                                    for at_num in range(1,natom+1)]
-                line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], 
-                                             QM_data, 'o', color=cart_cols[cart_dim])
-                self.Qlk_pos_avg_lines[cart_dim].append(line)
-                all_QM_data[cart_dim].append(QM_data)
-            
+        #Best thing to do here is store everything in a 1D list and create 3 
+        # mappings. 1 to map lines to cartesian dimension and 1 to map the line
+        # to the atom index and 1 to map the line to the timestep. These can be
+        # used to control the plotting.
+#        for Qrep, Rrep in zip(self.all_Qlk_data, all_pos):
+#            for cart_dim in range(3):
+##                for at_num in range(1,natom+1):
+#                    at_num = 1
+#                    # Find all the QM_data for each atom
+#                    QM_data = load_QM.find_in_Qlk(all_QM_data[Qrep][0], 
+#                                                  params  =  {'at_num':at_num, 
+#                                                              'cart_dim':cart_dim+1,
+#                                                              'lk':(1,2)})
+#                    line, = self.qm_plot_ax.plot(all_pos[Rrep][0][0][:,at_num, cart_dim], 
+#                                                 QM_data[:,0], 'o', color=self.colors[at_num])
+#                    
+#                    self.cart_lines[cart_dim].append(line)
+#                    self.at_lines[at_num-1].append(line)
+#            
+        for irep, (Qrep, Rrep) in enumerate(zip(self.all_Qlk_data, all_pos)):
+            print("Plotted rep %i"%irep)
+            for cart_dim in range(3):
+                for dt in range(self.Qlk_ntimesteps):
+                    # Find all the QM_data for each atom
+                    QM_data = [load_QM.find_in_Qlk(all_QM_data[Qrep][0], 
+                                                  params  =  {'at_num':at_num,
+                                                          'cart_dim':cart_dim+1,
+                                                          'lk':(1,2)})[dt] 
+                                                    for at_num in range(1,2)]
+                    line, = self.qm_plot_ax.plot(all_pos[Rrep][0][0][dt,1, cart_dim], 
+                                                 QM_data, 'o', color=self.colors[cart_dim])
+                    
+#                    self.cart_lines[cart_dim].append(line)
+#                    self.at_lines[at_num-1].append(line)       
+        
 #        self.qm_plot_ax.set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
 #        self.qm_plot_ax.autoscale()#set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
         
-        for cart_dim in range(3):
-            for line in self.Qlk_pos_avg_lines[cart_dim]:
-                line.set_visible(False)
-            if self.Qlk_cart_dims[cart_dim]:
-                self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(True)
+#        for cart_dim in range(3):
+#            for line in self.Qlk_pos_avg_lines[cart_dim]:
+#                line.set_visible(False)
+#            if self.Qlk_cart_dims[cart_dim]:
+#                self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(True)
         
     
     def _set_Qlk_control(self):
@@ -117,7 +140,7 @@ class QM_R(object):
         self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
         self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
         
-        self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
+        self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0)#, valstep=1)
         self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
         
         self.Qlk_vlines = [self.axes[param][1].axvline(self.current_dt*self.MD_dt) for param in self.non_qlk_params]

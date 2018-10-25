@@ -34,7 +34,7 @@ class fl_fk(object):
         fl_fk.colors = self.colors
         if self._use_control:    fl_fk._set_control()
         
-        fl_fk.plot_ax.set_ylabel(r"$( f_{k} - f_{l} )$")
+        fl_fk.plot_ax.set_ylabel(r"$( f_{k} - f_{l} )$", fontsize=28)
     
     @staticmethod
     def _plot_sum(self):
@@ -54,10 +54,6 @@ class fl_fk(object):
                 
                 self.Fl_Fk = (fl-fk)
                 for iat in range(fl_fk.natom):
-#                    cl_ck = self.all_Acoeff_data_avg[-1][:,l] \
-#                          * self.all_Acoeff_data_avg[-1][:,k] \
-#                          * len(self.all_tintf_data)
-#                    
                     for idim in range(3):
                         ln, = fl_fk.plot_ax.plot(timesteps, 
                                              self.Fl_Fk[:,iat,idim], 
@@ -120,7 +116,6 @@ class fl_fk(object):
         Will determine what coloring scheme to use in the plots
         """
         if label == 'X':
-            fl_fk.xyz[0] = not fl_fk.xyz[0]
             fl_fk.xyz[0] = not fl_fk.xyz[0]
             for iat, line in enumerate(fl_fk.sum_rep_lines[0]):
                 line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[0])
