@@ -119,6 +119,23 @@ def files_with_correct_reps(files, reps):
 
 # Will apply a function to load all relevant files in a folder
 def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
+    """
+    Will repeat a file loading function for all files in a folder depending on 
+    what rules for finding the files are specified in the arguments.
+    
+    Inputs:
+        * folder  =>  folder to look in for files [str]
+        * func    =>  func to apply to each file  [func]
+        * args    =>  arguments to be applied to the file loading function in 
+                      order [list]
+        * filename_must_not_contain => any strs the filenames must not contain
+        * filename_must_contain     => any strs the filenames must contain
+        * reps    => Which reps to load (can be 'all' or list of ints)
+    
+    Outputs:
+        * A dictionary with filenames as keys and the return of the func passed
+          as values.
+    """
     if not os.path.isdir(folder):
             raise SystemError("Sorry the folder given can't be found...")
     else:

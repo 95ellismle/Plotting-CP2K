@@ -84,27 +84,7 @@ class QM_R(object):
         natom = np.max(self.all_Qlk_data[Qkeys[0]][0][1][0,:,0])
         self.cart_lines = [[],[],[]]
         self.at_lines   = [[] for i in range(natom)]
-        cart_cols = ['r','g','b']
-        
-        #Best thing to do here is store everything in a 1D list and create 3 
-        # mappings. 1 to map lines to cartesian dimension and 1 to map the line
-        # to the atom index and 1 to map the line to the timestep. These can be
-        # used to control the plotting.
-#        for Qrep, Rrep in zip(self.all_Qlk_data, all_pos):
-#            for cart_dim in range(3):
-##                for at_num in range(1,natom+1):
-#                    at_num = 1
-#                    # Find all the QM_data for each atom
-#                    QM_data = load_QM.find_in_Qlk(all_QM_data[Qrep][0], 
-#                                                  params  =  {'at_num':at_num, 
-#                                                              'cart_dim':cart_dim+1,
-#                                                              'lk':(1,2)})
-#                    line, = self.qm_plot_ax.plot(all_pos[Rrep][0][0][:,at_num, cart_dim], 
-#                                                 QM_data[:,0], 'o', color=self.colors[at_num])
-#                    
-#                    self.cart_lines[cart_dim].append(line)
-#                    self.at_lines[at_num-1].append(line)
-#            
+
         for irep, (Qrep, Rrep) in enumerate(zip(self.all_Qlk_data, all_pos)):
             print("Plotted rep %i"%irep)
             for cart_dim in range(3):
