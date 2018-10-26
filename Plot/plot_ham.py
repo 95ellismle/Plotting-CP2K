@@ -147,7 +147,7 @@ class Coupling(object):
         """
         Will plot the off-diagonal hamiltonian elements.
         """
-        avg_Hs,timesteps = self.avg_ham_data['avg_ham']
+        avg_Hs, _, timesteps = self.avg_ham_data['avg_ham']
 #        avg_coups = np.tril(avg_Hs[0])
         avg_coups = avg_Hs[:,0,1]
-        self.coup_plot_ax.plot(timesteps, avg_coups)        
+#        self.coup_plot_ax.plot(timesteps, avg_coups)        

@@ -32,17 +32,18 @@ import datetime
 from matplotlib.widgets import MultiCursor
 from collections import OrderedDict
 import time
+#import os
 
 
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '../Data/200Rep_2mol_QM_tint_0'  
-plotting_parameters = ['fl_fk', 'qm_t']
-replicas            = range(3,4)
+folder              = '../Data/200Rep_2mol'  
+root_folder = '/home/Sangeya/Documents/PhD/Code/Data/Num_Rep_Convergence'
+folder = fold.make_fold_abs(root_folder) + 'NUMBER_REPLICA=15'
+plotting_parameters = ['coup', '|C|^2']
+replicas            = range(4,5)
 ###############
-
-
 
 
 
@@ -64,7 +65,7 @@ class Params(object):
         
         self._correct_plot_params()
 #        self._get_alpha()
-        self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
+        self._get_inp_data()
 
         self._set_title()
 #        self.title = r"Adiab coeffs evolution under **CT/Eh** -**irep** reps (with renormalisation)"
@@ -77,13 +78,23 @@ class Params(object):
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time      = 'all'    #(in fs)
+        self.max_time      = 150    #(in fs)
         self.min_time      = 0      #(in fs)
         self.quick_stride  = 0.1    #(in fs)
         self.slow_stride   = 0.1    #(in fs)
         
         self._fix_load_timings()
         
+    def _get_inp_data(self):
+        """
+        Will recursively retrieve all the data from the run.inp file.
+        """
+        with open(self.folder+'run.inp', 'r') as f:
+            inp_file = f.read().split('\n')
+        self.nested_inp_params = {}
+        self.run_inp_params  = {}
+        load_inp.parse_inp_file(self.nested_inp_params, self.run_inp_params, inp_file)
+    
     def _fix_load_timings(self):
         """
         Will convert the times to load into step numbers to pass into the 
@@ -212,7 +223,14 @@ class LoadData(object):
         specified (dependent on which reps are requested)
         """
         self.load_timings['H'] = time.time()
-        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, reps=self.reps, max_step=self.max_time, min_step=self.min_time, stride=self.quick_stride)
+        print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
+        if type(self.max_time) == str: max_step = self.max_time
+        else: max_step = int(self.max_time/print_step)
+        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, 
+                                                            reps=self.reps, 
+                                                            max_step=max_step, 
+                                                            min_step=self.min_time, 
+                                                            stride=self.quick_stride)
         self.avg_ham_data = plot_utils.avg_H_data_dict(self.all_ham_data)
         self.avg_site_ener, self.avg_couplings, self.avg_avg_couplings, self.Stimesteps = plot_utils.get_coup_data(self.avg_ham_data, 'avg_ham')
         self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data, ham_key) for ham_key in self.all_ham_data]
@@ -229,11 +247,14 @@ class LoadData(object):
         """
         if any(j in i for j in ('norm','|u|^2') for i in self.plot_params):
             self.load_timings['di coeff'] = time.time()
+            print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['COEFFICIENTS']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(self.folder, 
                                                                        filename_must_contain=['xyz','coeff'], 
                                                                        filename_must_not_contain=['ad'], 
                                                                        reps=self.reps,
-                                                                       max_step=self.max_time, 
+                                                                       max_step=max_step, 
                                                                        min_step=self.min_time, 
                                                                        stride=self.quick_stride)
             self.load_timings['di coeff'] = time.time() - self.load_timings['di coeff']
@@ -244,12 +265,14 @@ class LoadData(object):
         """
         if '|c|^2' in self.plot_params or \
            (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
-               
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['AD_COEFF']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.load_timings['ad coeff'] = time.time()
             self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, 
                                                                self.reps, 
                                                                self.all_ham_data,
-                                                               max_step=self.max_time, 
+                                                               max_step=max_step, 
                                                                min_step=self.min_time, 
                                                                stride=self.quick_stride)
             self.load_timings['ad coeff'] = time.time() - self.load_timings['ad coeff']
@@ -260,8 +283,12 @@ class LoadData(object):
         """
         if 'adiab_states' in self.plot_params:
             self.load_timings['adiab ener'] = time.time()
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = self.max_time*self.run_inp_params['NUCLEAR_TIMESTEP']
+
             self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, 
-                                                               reps=self.reps)
+                                                               reps=self.reps, 
+                                                               max_time=max_step)
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
@@ -272,15 +299,21 @@ class LoadData(object):
         """
         if any(['qm' in j  for j in self.plot_params]):
             self.load_timings['QM'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['QM']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, 
                                                                 reps=self.reps,
-                                                                max_step=self.max_time, 
+                                                                max_step=max_step, 
                                                                 min_step=self.min_time, 
                                                                 stride=self.slow_stride)
             if 'qm_r' in self.plot_params:
+                print_step = self.nested_inp_params['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD'][0]
+                if type(self.max_time) == str: max_step = self.max_time
+                else: max_step = int(self.max_time/print_step)
                 self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
                                                                     reps=self.reps,
-                                                                    max_step=self.max_time, 
+                                                                    max_step=max_step, 
                                                                     min_step=self.min_time, 
                                                                     stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
@@ -291,9 +324,12 @@ class LoadData(object):
         """
         if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             self.load_timings['history forces'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['T_INT_FORCE']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_tintf_data = load_tintf.load_all_tintf_in_folder(folder, 
                                                                       reps=self.reps,
-                                                                      max_step=self.max_time,
+                                                                      max_step=max_step,
                                                                       min_step=self.min_time,
                                                                       stride  = self.slow_stride)
             self.load_timings['history forces'] = time.time() - self.load_timings['history forces']
@@ -382,6 +418,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         LoadData.__init__(self, folder, reps, self.plot_params)
         self.reps = reps
         self.xlabel = "Time (fs)"
+        self.plot_info = {}
         
         self._create_ax_fig_layout()
         
@@ -516,10 +553,11 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         , how many replicas were used and how many molecules.
         """
         
-        
-        
         # Build the strs list
         str_sections = {'Date/Time':[], 'Ehrenfest':[], 'CTMQC':[]}
+        for i in self.plot_info:
+            str_sections[i] = self.plot_info[i]
+        
         
         strs = str_sections['Date/Time']
         strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Time of plot = %H:%M"))
@@ -621,14 +659,28 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 
 #/scratch/mellis/flavoured-cptk/200Rep_3mol
 folder = fold.make_fold_abs(folder)
-
-
-t1 = time.time()
 p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
-t2 = time.time()
 
-print("Total time taken = %.0e"%(t2-t1))
-
+# Will plot all norms in a folder
+#root_folder = '/home/Sangeya/Documents/PhD/Code/Data/Num_Rep_Convergence'
+#root_folder = fold.make_fold_abs(root_folder)
+#reps, drifts = [], []
+#for folder in os.listdir(root_folder)[:6]:
+#    folder = root_folder + folder
+#    if "NUMBER_REPLICA" in folder:
+#        print(folder)
+#        folder = fold.make_fold_abs(folder)
+#        
+#        t1 = time.time()
+#        p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
+#        t2 = time.time()
+#        
+#        reps.append(p.num_reps)
+#        drifts.append(p.norm_drift)
+#        print("Total time taken = %.0e"%(t2-t1))
+        
+        
+        
 ## Will plot many variations of replica number
 #for i in range(2,100,1):
 #    replicas = range(1,i)    
