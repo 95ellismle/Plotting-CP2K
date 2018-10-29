@@ -34,7 +34,7 @@ class fl_fk(object):
         fl_fk.colors = self.colors
         if self._use_control:    fl_fk._set_control()
         
-        fl_fk.plot_ax.set_ylabel(r"$( f_{k} - f_{l} )$")
+        fl_fk.plot_ax.set_ylabel(r"$|C_{k}|^2|C_{l}|^2( f_{k} - f_{l} )$")
     
     @staticmethod
     def _plot_sum(self):
@@ -86,7 +86,7 @@ class fl_fk(object):
                 for idim in range(3):
                     ln, = fl_fk.plot_ax.plot(timesteps, 
                                              data[:,iat,idim], 
-                                             color=self.colors[idim], 
+                                             color=self.colors[iat], 
                                              lw=1.2)
                     fl_fk.sum_rep_lines[idim].append(ln)
         
@@ -106,7 +106,7 @@ class fl_fk(object):
         fl_fk.xyz_control.on_clicked(fl_fk._cart_control)
         
 #        fl_fk.widget_ax[1].set_title("Color by:", fontsize=15)
-        fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['XYZ', 'atom'])
+        fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['atom', 'xyz'])
         fl_fk.color_control.on_clicked(fl_fk._color_control)
         
         if len(fl_fk.widget_ax) > 2:
@@ -129,7 +129,7 @@ class fl_fk(object):
         """
         Will control what coloring to use in the plots
         """
-        if label == "XYZ":
+        if label == "xyz":
             for idim, lines in enumerate(fl_fk.sum_rep_lines):
                 for line in lines:
                     line.set_color(fl_fk.colors[idim])

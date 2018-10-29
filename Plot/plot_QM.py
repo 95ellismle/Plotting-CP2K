@@ -93,6 +93,7 @@ class QM_R(object):
                                                                 'cart_dim':cart_dim+1,
                                                                 'lk':(1,2)})[timestep][0]
                                     for at_num in range(1,natom+1)]
+    
                 line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], 
                                              QM_data, 'o', color=cart_cols[cart_dim])
                 self.Qlk_pos_avg_lines[cart_dim].append(line)
@@ -172,58 +173,61 @@ class QM_t(object):
         self.all_reps_Qlk_t = False
         
         #Plotting
-        self._plot_all_rep_Qlk_t()
+#        self._plot_all_rep_Qlk_t()
         self._plot_avg_QM_t()
         
         #Connect checkboxes to plot control
-        if self._use_control:    self._set_Qlk_t_control()
+#        if self._use_control:    self._set_Qlk_t_control()
         
         self.plot_ax.set_ylabel(r"$|Q_{12,\nu}^{(I)}|^{2}$")
     
-    def _check_settings_Qlk_t(self, label):
-        if label == 'all replicas': #Pressed the all replicas button
-            for line in self.all_Qlk_t_lines:
-                line.set_visible(not line.get_visible())
-                
-        elif label == 'average':
-            for line in self.avg_qlk_t_lines:
-                line.set_visible(not line.get_visible())
-        plt.draw()
+#    def _check_settings_Qlk_t(self, label):
+#        if label == 'all replicas': #Pressed the all replicas button
+#            for line in self.all_Qlk_t_lines:
+#                line.set_visible(not line.get_visible())
+#                
+#        elif label == 'average':
+#            for line in self.avg_qlk_t_lines:
+#                line.set_visible(not line.get_visible())
+#        plt.draw()
             
-    #Will set the control panel for Qlk_t graph
-    def _set_Qlk_t_control(self):
-        self.check_Qlk_t = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_Qlk_t, self.avg_reps_Qlk_t))
-        self.check_Qlk_t.on_clicked(self._check_settings_Qlk_t)
+#    #Will set the control panel for Qlk_t graph
+#    def _set_Qlk_t_control(self):
+#        self.check_Qlk_t = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_Qlk_t, self.avg_reps_Qlk_t))
+#        self.check_Qlk_t.on_clicked(self._check_settings_Qlk_t)
         
-    #Will plot the all replica Qlk_ts
-    def _plot_all_rep_Qlk_t(self):
-        """
-        Will plot all the Qlk vs time lines for each replica
-        """
-        self.all_Qlk_t_lines = []
-        
-        ax = self.axes['qm_t'][1]
-        for Qlk_filename in self.all_Qlk_data:
-#                Qlk_filename = 'run-QM-1.xyz'
-            Qlk_data = self.all_Qlk_data[Qlk_filename]
-            Qlk_timesteps = Qlk_data[1]
-            Qlk_data = Qlk_data[0]
-            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
-            for iatom in range(1,num_atoms+1):
-#                        if any(iatom == j for j in (2,4,11,8,1)): continue
-                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-                
-                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
-#                        QM_mag /= np.max(QM_mag)
-                ln, = ax.plot(Qlk_timesteps, QMX, label="atom %i"%iatom, color=self.colors[iatom])
-                self.all_Qlk_t_lines.append(ln)
-            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
-            
-        #Initialise the replica lines
-        for line in self.all_Qlk_t_lines:
-            line.set_visible(self.all_reps_Qlk_t)
+#    #Will plot the all replica Qlk_ts
+#    def _plot_all_rep_Qlk_t(self):
+#        """
+#        Will plot all the Qlk vs time lines for each replica
+#        """
+#        self.all_Qlk_t_lines = []
+#        
+#        ax = self.axes['qm_t'][1]
+#        for Qlk_filename in self.all_Qlk_data:
+##                Qlk_filename = 'run-QM-1.xyz'
+#            Qlk_data = self.all_Qlk_data[Qlk_filename]
+#            Qlk_timesteps = Qlk_data[1]
+#            Qlk_data = Qlk_data[0]
+#            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
+#            for iatom in range(1,num_atoms+1):
+##                        if any(iatom == j for j in (2,4,11,8,1)): continue
+#                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+#                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+#                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+#                
+#                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
+##                        QM_mag /= np.max(QM_mag)
+#                ln, = ax.plot(Qlk_timesteps, 
+#                              QM_mag, 
+#                              label="atom %i"%iatom, 
+#                              color=self.colors[iatom-1])
+#                self.all_Qlk_t_lines.append(ln)
+#            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
+#            
+#        #Initialise the replica lines
+#        for line in self.all_Qlk_t_lines:
+#            line.set_visible(self.all_reps_Qlk_t)
 
     #Will plot the Quantum Momentum term
     def _plot_avg_QM_t(self):
@@ -243,7 +247,10 @@ class QM_t(object):
             QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
             QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
 #                        QM_mag /= np.max(QM_mag)
-            ln, = ax.plot(Qlk_timesteps, QMX, label="atom %i"%iatom, color=self.colors[iatom])
+            ln, = ax.plot(Qlk_timesteps, 
+                          QM_mag, 
+                          label="atom %i"%iatom, 
+                          color=self.colors[iatom-1])
             self.avg_qlk_t_lines.append(ln)
 
 
