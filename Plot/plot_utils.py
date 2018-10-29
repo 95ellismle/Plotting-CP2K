@@ -232,7 +232,7 @@ def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
             fl = np.array([i[Tcols[0,:,1] == str(l+1)] for i in Tdata])
             Clk = pops[:,l] * pops[:,k]
             
-            tmp = [Clk[i] * F for i, F in enumerate(fk-fl)]            
+            tmp = [Clk[i] * F for i, F in enumerate(fl-fk)]            
             all_tintf_lk['%i%i'%(l,k)] += tmp
         
     Tsteps = all_tintf_data[list(all_tintf_data.keys())[0]][1]
@@ -273,7 +273,7 @@ def match_timesteps_4col_2col(data_4col, data_2col):
     data4, cols4, timesteps4, populations4   = data_4col
     DCT1, DCT2, mask1, mask2 = match_timesteps([data2, cols2, timesteps2], 
                                                [data4, cols4, timesteps4])
-    populations4 = populations4[mask1]
+    populations4 = populations4[mask2]
     
     return [data4, cols4, timesteps4, populations4], [(data2, cols2), timesteps2]
     

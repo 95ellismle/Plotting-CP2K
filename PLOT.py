@@ -37,8 +37,8 @@ import time
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'  
-plotting_parameters = ['qm_t', 'fl_fk']
+folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'
+plotting_parameters = [ '|c|^2', 'norm']
 replicas            = 'all'
 ###############
 
@@ -77,7 +77,7 @@ class Params(object):
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time      = 100    #(in fs)
+        self.max_time      = 'all'    #(in fs)
         self.min_time      = 0      #(in fs)
         self.quick_stride  = 0.1    #(in fs)
         self.slow_stride   = 0.1    #(in fs)
