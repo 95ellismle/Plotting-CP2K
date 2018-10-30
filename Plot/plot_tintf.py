@@ -6,7 +6,7 @@ Created on Tue Oct 16 16:42:54 2018
 @author: mellis
 """
 import matplotlib.pyplot as plt
-from matplotlib.widgets import CheckButtons, RadioButtons
+from matplotlib.widgets import CheckButtons, RadioButtons, TextBox
 import itertools as IT
 import numpy as np
 
@@ -90,7 +90,7 @@ class fl_fk(object):
                                              color=self.colors[iat], 
                                              lw=1.2)
                     fl_fk.sum_rep_lines[idim].append(ln)
-        
+        fl_fk.Xlines, fl_fk.Ylines, fl_fk.Zlines = fl_fk.sum_rep_lines
         for idim, lines in enumerate(fl_fk.sum_rep_lines):
             for line in lines:
                 line.set_visible(fl_fk.xyz[idim])
@@ -110,11 +110,8 @@ class fl_fk(object):
         fl_fk.color_control = RadioButtons(fl_fk.widget_ax[1], ['atom', 'xyz'])
         fl_fk.color_control.on_clicked(fl_fk._color_control)
         
-        if len(fl_fk.widget_ax) > 2:
-            fl_fk.atom_control = CheckButtons(fl_fk.widget_ax[2], 
-                                              ['atom %i'%(i+1) for i in range(fl_fk.natom)], 
-                                              fl_fk.ats_to_plot)
-            fl_fk.atom_control.on_clicked(fl_fk._atom_control)
+        fl_fk.textbox = TextBox(fl_fk.widget_ax[2], 'Atoms:', initial="all")
+        fl_fk.textbox.on_submit(fl_fk._submit_text)
         
     
     @staticmethod
@@ -158,43 +155,52 @@ class fl_fk(object):
             for iat, line in enumerate(fl_fk.sum_rep_lines[2]):
                 line.set_visible(fl_fk.ats_to_plot[iat] and fl_fk.xyz[2])
         plt.draw()
+    
+    @staticmethod
+    def _turn_on_atoms(Min, Max, type_switch='opposite'):
+        """
+        Will turn on atoms in a given range dependent on the current state of 
+        the X, Y and Z checkboxes
+        """
+        poss_lines   = [fl_fk.Xlines, fl_fk.Ylines, fl_fk.Zlines]
+        all_switches = fl_fk.xyz
+        for i, test in enumerate(all_switches):
+            if test:
+                for ln in poss_lines[i][ Min:Max ]:
+                    if type_switch == 'opposite':
+                        ln.set_visible(not ln.set_visible)
+                    else:
+                        ln.set_visible(type_switch)
+        plt.draw()
         
+    @staticmethod
+    def _submit_text(text):
+        """
+        Will decide which atoms to plot from the submitted text in the text box
+        """
+        if text == 'all':
+            fl_fk._turn_on_atoms(0,len(fl_fk.Xlines), True)
+        else:
+            text = text.split(',')
+            for item in text:
+                minmax = item.split('-')
+                if len(minmax) == 2:
+                    Min, Max = minmax
+                    if Max == ':':
+                        Max = len(fl_fk.Xlines)
+                    try:
+                        Min = int(Min)
+                        Max = int(Max)
+                    except:
+                        print("Tried to convert '%s' to ints but couldn't"%item)
+                elif len(minmax) == 1:
+                    try:
+                        Min = int(minmax[0])
+                        Max = int(minmax[0])+1
+                    except:
+                        print("Tried to convert '%s' to ints but couldn't"%item)
+                if Max > len(fl_fk.Xlines):
+                    Max = len(fl_fk.Xlines)
+                fl_fk._turn_on_atoms(0,len(fl_fk.Xlines), False)
+                fl_fk._turn_on_atoms(Min, Max, True)
         
-        
-#    @staticmethod
-#    def _plot_all(self):
-#        """
-#        Will plot the average (over replicas) of the f_l - f_k data.
-#        """
-#        fl_fk.all_rep_lines = [[],[],[]]
-#        for Trep in self.all_tintf_data:
-#            (data, cols), timesteps = self.all_tintf_data[Trep]
-#            fl_fk.nstates = max(cols[0,:,1].astype(int))
-#            fl_fk.natom   = int(len(data[0])/fl_fk.nstates)
-#            all_combs = IT.combinations(range(fl_fk.nstates), 2)
-#            for l, k in all_combs:
-#                for iat in range(fl_fk.natom):
-#                    fk = data[cols[:,:,1] == str(k+1)]
-#                    fl = data[cols[:,:,1] == str(l+1)]
-#                    
-#                    fk = np.array([fk[12*dt:12*(dt+1)] for dt in range(len(data))])
-#                    fl = np.array([fl[12*dt:12*(dt+1)] for dt in range(len(data))])
-#                    
-#                    Fl_Fk = fl-fk
-#                    
-#                    cl_ck = self.all_Acoeff_data_avg[-1][:,l] \
-#                          * self.all_Acoeff_data_avg[-1][:,k] \
-#                          * len(self.all_tintf_data)
-#                    
-#                    for idim in range(3):
-#                        ln, = fl_fk.plot_ax.plot(timesteps, 
-#                                             Fl_Fk[:,iat,idim]*cl_ck, 
-#                                             color=self.colors[idim], 
-#                                             lw=0.7, 
-#                                             alpha=self.alpha)
-#                        fl_fk.all_rep_lines[idim].append(ln)
-#        
-#        for idim, lines in enumerate(fl_fk.all_rep_lines):
-#            for line in lines:
-#                line.set_visible(fl_fk.xyz[idim])    
-                

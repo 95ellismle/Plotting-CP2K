@@ -40,7 +40,7 @@ import time
 #CTMQC_low_coup_2mol
 folder = '/scratch/mellis/flavoured-cptk/200Rep_2mol/'
 #folder              = '../Data/run-fssh-0/'
-plotting_parameters = [ '|C|^2', 'qm_t']
+plotting_parameters = ['qm_t', 'fl_fk']
 replicas            = 'all'
 #
 #folder              = '../Data/200Rep_2mol'  
@@ -498,7 +498,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.axes['qm_r'][0][0] = self._clean_widget_axes(self.axes['qm_r'][0][0])
             self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
     
-    def _2_pane_special_case(self, ax_name):
+    def _N_pane_special_case(self, num_panes, ax_name):
         """
         Will create a special case control panel for axes with 2 panes. The 
         slightly odd ax_name input is to enable multiple substring matches
@@ -510,17 +510,17 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         """
         if all([any(name in j for j in self.plot_params) for name in ax_name]):
             ax_name = '_'.join(ax_name).strip('_')
-            self.axes[ax_name] = [[plt.subplot2grid( (len(self.plot_params)*2,7),
-                                          (self.plot_params.index(ax_name)*2,0), 
-                                          colspan=1),
-                           plt.subplot2grid( (len(self.plot_params)*2,7),
-                                          (self.plot_params.index(ax_name)*2+1,0), 
-                                          colspan=1)],
+            widg_ax = []
+            for i in range(num_panes):
+                widg_ax.append(plt.subplot2grid( (len(self.plot_params)*num_panes,7),
+                                          (self.plot_params.index(ax_name)*num_panes+i,0), 
+                                          colspan=1))
+            self.axes[ax_name] = [widg_ax,
                            plt.subplot2grid( (len(self.plot_params),7),
                                           (self.plot_params.index(ax_name),1), 
                                           colspan=6)]
-            self.axes[ax_name][0][0] = self._clean_widget_axes(self.axes[ax_name][0][0])
-            self.axes[ax_name][0][1] = self._clean_widget_axes(self.axes[ax_name][0][1])
+            for i in range(num_panes):
+                self.axes[ax_name][0][i] = self._clean_widget_axes(self.axes[ax_name][0][i])
     
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):
@@ -548,8 +548,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
         self._QM_r_axis_special_case()
-        self._2_pane_special_case(['fl','fk'])
-        self._2_pane_special_case(['qm_t'])
+        self._N_pane_special_case(3, ['fl','fk'])
+        self._N_pane_special_case(3, ['qm_t'])
     
         
     def print_final_info(self):
@@ -701,3 +701,30 @@ p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
 #        filename += "%i_comm.png"%(p.num_reps)
 #    p.f.savefig(filename)
 
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+"""
+[plt.subplot2grid( (len(self.plot_params)*num_panes,7),
+                                          (self.plot_params.index(ax_name)*num_panes,0), 
+                                          colspan=1),
+                           plt.subplot2grid( (len(self.plot_params)*num_panes,7),
+                                          (self.plot_params.index(ax_name)*num_panes+1,0), 
+                                          colspan=1)]"""
