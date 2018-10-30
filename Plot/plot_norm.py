@@ -8,6 +8,10 @@ Created on Wed Oct  3 15:53:35 2018
 from matplotlib.widgets import CheckButtons
 import matplotlib.pyplot as plt
 import numpy as np
+from scipy.optimize import curve_fit
+
+def linear_fit(x, m ,c):
+    return m*x + c
 
 class Plot_Norm(object):
     """
@@ -18,6 +22,7 @@ class Plot_Norm(object):
                  widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):
+        self.plot_info['Norm'] = []
         self.widget_ax = axes[0]
         self.plot_ax = axes[1]
         
@@ -29,6 +34,7 @@ class Plot_Norm(object):
         self.all_rep_lines_norm = []
         self._plot_all_rep_norm()
         self._plot_norm_graph()
+        Plot_Norm.put_drift_annotation(self)
         
         #Connect checkboxes to plot control
         if self._use_control:    self._set_norm_control()
@@ -51,6 +57,9 @@ class Plot_Norm(object):
         
     #Will plot the all replica norms
     def _plot_all_rep_norm(self):
+        """
+        Will plot all the replicas as thin red lines.
+        """
         self.all_rep_lines_norm = []
         for Dfilename in self.all_Dcoeff_data:
             coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
@@ -60,6 +69,31 @@ class Plot_Norm(object):
         #Initialise the replica lines
         for line in self.all_rep_lines_norm:
             line.set_visible(self.all_reps_norm)
+    
+    @staticmethod
+    def put_drift_annotation(self):
+        """
+        Will put an annotation of the drift value on the norm graph
+        """
+        coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
+        norms = np.sum(pops, axis=1)
+        fit = np.polyfit(timesteps, norms, 1)
+        errs = [1e-10]+[1e-6]*(len(timesteps)-1)
+        fit2, pcov = curve_fit(linear_fit, timesteps, norms, p0=[fit[0], 1], sigma=errs)
+        step = np.mean(np.diff(timesteps))
+        text = r"Avg drift per rep = %.2g ps$^{-1}$"%(fit2[0]*(1000/step))
+        
+        y1 = np.polyval(fit2, timesteps)
+        self.plot_ax.plot(timesteps, y1, 'k--', lw=0.5)
+        
+        all_norms = [np.sum(self.all_Dcoeff_data[i][3], axis=1) for i in self.all_Dcoeff_data]
+        min_x, min_y = min(timesteps), np.min(all_norms)
+        range_x, range_y = max(timesteps) - min(timesteps), np.max(all_norms) - np.min(all_norms)
+        loc = (min_x+0.05*range_x, min_y + 0.85*range_y)
+        
+        self.norm_drift = fit[0]
+        self.plot_ax.annotate(text, loc, fontsize=18)
+        self.plot_info['Norm'].append(text[:text.find('ps')])
 
     #Will plot normal of diabatic coeffs
     def _plot_norm_graph(self):

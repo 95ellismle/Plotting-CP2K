@@ -23,11 +23,16 @@ def load_all_ener_dat(folder, reps):
 
 
 # Will load the adiabtic energy csv
-def load_ener_ad(filepath):  return pd.read_csv(filepath)
-
+def load_ener_ad(filepath, max_time):
+    data = pd.read_csv(filepath)
+    if max_time == 'all':
+        return data
+    else:
+        return data[data['Time'] < max_time]
+    
 # Load all adiabatic energy files in a folder
-def load_all_ener_ad(folder, reps):
-    return Utils.load_all_in_folder(folder, load_ener_ad, filename_must_contain=['csv', 'ad_ener'], reps=reps)
+def load_all_ener_ad(folder, reps, max_time='all'):
+    return Utils.load_all_in_folder(folder, load_ener_ad, args=[max_time], filename_must_contain=['csv', 'ad_ener'], reps=reps)
 
 
 def load_ener_time_data(filepath):

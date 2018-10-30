@@ -1,13 +1,17 @@
-#!/usr/bin/env python2
+#!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 """
-Created on Tue Oct  9 11:00:42 2018
+Created on Thu Oct 25 14:22:12 2018
 
-@author: mellis
+@author: Sangeya
 """
-
 import re
 
+inp_file = "/home/Sangeya/Documents/PhD/Code/Data/200Rep_2mol_QM_tint_0/run.inp"
+
+with open(inp_file, 'r') as f:
+    inp_txt = f.read().split('\n')
+    
 def rm_comment_from_line(line):
     """
     Will remove any comments in a line for parsing.
@@ -38,13 +42,6 @@ def str_to_num(String):
         * If the string can be converted to a number it will be with ints being 
           preferable to floats. Else will return the same string
     """
-    # Convert run.inp settings to bool
-    if type(String) == str:
-        if String.upper() == 'T':
-            return True
-        elif String.upper() == 'F':
-            return False
-    # Convert to number
     try:
         return int(String)
     except ValueError:
@@ -135,3 +132,6 @@ def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=
     if line_ind < len(inp_file)-1:
         parse_inp_file(Dict, non_nested_settings, inp_file, line_ind+1, found_sects)
     
+non_nested_run_inp = {}
+nested_inp = {}
+parse_inp_file(nested_inp, non_nested_run_inp, inp_txt)

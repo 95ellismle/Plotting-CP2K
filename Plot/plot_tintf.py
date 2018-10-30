@@ -27,6 +27,7 @@ class fl_fk(object):
         fl_fk.ats_to_plot = [True]
         fl_fk.all_reps = False
         fl_fk.get_metadata(self)
+        
         #Plotting
         fl_fk._plot_sum_CC(self)
         
@@ -34,7 +35,7 @@ class fl_fk(object):
         fl_fk.colors = self.colors
         if self._use_control:    fl_fk._set_control()
         
-        fl_fk.plot_ax.set_ylabel(r"$|C_{k}|^2|C_{l}|^2( f_{k} - f_{l} )$")
+        fl_fk.plot_ax.set_ylabel(r"$|C_{l}|^2 |C_{k}|^2 ( f_{k} - f_{l} )$", fontsize=28)
     
     @staticmethod
     def _plot_sum(self):
