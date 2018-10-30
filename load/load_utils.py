@@ -88,27 +88,40 @@ Filename after regex = '%s' """%(filename, regex_matches[lab], str(reduced_fname
         raise SystemExit("Sorry I couldn't find the file type (pos, vel, frc, coeff etc...), something went wrong!\n\nFilename = %s"%(filename))     
 
 
-# Will find how many/which replicas are available and return them based on which ones are wanted
-def sort_reps(folder, reps):
-    all_files = os.listdir(folder)
-    labs = ['n-frc', 'd_frc', 'coeff_a', 'n-vel', 'n-pos', 't_frc', 'ham', 'coeff-', 'd_ener', 'QM', 'n-ener_',]
-    files_sorted = {lab:
-                   [f for f in all_files if lab in f] for lab in labs }
-    for lab in labs:
-        avail_reps = [find_rep_num_in_name(f) for f in files_sorted[lab]]
-        break
-            
-    if type(reps) == str:
-        reps = avail_reps
-    elif type(reps) == list:
-        reps = [i for i in reps if i in avail_reps]
-        
-    return reps
+## Will find how many/which replicas are available and return them based on which ones are wanted
+#def sort_reps(folder, reps):
+#    all_files = os.listdir(folder)
+#    labs = ['n-frc', 'd_frc', 'coeff_a', 'n-vel', 'n-pos', 't_frc', 'ham', 'coeff-', 'd_ener', 'QM', 'n-ener_',]
+#    files_sorted = {lab:
+#                   [f for f in all_files if lab in f] for lab in labs }
+#    for lab in labs:
+#        avail_reps = [find_rep_num_in_name(f) for f in files_sorted[lab]]
+#        break
+#            
+#    if type(reps) == str:
+#        reps = avail_reps
+#    elif type(reps) == list:
+#        reps = [i for i in reps if i in avail_reps]
+#        
+#    return reps
 
 
 # Given a list of files and a list of replica numbers find which files match the list of reps
 def files_with_correct_reps(files, reps):
-    rep_nums = {f:find_rep_num_in_name(f) for f in files}
+    try:
+        rep_nums = {f:find_rep_num_in_name(f) for f in files}
+    except:
+        print("""Replica sorting isn't working for this data, switching it off.
+
+This means all data files will be read. 
+
+If this is Surface Hopping this is OK as it does not output different trajectory
+info in the same format as CTMQC.
+
+
+
+""")
+        return files
     files = [i[1] for i in sorted(zip(rep_nums.values(), rep_nums.keys()))]
     if type(reps) == int:
         reps = [reps]
@@ -119,6 +132,23 @@ def files_with_correct_reps(files, reps):
 
 # Will apply a function to load all relevant files in a folder
 def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
+    """
+    Will repeat a file loading function for all files in a folder depending on 
+    what rules for finding the files are specified in the arguments.
+    
+    Inputs:
+        * folder  =>  folder to look in for files [str]
+        * func    =>  func to apply to each file  [func]
+        * args    =>  arguments to be applied to the file loading function in 
+                      order [list]
+        * filename_must_not_contain => any strs the filenames must not contain
+        * filename_must_contain     => any strs the filenames must contain
+        * reps    => Which reps to load (can be 'all' or list of ints)
+    
+    Outputs:
+        * A dictionary with filenames as keys and the return of the func passed
+          as values.
+    """
     if not os.path.isdir(folder):
             raise SystemError("Sorry the folder given can't be found...")
     else:
@@ -133,7 +163,7 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
     for arg in args:
         all_data[arg[0][arg[0].rfind('/')+1:]] = func(*arg)
     if not all_data:
-        raise SystemExit("Sorry there doesn't seem to be any data in the folder!")
+        return False
     return all_data
 
 

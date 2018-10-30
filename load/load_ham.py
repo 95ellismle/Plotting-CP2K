@@ -13,7 +13,7 @@ from load import load_utils as Utils
 def find_num_basis(filepath):
     with open(filepath, 'r') as f:
         for line in f:
-            all_line = [i for i in line.split(' ') if i and '\n' not in i]
+            all_line = [i for i in line.split(' ') if i.strip() and '\n' != i and '\n' != i.strip()]
             num_line = [i for i in all_line if XYZ.is_num(i)]
             if float(len(num_line))/len(all_line) > 0.8:
                 floats_in_num_line = [i for i in num_line if '.' in i]

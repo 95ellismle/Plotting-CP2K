@@ -32,17 +32,23 @@ import datetime
 from matplotlib.widgets import MultiCursor
 from collections import OrderedDict
 import time
+#import os
 
 
 
 ###############
 #CTMQC_low_coup_2mol
-folder              = '/scratch/mellis/flavoured-cptk/200Rep_2mol'
-plotting_parameters = [ '|c|^2', 'norm']
+folder = '/scratch/mellis/flavoured-cptk/200Rep_2mol/'
+#folder              = '../Data/run-fssh-0/'
+plotting_parameters = [ '|C|^2', 'qm_t']
 replicas            = 'all'
+#
+#folder              = '../Data/200Rep_2mol'  
+#root_folder = '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/Num_Rep_Convergence'
+#folder = fold.make_fold_abs(root_folder) + 'NUMBER_REPLICA=15'
+#plotting_parameters = ['norm']
+#replicas            = 'all'
 ###############
-
-
 
 
 
@@ -64,9 +70,10 @@ class Params(object):
         
         self._correct_plot_params()
 #        self._get_alpha()
-        self.run_inp_params = load_inp.get_all_run_inp_variables(self.folder+'run.inp')
+        self._get_inp_data()
 
         self._set_title()
+#        self.title = r"Quantum Momentum and $\sum_{J}|C_1^{ J}|^2|C_2^{ J}|^2(f_1^{J} - f_2^{J})$ for each cartesian dimension for atom 1"
 #        self.title = r"Adiab coeffs evolution under **CT/Eh** -**irep** reps (with renormalisation)"
 
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
@@ -77,13 +84,23 @@ class Params(object):
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time      = 'all'    #(in fs)
+        self.max_time      = 25    #(in fs)
         self.min_time      = 0      #(in fs)
         self.quick_stride  = 0.1    #(in fs)
         self.slow_stride   = 0.1    #(in fs)
         
         self._fix_load_timings()
         
+    def _get_inp_data(self):
+        """
+        Will recursively retrieve all the data from the run.inp file.
+        """
+        with open(self.folder+'run.inp', 'r') as f:
+            inp_file = f.read().split('\n')
+        self.nested_inp_params = {}
+        self.run_inp_params  = {}
+        load_inp.parse_inp_file(self.nested_inp_params, self.run_inp_params, inp_file)
+    
     def _fix_load_timings(self):
         """
         Will convert the times to load into step numbers to pass into the 
@@ -100,7 +117,7 @@ max_time, you can use all, or specify a maximum time in fs.""")
         self.quick_stride = int(self.quick_stride/dt)
         self.slow_stride = int(self.slow_stride/dt)
         
-        if self.max_time < 1: self.max_time = 1 
+        if type(self.max_time) != str and self.max_time < 1: self.max_time = 1 
         if self.min_time < 0: self.min_time = 0
         if self.quick_stride < 1: self.quick_stride = 1 
         if self.slow_stride< 1: self.slow_stride = 1 
@@ -212,7 +229,14 @@ class LoadData(object):
         specified (dependent on which reps are requested)
         """
         self.load_timings['H'] = time.time()
-        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, reps=self.reps, max_step=self.max_time, min_step=self.min_time, stride=self.quick_stride)
+        print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
+        if type(self.max_time) == str: max_step = self.max_time
+        else: max_step = int(self.max_time/print_step)
+        self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, 
+                                                            reps=self.reps, 
+                                                            max_step=max_step, 
+                                                            min_step=self.min_time, 
+                                                            stride=self.quick_stride)
         self.avg_ham_data = plot_utils.avg_H_data_dict(self.all_ham_data)
         self.avg_site_ener, self.avg_couplings, self.avg_avg_couplings, self.Stimesteps = plot_utils.get_coup_data(self.avg_ham_data, 'avg_ham')
         self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data, ham_key) for ham_key in self.all_ham_data]
@@ -229,11 +253,14 @@ class LoadData(object):
         """
         if any(j in i for j in ('norm','|u|^2') for i in self.plot_params):
             self.load_timings['di coeff'] = time.time()
+            print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['COEFFICIENTS']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(self.folder, 
                                                                        filename_must_contain=['xyz','coeff'], 
                                                                        filename_must_not_contain=['ad'], 
                                                                        reps=self.reps,
-                                                                       max_step=self.max_time, 
+                                                                       max_step=max_step, 
                                                                        min_step=self.min_time, 
                                                                        stride=self.quick_stride)
             self.load_timings['di coeff'] = time.time() - self.load_timings['di coeff']
@@ -244,12 +271,17 @@ class LoadData(object):
         """
         if '|c|^2' in self.plot_params or \
            (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
-               
+            try:
+                print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['AD_COEFF']['EACH']['MD'][0]
+            except KeyError:
+                print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['COEFFICIENTS']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.load_timings['ad coeff'] = time.time()
             self.all_Acoeff_data = plot_utils.load_Acoeff_data(self.folder, 
                                                                self.reps, 
                                                                self.all_ham_data,
-                                                               max_step=self.max_time, 
+                                                               max_step=max_step, 
                                                                min_step=self.min_time, 
                                                                stride=self.quick_stride)
             self.load_timings['ad coeff'] = time.time() - self.load_timings['ad coeff']
@@ -260,8 +292,12 @@ class LoadData(object):
         """
         if 'adiab_states' in self.plot_params:
             self.load_timings['adiab ener'] = time.time()
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = self.max_time*self.run_inp_params['NUCLEAR_TIMESTEP']
+
             self.all_ad_ener_data = load_ener.load_all_ener_ad(folder, 
-                                                               reps=self.reps)
+                                                               reps=self.reps, 
+                                                               max_time=max_step)
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
@@ -270,18 +306,25 @@ class LoadData(object):
         """
         Will load the quantum momentum file into the format in load_QM.
         """
-        if any('qm' in j  for j in self.plot_params):
+        if any(['qm' in j  for j in self.plot_params]):
             self.load_timings['QM'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['QM']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_Qlk_data  = load_QM.load_all_Qlk_in_folder(folder, 
                                                                 reps=self.reps,
-                                                                max_step=self.max_time, 
+                                                                max_step=max_step, 
                                                                 min_step=self.min_time, 
                                                                 stride=self.slow_stride)
-            self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
-                                                                reps=self.reps,
-                                                                max_step=self.max_time, 
-                                                                min_step=self.min_time, 
-                                                                stride=self.slow_stride)
+            if 'qm_r' in self.plot_params:
+                print_step = self.nested_inp_params['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD'][0]
+                if type(self.max_time) == str: max_step = self.max_time
+                else: max_step = int(self.max_time/print_step)
+                self.all_pos_data = load_pos.load_all_pos_in_folder(folder, 
+                                                                    reps=self.reps,
+                                                                    max_step=max_step, 
+                                                                    min_step=self.min_time, 
+                                                                    stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
     
     def load_hist_f(self):
@@ -290,9 +333,12 @@ class LoadData(object):
         """
         if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
             self.load_timings['history forces'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['T_INT_FORCE']['EACH']['MD'][0]
+            if type(self.max_time) == str: max_step = self.max_time
+            else: max_step = int(self.max_time/print_step)
             self.all_tintf_data = load_tintf.load_all_tintf_in_folder(folder, 
                                                                       reps=self.reps,
-                                                                      max_step=self.max_time,
+                                                                      max_step=max_step,
                                                                       min_step=self.min_time,
                                                                       stride  = self.slow_stride)
             self.load_timings['history forces'] = time.time() - self.load_timings['history forces']
@@ -321,9 +367,10 @@ class LoadData(object):
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
             self.load_timings['Averaging: ']['adiab_ener'] = time.time() - self.load_timings['Averaging: ']['adiab_ener']
         
-        if any('qm' in j for j in self.plot_params):
+        if any(['qm' in j  for j in self.plot_params]):
             self.load_timings['Averaging: ']['qm'] = time.time()
-            self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
+            if 'qm_r' in self.plot_params:
+                self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - self.load_timings['Averaging: ']['qm']
         
@@ -381,6 +428,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         LoadData.__init__(self, folder, reps, self.plot_params)
         self.reps = reps
         self.xlabel = "Time (fs)"
+        self.plot_info = {}
         
         self._create_ax_fig_layout()
         
@@ -429,7 +477,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         
         return axis
     
-    def _Qlk_axis_special_case(self):
+    def _QM_r_axis_special_case(self):
+        """
+        A special case layout for the qm_r axis
+        """
         if 'qm_r' in self.plot_params:
             self.Qlk_widg_f, ax = plt.subplots(2)
             self.axes['qm_r'] = [0,0] 
@@ -446,37 +497,30 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             
             self.axes['qm_r'][0][0] = self._clean_widget_axes(self.axes['qm_r'][0][0])
             self.axes['qm_r'][0][1] = self._clean_widget_axes(self.axes['qm_r'][0][1])
+    
+    def _2_pane_special_case(self, ax_name):
+        """
+        Will create a special case control panel for axes with 2 panes. The 
+        slightly odd ax_name input is to enable multiple substring matches
+        in a string. It is a list of substrings that are in the axis name. 
         
-    def _flfk_axis_special_case(self):
-        if (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
-            nstates = max(self.sum_tintf_data['sum_tintf'][0][1][0,:,1].astype(int))
-            natom   = int(len(self.sum_tintf_data['sum_tintf'][0][0][0])/nstates)
-            if natom < 10:
-                self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,14),
-                                                      (self.plot_params.index('fl_fk')*2,0), 
-                                                      colspan=1),
-                                       plt.subplot2grid( (len(self.plot_params)*2,14),
-                                                      (self.plot_params.index('fl_fk')*2+1,0), 
-                                                      colspan=1), 
-                                       plt.subplot2grid( (len(self.plot_params)*2,14),
-                                                      (self.plot_params.index('fl_fk')*2,1), 
-                                                      colspan=1, rowspan=2),],
-                                       plt.subplot2grid( (len(self.plot_params),7),
-                                                      (self.plot_params.index('fl_fk'),1), 
-                                                      colspan=6)]
-                self.axes['fl_fk'][0][2] = self._clean_widget_axes(self.axes['fl_fk'][0][2])
-            else:
-                self.axes['fl_fk'] = [[plt.subplot2grid( (len(self.plot_params)*2,7),
-                                                      (self.plot_params.index('fl_fk')*2,0), 
-                                                      colspan=1),
-                                       plt.subplot2grid( (len(self.plot_params)*2,7),
-                                                      (self.plot_params.index('fl_fk')*2+1,0), 
-                                                      colspan=1)],
-                                       plt.subplot2grid( (len(self.plot_params),7),
-                                                      (self.plot_params.index('fl_fk'),1), 
-                                                      colspan=6)]
-            self.axes['fl_fk'][0][0] = self._clean_widget_axes(self.axes['fl_fk'][0][0])
-            self.axes['fl_fk'][0][1] = self._clean_widget_axes(self.axes['fl_fk'][0][1])
+        E.g. if ax_name = ['fl', 'fk'] all axes with both fl and fk in their 
+             name will be found. If ax_name = ['qm_t'] then all axes with qm_t
+             in their name will be found etc...        
+        """
+        if all([any(name in j for j in self.plot_params) for name in ax_name]):
+            ax_name = '_'.join(ax_name).strip('_')
+            self.axes[ax_name] = [[plt.subplot2grid( (len(self.plot_params)*2,7),
+                                          (self.plot_params.index(ax_name)*2,0), 
+                                          colspan=1),
+                           plt.subplot2grid( (len(self.plot_params)*2,7),
+                                          (self.plot_params.index(ax_name)*2+1,0), 
+                                          colspan=1)],
+                           plt.subplot2grid( (len(self.plot_params),7),
+                                          (self.plot_params.index(ax_name),1), 
+                                          colspan=6)]
+            self.axes[ax_name][0][0] = self._clean_widget_axes(self.axes[ax_name][0][0])
+            self.axes[ax_name][0][1] = self._clean_widget_axes(self.axes[ax_name][0][1])
     
     #Decides what arrangement of axes to use
     def _create_ax_fig_layout(self):
@@ -503,8 +547,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         else:
             plt.close()
             raise SystemExit("Sorry I don't have any way to handle more than 3 plots at the same time yet!")
-        self._Qlk_axis_special_case()
-        self._flfk_axis_special_case()
+        self._QM_r_axis_special_case()
+        self._2_pane_special_case(['fl','fk'])
+        self._2_pane_special_case(['qm_t'])
     
         
     def print_final_info(self):
@@ -514,68 +559,72 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         used, whether the run was Ehrenfest or not, the data/time of the plot
         , how many replicas were used and how many molecules.
         """
-        
-        
-        
-        # Build the strs list
-        str_sections = {'Date/Time':[], 'Ehrenfest':[], 'CTMQC':[]}
-        
-        strs = str_sections['Date/Time']
-        strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Time of plot = %H:%M"))
-        strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Date = %d/%m/%Y"))
-        
-        if not self.run_inp_params['USE_QM']:
-            strs = str_sections['Ehrenfest']
-            if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
-            else: strs.append("Commutator was OFF")
-            strs.append("Num Replicas = %i"%self.num_reps)
-        
-        else:
-            strs = str_sections['CTMQC']
-            if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
-            else: strs.append("Commutator was OFF")
-            strs.append("Num Replicas = %i"%self.num_reps)
-            strs.append("Initial Width = %.3g"%self.run_inp_params['INITIAL_SIGMA'])
+        if self.run_inp_params['METHOD_PROPAGATION'] == 'CTMQC':
+            # Build the strs list
+            str_sections = {'Date/Time':[], 'Ehrenfest':[], 'CTMQC':[]}
+            for i in self.plot_info:
+                str_sections[i] = self.plot_info[i]
             
-        # Find max len of string and add a hash to the end of each line
-        max_len_str = np.max([len(i) for j in str_sections for i in str_sections[j]]) + 4
-        str_sections = {sect: [i+ ' '*(max_len_str-len(i))+'#' for i in str_sections[sect]] 
-                               for sect in str_sections}
-        
-        # Do the printing
-        tabN = 6
-        tab = " "*tabN
-        for i in str_sections:
-            if not str_sections[i]: continue
-            strs = str_sections[i]
-            print("\n"+'#'*tabN+'#'*max_len_str+'#')
-            print(i + ' '*(max_len_str-len(i))+tab+'#')
-            print('-'*len(i) + ' '*(max_len_str-len(i))+tab+'#')
-            for line in strs:
-                print(tab+" "*max_len_str+'#')
-                print(tab+line)
+            
+            strs = str_sections['Date/Time']
+            strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Time of plot = %H:%M"))
+            strs.append( datetime.datetime.strftime(datetime.datetime.now(), "Date = %d/%m/%Y"))
+            
+            if not self.run_inp_params['USE_QM']:
+                strs = str_sections['Ehrenfest']
+                if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
+                else: strs.append("Commutator was OFF")
+                strs.append("Num Replicas = %i"%self.num_reps)
+            
+            else:
+                strs = str_sections['CTMQC']
+                if not self.run_inp_params['FAST_EHRENFEST']: strs.append("Commutator was ON")
+                else: strs.append("Commutator was OFF")
+                strs.append("Num Replicas = %i"%self.num_reps)
+                strs.append("Initial Width = %.3g"%self.run_inp_params['INITIAL_SIGMA'])
                 
-            print(tab+" "*max_len_str+'#')
-            print('#'*tabN+'#'*max_len_str+'#')
-    'all'
+            # Find max len of string and add a hash to the end of each line
+            max_len_str = np.max([len(i) for j in str_sections for i in str_sections[j]]) + 4
+            str_sections = {sect: [i+ ' '*(max_len_str-len(i))+'#' for i in str_sections[sect]] 
+                                   for sect in str_sections}
+            
+            # Do the printing
+            tabN = 6
+            tab = " "*tabN
+            for i in str_sections:
+                if not str_sections[i]: continue
+                strs = str_sections[i]
+                print("\n"+'#'*tabN+'#'*max_len_str+'#')
+                print(i + ' '*(max_len_str-len(i))+tab+'#')
+                print('-'*len(i) + ' '*(max_len_str-len(i))+tab+'#')
+                for line in strs:
+                    print(tab+" "*max_len_str+'#')
+                    print(tab+line)
+                    
+                print(tab+" "*max_len_str+'#')
+                print('#'*tabN+'#'*max_len_str+'#')
+
     def _fill_in_the_title(self):
         """
         Will replace certain words in the title with parameters used in the
         graph etc...
         """
-        #Rep num
-        self.title = self.title.replace("**irep**", str(self.num_reps))
-        if self.num_reps > 1: self.title = self.title.replace("replica", "replicas")
-        
-        #Using Comm
-        if self.run_inp_params['FAST_EHRENFEST']:
-            self.title = self.title.replace("**comm**", "off")
-        else: self.title = self.title.replace("**comm**", "on")
-        
-        #Ehrenfest or CTMQC
-        if self.run_inp_params['USE_QM']: 
-            self.title = self.title.replace("**CT/Eh**", "CTMQC")
-        else: self.title = self.title.replace("**CT/Eh**", "Ehrenfest")
+        if self.run_inp_params['METHOD_PROPAGATION'] == 'CTMQC':
+            #Rep num
+            self.title = self.title.replace("**irep**", str(self.num_reps))
+            if self.num_reps > 1: self.title = self.title.replace("replica", "replicas")
+            
+            #Using Comm
+            if self.run_inp_params['FAST_EHRENFEST']:
+                self.title = self.title.replace("**comm**", "off")
+            else: self.title = self.title.replace("**comm**", "on")
+            
+            #Ehrenfest or CTMQC
+            if self.run_inp_params['USE_QM']: 
+                self.title = self.title.replace("**CT/Eh**", "CTMQC")
+            else: self.title = self.title.replace("**CT/Eh**", "Ehrenfest")
+        else:
+            self.title = "%s propagation CP2K"%(self.run_inp_params['METHOD_PROPAGATION'].title().replace("_"," "))
     
     #Will finish off the plots
     def __finalise(self):
@@ -603,10 +652,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             AX.spines['bottom'].set_visible(False)
             AX.spines['left'].set_visible(True)
             AX.grid('on', alpha=0.5)
-            
+#            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis
         try:
-            self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)")
+            self.axes[self.non_qlk_params[-1]][1].set_xlabel("Time (fs)", fontsize=27)
         except IndexError:
             pass
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
@@ -620,14 +669,28 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 
 #/scratch/mellis/flavoured-cptk/200Rep_3mol
 folder = fold.make_fold_abs(folder)
-
-
-t1 = time.time()
 p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
-t2 = time.time()
 
-print("Total time taken = %.0e"%(t2-t1))
-
+# Will plot all norms in a folder
+#root_folder = '/home/Sangeya/Documents/PhD/Code/Data/Num_Rep_Convergence'
+#root_folder = fold.make_fold_abs(root_folder)
+#reps, drifts = [], []
+#for folder in os.listdir(root_folder)[:6]:
+#    folder = root_folder + folder
+#    if "NUMBER_REPLICA" in folder:
+#        print(folder)
+#        folder = fold.make_fold_abs(folder)
+#        
+#        t1 = time.time()
+#        p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
+#        t2 = time.time()
+#        
+#        reps.append(p.num_reps)
+#        drifts.append(p.norm_drift)
+#        print("Total time taken = %.0e"%(t2-t1))
+        
+        
+        
 ## Will plot many variations of replica number
 #for i in range(2,100,1):
 #    replicas = range(1,i)    

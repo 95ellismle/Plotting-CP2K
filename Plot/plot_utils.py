@@ -297,6 +297,7 @@ def get_num_reps(all_data, avg_on, found_num_reps):
             else:
                 raise SystemExit("OK, I am exiting so you can average the replica data.\n\nTo average the replicas set the variable 'avg_reps = True'")
         return num_reps, True
+    
 #Will get the avg_coupling, site_ener_diff 
 def get_coup_data(H_data, key):
     site_ener = H_data[key][0][:,0,0]-H_data[key][0][:,1,1]
