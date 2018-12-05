@@ -12,27 +12,37 @@ from load import load_utils as Utils
 
 
 # Will load the total energy file
-def load_ener_dat(filepath):
+def load_ener_dat(filepath, max_time):
     headers = ['Step','Time','Kin','Temp','Pot','E_cons','CPU']
     data = pd.read_csv(filepath, names=headers, delim_whitespace=True, skiprows=[0])
-    return data
-
-# Load all adiabatic energy files in a folder
-def load_all_ener_dat(folder, reps):
-    return Utils.load_all_in_folder(folder, load_ener_dat, filename_must_contain=['dat', 'ener'], reps=reps)
-
-
-# Will load the adiabtic energy csv
-def load_ener_ad(filepath, max_time):
-    data = pd.read_csv(filepath)
     if max_time == 'all':
         return data
     else:
         return data[data['Time'] < max_time]
     
 # Load all adiabatic energy files in a folder
-def load_all_ener_ad(folder, reps, max_time='all'):
-    return Utils.load_all_in_folder(folder, load_ener_ad, args=[max_time], filename_must_contain=['csv', 'ad_ener'], reps=reps)
+def load_all_ener_dat(folder, reps, max_time):
+    return Utils.load_all_in_folder(folder, 
+                                    load_ener_dat, 
+                                    args=[max_time], 
+                                    filename_must_contain=['dat', 'ener'], 
+                                    reps=reps)
+
+
+# Will load the adiabtic energy csv
+def load_ener_ad(filepath, max_time, min_time):
+    data = pd.read_csv(filepath)
+    print(min_time)
+    if min_time > 0:
+        data = data[data['Time'] > min_time]
+    if max_time == 'all':
+        return data
+    else:
+        return data[data['Time'] < max_time]
+    
+# Load all adiabatic energy files in a folder
+def load_all_ener_ad(folder, reps, max_time='all', min_time=0):
+    return Utils.load_all_in_folder(folder, load_ener_ad, args=[max_time, min_time], filename_must_contain=['csv', 'ad_ener'], reps=reps)
 
 
 def load_ener_time_data(filepath):

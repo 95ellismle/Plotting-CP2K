@@ -156,9 +156,13 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
             folder = folder + '/'
 
     filename_must_not_contain.append(".sw")
-    all_files = [folder+i for i in os.listdir(folder) if all(j in i for j in filename_must_contain) and all(k not in i for k in filename_must_not_contain)]
-    all_files = files_with_correct_reps(all_files, reps) # Only read files with the correct rep num
-    args = [[f]+list(args) for f in all_files]
+    all_files1 = [folder+i for i in os.listdir(folder) if all(j in i for j in filename_must_contain) and all(k not in i for k in filename_must_not_contain)]
+    if not all_files1: raise SystemExit("\n\n\n\tSorry I can't find any files with the correct filenames!\n\n\n")
+    all_files2 = files_with_correct_reps(all_files1, reps) # Only read files with the correct rep num
+    if not all_files2: 
+        valid_rep_nums = [find_rep_num_in_name(f) for f in all_files1]
+        raise SystemExit("\n\n\n\tSorry I can't find any files with the correct replica number!\n\n\n\tValid replica numbers are:\n\t\t* %s"%",\t".join([str(i) for i in valid_rep_nums]))
+    args = [[f]+list(args) for f in all_files2]
     all_data = collections.OrderedDict()
     for arg in args:
         all_data[arg[0][arg[0].rfind('/')+1:]] = func(*arg)

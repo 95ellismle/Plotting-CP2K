@@ -5,20 +5,51 @@ Created on Mon Oct 29 11:41:22 2018
 
 @author: mellis
 """
-#import os
-#from .. import PLOT
-#
-#reps, drifts = [], []
-#for folder in os.listdir(root_folder)[:6]:
-#    folder = root_folder + folder
-#    if "NUMBER_REPLICA" in folder:
-#        print(folder)
-#        folder = fold.make_fold_abs(folder)
-#        
-#        t1 = time.time()
-#        p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas)
-#        t2 = time.time()
-#        
-#        reps.append(p.num_reps)
-#        drifts.append(p.norm_drift)
-#        print("Total time taken = %.0e"%(t2-t1))
+import matplotlib.pyplot as plt
+
+reps = [1,
+ 2,
+ 5,
+ 35,
+ 40,
+ 45,
+ 50,
+ 100,
+ 200,
+ 300,
+ 400,
+ 500,
+ 1000,
+ 3,
+ 4,
+ 10,
+ 15,
+ 20,
+ 25,
+ 30]
+
+drifts = [-1.1613373097259465e-12,
+ -4.266448651691449e-14,
+ 7.807191572386627e-05,
+ 5.627643011898045e-06,
+ 6.517532366396186e-05,
+ 0.003128612993420705,
+ 0.00025867666072427656,
+ 4.5285944059609666e-05,
+ 0.0008502067307421256,
+ 0.00012867257282520337,
+ 2.7493266639320513e-05,
+ 1.227350838487835e-05,
+ 6.149303241578562e-06,
+ 3.365704051199592e-06,
+ 1.577397387778507e-05,
+ 3.7969949312946234e-05,
+ 4.750284375534764e-06,
+ 4.578192000964492e-05,
+ 6.031375673414818e-05,
+ 3.5471062784247215e-05]
+
+plt.plot(reps, drifts, 'k.')
+plt.xlabel("Number Replica")
+plt.ylabel(r"Norm Drift [ps$^{-1}$]")
+plt.title("Norm Drift vs Number of Reps")

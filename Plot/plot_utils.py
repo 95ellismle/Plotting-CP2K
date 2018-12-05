@@ -25,10 +25,11 @@ def calc_U_matrix(H):
     
     E, U = np.linalg.eigh(H) #get eigenvectors
 
-    # Sort eigenvectors by eigenvalues        
-    idx = E.argsort() #Sort by absolute energy
-    E = E[idx]
-    U = U[:,idx]
+#    # Sort eigenvectors by eigenvalues        
+#    idx = E.argsort() #Sort by absolute energy
+#    E = E[idx]
+#    U = U[:,idx]
+#    
     
 #    U_T_1 = np.matrix(np.linalg.inv(U).T)
 #    # To check the unitary transformation matrix
@@ -36,7 +37,7 @@ def calc_U_matrix(H):
 #        raise SystemExit("""Something is wrong with the transformation matrix U
 #
 #Max deviation from U^{\dagger} - U = %.2g"""%(np.max(np.transpose(np.linalg.inv(U)) - U).real))
-    return U
+    return E, U
 
 # Will transform the diabatic coefficients with the hamiltonian
 def transform_di_2_ad(udata, ucols, utimesteps, hdata, htimesteps):
@@ -48,7 +49,7 @@ def transform_di_2_ad(udata, ucols, utimesteps, hdata, htimesteps):
     ucols = ucols[umask]
     utimesteps = utimesteps[umask]
     
-    Us = np.array([calc_U_matrix(H) for H in hdata])
+    Us = np.array([calc_U_matrix(H)[1] for H in hdata])
     
     C = np.array([np.dot(U.T, u) for U, u in zip(Us, udata)])
     pops = np.array([np.array([np.linalg.norm(j)**2 for j in i]) for i in C])
@@ -180,18 +181,30 @@ def sum_hist_f_data(all_tintf_data):
     Ouputs:
         * The averaged tintf data.
     """
-    min_len = np.min([[len(all_tintf_data[f][0][0]), len(all_tintf_data[f][0][1]), len(all_tintf_data[f][1])] for f in all_tintf_data])
-    all_tintf = [[all_tintf_data[f][0][0][:min_len] for f in all_tintf_data ],
-                '',
-                [all_tintf_data[f][1][:min_len] for f in all_tintf_data ]]
-    avg_pos = {}
-    Tkeys = list(all_tintf_data.keys())
-    if all_tintf[0]:
-        # Should return in same format as input
-        avg_pos = {'sum_tintf':[(np.sum(all_tintf[0], axis=0),
-                               all_tintf_data[Tkeys[0]][0][1]), 
-                       np.sum(all_tintf[2], axis=0)/len(all_tintf_data)]}   
-    return avg_pos    
+    Tcols = all_tintf_data[list(all_tintf_data.keys())[0]][0][1]
+    nstates = max(Tcols[0,:,1].astype(int))
+    all_state_combs = list(IT.combinations(range(nstates), 2))
+    all_tintf_lk = {"%i%i"%(i,j):'' for i,j in all_state_combs}
+
+    Tdata = all_tintf_data[list(all_tintf_data.keys())[0]][0][0]
+    nsteps = len(Tdata)
+    natom = int(len(Tdata[0])/nstates)
+    for i,j in all_state_combs:
+        all_tintf_lk["%i%i"%(i,j)] = np.zeros((nsteps, natom, 3))
+    
+    #Actually do the calc
+    for Tkey in all_tintf_data:
+        (Tdata, Tcols), _ = all_tintf_data[Tkey]
+
+        for l,k in all_state_combs:
+            fk = np.array([i[Tcols[0,:,1] == str(k+1)] for i in Tdata])
+            fl = np.array([i[Tcols[0,:,1] == str(l+1)] for i in Tdata])
+            
+            tmp = [F for i, F in enumerate(fl-fk)]            
+            all_tintf_lk['%i%i'%(l,k)] += tmp
+        
+    Tsteps = all_tintf_data[list(all_tintf_data.keys())[0]][1]
+    return [all_tintf_lk, Tsteps]
 
 
 def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
@@ -277,7 +290,6 @@ def match_timesteps_4col_2col(data_4col, data_2col):
     
     return [data4, cols4, timesteps4, populations4], [(data2, cols2), timesteps2]
     
-
 
 # Will average the energy data
 def avg_E_data_dict(all_ener_data):
