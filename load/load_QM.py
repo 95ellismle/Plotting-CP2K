@@ -68,7 +68,8 @@ def find_in_Qlk(Qlk_data, params):
     Will find data corresponding to the params entered.
     
     Inputs:
-        Qlk_data  =>  the qlk to search in
+        Qlk_data  =>  the qlk to search in (must just be a tuple of data and 
+                                            cols)
         params    =>  A dictionary with the parameters to search for. 
                       The optional key labels are:
                           * at_num    [int]

@@ -24,25 +24,26 @@ class Adiab_States(object):
     """
     
     def __init__(self, axes):
-        self.AS_widg_ax, self.AS_plot_ax = axes
-        self.state_cols_AS = [i for i in self.all_ad_ener_data_avg.columns if 'State' in i]
-
-        
-        # Set defaults
-        self.plot_all_AS = False
-        self.plot_avg_AS = True
-        self.fill_between_AS = False
-        
-        # Plot everything
-        self._plot_all_reps_AS()
-        self._plot_avg_rep_AS()
-        self._fill_between_AS()
-        
-        # Set the control
-        if self._use_control: self._set_control_AS()
-        
-        # Finish up (make things look pretty)
-        self.AS_plot_ax.set_ylabel(r"$E^{ad}_{l}$")
+        if self.plot:
+            self.AS_widg_ax, self.AS_plot_ax = axes
+            self.state_cols_AS = [i for i in self.all_ad_ener_data_avg.columns if 'State' in i]
+    
+            
+            # Set defaults
+            self.plot_all_AS = False
+            self.plot_avg_AS = True
+            self.fill_between_AS = False
+            
+            # Plot everything
+            self._plot_all_reps_AS()
+            self._plot_avg_rep_AS()
+            self._fill_between_AS()
+            
+            # Set the control
+            if self._use_control: self._set_control_AS()
+            
+            # Finish up (make things look pretty)
+            self.AS_plot_ax.set_ylabel(r"$E^{ad}_{l}$ [Ha]")
     
     
     def _plot_all_reps_AS(self):
@@ -86,6 +87,7 @@ class Adiab_States(object):
         Will fill the adiabatic states with a color dependant on how close 
         they are to each other.
         """
+        scaler = 2.5
         self.all_fill_bars = []
         #Fill colors originally
         for i, state in enumerate(self.state_cols_AS[:-1]):
@@ -96,10 +98,12 @@ class Adiab_States(object):
                 T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
                 y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
                 y2 = self.all_ad_ener_data_avg[self.state_cols_AS[i+1]].iloc[[dt, dt+1]]
-                diffy = 1-normed_diffs[dt]
-                color = cm.hot(diffy*2)
-                ln = self.AS_plot_ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
-                self.all_fill_bars.append(ln)
+                diffy = scaler*(1-normed_diffs[dt])
+                if diffy < 1:
+                    color = cm.hot(diffy)
+                    
+                    ln = self.AS_plot_ax.fill_between(T, y1, y2, alpha=0.4, color=color, lw=0)
+                    self.all_fill_bars.append(ln)
         
         # Set initial visibility
         for line in self.all_fill_bars:
@@ -128,3 +132,34 @@ class Adiab_States(object):
             for line in self.all_fill_bars:
                 line.set_visible(not line.get_visible())
         plt.draw()
+        
+        
+
+
+class Energy_Cons(object):
+    """
+    Will plot the kinetic, potential and total energy of the system.
+    
+    Inputs:
+        * axes => The axes on which to plot (first is the checkbox axis, 
+                                             second is the plotting axis)
+    """
+    
+    def __init__(self, axes):
+        if self.plot:
+            Energy_Cons.widg_ax, Energy_Cons.plot_ax = axes
+            
+            Energy_Cons.plot_all_energy_drifts(self)
+            Energy_Cons.plot_ax.ylabel("Energy Drift [Ha]")
+    
+    @staticmethod
+    def plot_all_energy_drifts(self):
+        # Total energy
+        for irep in self.all_tot_ener:
+            data = self.all_tot_ener[irep]
+            Energy_Cons.plot_ax.plot(data['Time'], 
+                                     data['E_cons'], 
+                                     'k-', 
+                                     lw=0.5, 
+                                     alpha=self.alpha)
+    

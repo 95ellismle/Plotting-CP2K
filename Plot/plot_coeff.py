@@ -22,21 +22,21 @@ class Plot_Coeff(object):
     """
     def __init__(self, axes):
         self._set_di_or_ad()
-
-        self.coeff_widg_axes[self.di_or_ad] = axes[0]        
-        self.coeff_plot_axes[self.di_or_ad] = axes[1]        
-        
-        self.all_reps_coeff = True
-        self.avg_reps_coeff = True
-        
-        if self._use_control:
-            self._set_coeff_control()
-        self._set_coeff_data()
-        
-        self._plot_all_reps_coeff()
-        self._plot_avg_reps_coeff()
-        
-        self.coeff_plot_axes[self.di_or_ad].set_ylabel(self.ylabel)
+        if self.plot:
+            self.coeff_widg_axes[self.di_or_ad] = axes[0]        
+            self.coeff_plot_axes[self.di_or_ad] = axes[1]        
+            
+            self.all_reps_coeff = True
+            self.avg_reps_coeff = True
+            
+            if self._use_control:
+                self._set_coeff_control()
+            self._set_coeff_data()
+            
+            self._plot_all_reps_coeff()
+            self._plot_avg_reps_coeff()
+            
+            self.coeff_plot_axes[self.di_or_ad].set_ylabel(self.ylabel)
         
     def _set_coeff_data(self):
         """

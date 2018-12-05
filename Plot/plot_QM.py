@@ -9,6 +9,8 @@ Created on Tue Oct  9 16:11:09 2018
 from matplotlib.widgets import Slider, CheckButtons, TextBox
 import matplotlib.pyplot as plt
 import numpy as np
+from collections import OrderedDict
+import time
 
 from load import load_QM
 
@@ -21,18 +23,24 @@ class QM_R(object):
                  widget axis the second will be the axis to plot the data.  
     """
     def __init__(self, axes):
-        self.qm_widg_ax, self.qm_plot_ax = axes
+        if self.plot:
+            QM_R.widg_ax, QM_R.plot_ax = axes
+            QM_R.timing_dict = OrderedDict()
+            
+            QM_R.lines = []
+            QM_R.cart_dims  = [True, True, True]
+            
+            QM_R.timing_dict['Plot'] = time.time()
+            QM_R._plot_qm_vs_pos_all_reps(self, 1000)
+            QM_R.timing_dict['Plot'] = time.time() - QM_R.timing_dict['Plot']
+            
+            QM_R._set_Qlk_control(self)
+            
+            QM_R.plot_ax.set_xlabel("R [angstrom]", fontsize=28)
+            QM_R.plot_ax.set_ylabel(r"${Q^{J}_{12, \nu}}$ [$\frac{Ha \cdot s}{l}$]",
+                                       fontsize=28)
         
-        self.current_dt = 0
-        self.Qlk_cart_dims  = [True, True, True]
-        
-        self._plot_avg_qm_vs_pos()
-        
-#        self._set_Qlk_control()
-        
-        self.qm_plot_ax.set_xlabel("R [au]", fontsize=28)
-        self.qm_plot_ax.set_ylabel(r"${Q^{J}_{12, \nu}}$",
-                                   fontsize=28)
+            self.print_timing_info(QM_R.timing_dict, "Qlk vs Pos timings")
     
     def _match_timesteps_Qlk_pos(self, all_Qlk_data, all_pos_data):
         """
@@ -66,7 +74,14 @@ class QM_R(object):
         
         return all_Qlk_data, all_pos_data
     
-    def _plot_avg_qm_vs_pos(self):
+    @staticmethod
+    def put_time_annotation(self):
+        """
+        Will put an annotation of the current time on the graph
+        """
+        
+    @staticmethod
+    def _plot_qm_vs_pos_all_reps(self, istep):
         """
         Will plot the quantum momentum vs position.
 
@@ -78,98 +93,133 @@ class QM_R(object):
         # First get shared timesteps between Qlk and pos
         all_QM_data, all_pos = self._match_timesteps_Qlk_pos(self.all_Qlk_data, self.all_pos_data)
         
-        Qkeys = list(self.all_Qlk_data.keys())
-        cart_dim = 1
+        Qkeys, Pkeys = list(all_QM_data.keys()), list(all_pos.keys())
+        
         self.Qlk_ntimesteps = len(self.all_Qlk_data[Qkeys[0]][0][0])
         natom = np.max(self.all_Qlk_data[Qkeys[0]][0][1][0,:,0])
         self.cart_lines = [[],[],[]]
         self.at_lines   = [[] for i in range(natom)]
 
-        for irep, (Qrep, Rrep) in enumerate(zip(self.all_Qlk_data, all_pos)):
-            print("Plotted rep %i"%irep)
-            for cart_dim in range(3):
-                for dt in range(self.Qlk_ntimesteps):
-                    # Find all the QM_data for each atom
-                    QM_data = [load_QM.find_in_Qlk(all_QM_data[Qrep][0], 
-                                                  params  =  {'at_num':at_num,
-                                                          'cart_dim':cart_dim+1,
-                                                          'lk':(1,2)})[dt] 
-                                                    for at_num in range(natom)]
-                    line, = self.qm_plot_ax.plot(all_pos[Rrep][0][0][dt,1, cart_dim], 
-                                                 QM_data, 'o', color=self.colors[cart_dim])
+        idim   = 0
+        iatom  = 0
+        for irep in range(len(all_QM_data)):
+            for iatom in range(natom):
+                rep_key = Qkeys[irep]
+                Qlk_data = load_QM.find_in_Qlk(all_QM_data[rep_key][0], {
+                                                                     'at_num':iatom+1, 
+                                                                     'cart_dim':idim+1, 
+                                                                     'lk':(1,2)      })
+            
+                if self.run_inp_params['NUMBER_ATOMS_PER_SITE'] > 6:
+                    print("""The QM vs pos graph won't work properly for anything but 
+                          Ethylene. This is because the code isn't matching the correct
+                          active atoms position to the quantum momentum. This can be 
+                          done using the AOM_COEFF.include file. It has been 
+                          implemented in the movie maker. There will be some useful 
+                          code there to help with this.""")
+                    raise SystemExit("UNSUPPORTED MOLECULE TYPE")
+                else:
+                    act_atoms = self.run_inp_params['NUMBER_ATOMS_PER_SITE'] * \
+                                self.run_inp_params['NUMBER_DIABATIC_STATES']
                     
-#                    self.cart_lines[cart_dim].append(line)
-#                    self.at_lines[at_num-1].append(line)       
+                single_rep_pos = all_pos[Pkeys[irep]][0][0]
+                single_rep_pos = single_rep_pos[:,:act_atoms]
+                
+                ln, = QM_R.plot_ax.plot(single_rep_pos[istep,iatom, idim], 
+                                  Qlk_data[istep,0], 
+                                  '.', color=self.colors[iatom])
+                QM_R.lines.append(ln)
+
         
-#        all_QM_data = [[],[],[]]
-#        for cart_dim in range(3):
-#            for timestep in range(self.Qlk_ntimesteps):
-#                # Find all the QM_data for each atom
-#                QM_data = [load_QM.find_in_Qlk(self.avg_QM_data['avg_Qlk'][0], 
-#                                               params   =      {'at_num':at_num, 
-#                                                                'cart_dim':cart_dim+1,
-#                                                                'lk':(1,2)})[timestep][0]
-#                                    for at_num in range(1,natom+1)]
-#    
-#                line, = self.qm_plot_ax.plot(avg_pos['avg_pos'][0][0][timestep,:natom, cart_dim], 
-#                                             QM_data, 'o', color=cart_cols[cart_dim])
-#                self.Qlk_pos_avg_lines[cart_dim].append(line)
-#                all_QM_data[cart_dim].append(QM_data)
-#        self.qm_plot_ax.set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
-#        self.qm_plot_ax.autoscale()#set_ylim([np.min(all_QM_data), np.max(all_QM_data)])
-        
-#        for cart_dim in range(3):
-#            for line in self.Qlk_pos_avg_lines[cart_dim]:
-#                line.set_visible(False)
-#            if self.Qlk_cart_dims[cart_dim]:
-#                self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(True)
-        
+        QM_R.put_time_annotation(self)
     
+    @staticmethod
+    def _set_qm_vs_pos_all_reps(self, istep):
+        """
+        Will reset the line ydata according to the timestep.
+        """
+        
+        # First get shared timesteps between Qlk and pos
+        all_QM_data, all_pos = self._match_timesteps_Qlk_pos(self.all_Qlk_data, self.all_pos_data)
+        
+        Qkeys, Pkeys = list(all_QM_data.keys()), list(all_pos.keys())
+        
+        self.Qlk_ntimesteps = len(self.all_Qlk_data[Qkeys[0]][0][0])
+        natom = np.max(self.all_Qlk_data[Qkeys[0]][0][1][0,:,0])
+        self.cart_lines = [[],[],[]]
+        self.at_lines   = [[] for i in range(natom)]
+
+        idim   = 0
+        count = 0
+        for irep in range(len(all_QM_data)):
+            for iatom in range(natom):
+                rep_key = Qkeys[irep]
+                Qlk_data = load_QM.find_in_Qlk(all_QM_data[rep_key][0], {
+                                                                     'at_num':iatom+1, 
+                                                                     'cart_dim':idim+1, 
+                                                                     'lk':(1,2)      })
+            
+                if self.run_inp_params['NUMBER_ATOMS_PER_SITE'] > 6:
+                    print("""The QM vs pos graph won't work properly for anything but 
+                          Ethylene. This is because the code isn't matching the correct
+                          active atoms position to the quantum momentum. This can be 
+                          done using the AOM_COEFF.include file. It has been 
+                          implemented in the movie maker. There will be some useful 
+                          code there to help with this.""")
+                    raise SystemExit("UNSUPPORTED MOLECULE TYPE")
+                else:
+                    act_atoms = self.run_inp_params['NUMBER_ATOMS_PER_SITE'] * \
+                                self.run_inp_params['NUMBER_DIABATIC_STATES']
+                    
+                single_rep_pos = all_pos[Pkeys[irep]][0][0]
+                single_rep_pos = single_rep_pos[:,:act_atoms]
+                
+                QM_R.lines[count].set_ydata(Qlk_data[istep,0])
+                QM_R.lines[count].set_xdata(single_rep_pos[istep,iatom, idim])
+                count += 1
+        plt.draw()
+        QM_R.put_time_annotation(self)
+        
+    @staticmethod
     def _set_Qlk_control(self):
         """
         Will set the control panel for the Qlk graphs
         """
         self.MD_dt = self.run_inp_params['NUCLEAR_TIMESTEP']
+
+        QM_R.Qlk_dt_slider = Slider(QM_R.widg_ax, 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
+        QM_R.SELF = self #Need this for the on_changed function... there is probably a better way though.
+        QM_R.Qlk_dt_slider.on_changed(QM_R._set_Qlk_slider_control)
         
-        self.Qlk_cart_dim_butt  = CheckButtons(self.qm_widg_ax[0], ["X","Y","Z"], self.Qlk_cart_dims)
-        self.Qlk_cart_dim_butt.on_clicked(self._Qlk_cart_dim_control)
-        
-        self.Qlk_dt_slider = Slider(self.qm_widg_ax[1], 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0)#, valstep=1)
-        self.Qlk_dt_slider.on_changed(self._set_Qlk_slider_control)
-        
-        self.Qlk_vlines = [self.axes[param][1].axvline(self.current_dt*self.MD_dt) for param in self.non_qlk_params]
+#        self.Qlk_vlines = [self.axes[param][1].axvline(QM_R.current_dt*self.MD_dt) for param in self.non_qlk_params]
     
-    def _Qlk_cart_dim_control(self, label):
-        """
-        Will control which cartesian dimensions are plotted. 
-        (see plt.CheckButton docs)
-        
-        Inputs:
-            *label   =>  The label of the checkbutton pressed
-        """
-        for i, dim in enumerate(["X","Y","Z"]):
-            if label == dim: self.Qlk_cart_dims[i] = not self.Qlk_cart_dims[i]
-        self._set_Qlk_slider_control(self.Qlk_dt_slider.val)
+#    def _Qlk_cart_dim_control(self, label):
+#        """
+#        Will control which cartesian dimensions are plotted. 
+#        (see plt.CheckButton docs)
+#        
+#        Inputs:
+#            *label   =>  The label of the checkbutton pressed
+#        """
+#        for i, dim in enumerate(["X","Y","Z"]):
+#            if label == dim: QM_R.cart_dims[i] = not QM_R.cart_dims[i]
+#        self._set_Qlk_slider_control(self.Qlk_dt_slider.val)
     
-    def _set_Qlk_slider_control(self, val):
+    @staticmethod
+    def _set_Qlk_slider_control(val):
         """
         Will control what happens when the slider is interacted with
         """
         # Need to be an int as it indexes
         val = int(val)
-        # Set the required timestep to be visible
-        for cart_dim in range(3):
-            self.Qlk_pos_avg_lines[cart_dim][self.current_dt].set_visible(False)
-        for cart_dim, cart_val in enumerate(self.Qlk_cart_dims):
-            self.Qlk_pos_avg_lines[cart_dim][val].set_visible(cart_val)
-            self.current_dt = val
+        QM_R._set_qm_vs_pos_all_reps(QM_R.SELF, val)
         
-        # Draw the time lines
-        for line in self.Qlk_vlines: line.remove()
-        self.Qlk_vlines = [self.axes[param][1].axvline(val*self.MD_dt) for param in self.non_qlk_params]
-        
-        plt.figure(self.f.number)
-        plt.draw()
+#        # Draw the time lines
+#        for line in self.Qlk_vlines: line.remove()
+#        self.Qlk_vlines = [self.axes[param][1].axvline(val*self.MD_dt) for param in self.non_qlk_params]
+#        
+#        plt.figure(self.f.number)
+#        plt.draw()
 
 
 
@@ -198,20 +248,21 @@ class QM_t(object):
                  widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):
-        QM_t.widget_ax = axes[0]
-        QM_t.plot_ax = axes[1]
-        
-        #Setting initial default values
-        QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag = [False, False, False, True]
-        
-        #Plotting
-#        self._plot_all_rep_Qlk_t()
-        QM_t._plot_avg_QM_t(self)
-        
-        #Connect checkboxes to plot control
-        if self._use_control:    QM_t._set_Qlk_t_control()
-        
-        QM_t.plot_ax.set_ylabel(r"$Q_{12,\nu}^{(I)}$")
+        if self.plot:
+            QM_t.widget_ax = axes[0]
+            QM_t.plot_ax = axes[1]
+            
+            #Setting initial default values
+            QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag = [False, False, False, True]
+            
+            #Plotting
+    #        self._plot_all_rep_Qlk_t()
+            QM_t._plot_avg_QM_t(self)
+            
+            #Connect checkboxes to plot control
+            if self._use_control:    QM_t._set_Qlk_t_control()
+            
+            QM_t.plot_ax.set_ylabel(r"$Q_{12,\nu}^{(I)}$ [$\frac{Ha s}{l}$]")
     
     @staticmethod
     def _check_settings_Qlk_t(label):
@@ -290,38 +341,7 @@ class QM_t(object):
         QM_t.textbox = TextBox(QM_t.widget_ax[1], 'Atoms:', initial="all")
         QM_t.textbox.on_submit(QM_t._submit_text)
         
-    #Will plot the all replica Qlk_ts
-    def _plot_all_rep_Qlk_t(self):
-        """
-        Will plot all the Qlk vs time lines for each replica
-        """
-        self.all_Qlk_t_lines = []
-        
-        ax = self.axes['qm_t'][1]
-        for Qlk_filename in self.all_Qlk_data:
-#                Qlk_filename = 'run-QM-1.xyz'
-            Qlk_data = self.all_Qlk_data[Qlk_filename]
-            Qlk_timesteps = Qlk_data[1]
-            Qlk_data = Qlk_data[0]
-            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
-            for iatom in range(1,num_atoms+1):
-#                        if any(iatom == j for j in (2,4,11,8,1)): continue
-                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-                
-                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
-#                        QM_mag /= np.max(QM_mag)
-                ln, = ax.plot(Qlk_timesteps, 
-                              QM_mag, 
-                              label="atom %i"%iatom, 
-                              color=self.colors[iatom-1])
-                self.all_Qlk_t_lines.append(ln)
-            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
-            
-        #Initialise the replica lines
-        for line in self.all_Qlk_t_lines:
-            line.set_visible(self.all_reps_Qlk_t)
+
 
     #Will plot the Quantum Momentum term
     @staticmethod
@@ -365,9 +385,53 @@ class QM_t(object):
             ln.set_visible(QM_t.Z)
             QM_t.Zlines.append(ln)
             
+#            print(np.mean(QM_mag))
+#            print(np.std(QM_mag))
+#            ax.axhline(np.mean(QM_mag))
+            self.QM_mag = QM_mag
+#            ax.axhline(np.mean(QM_mag)+np.std(QM_mag)*2, color=self.colors[iatom-1])
             ln, = ax.plot(Qlk_timesteps, 
-                          QM_mag, 
+                          QM_mag[:,0], 
                           '--', 
                           color=self.colors[iatom-1])
             ln.set_visible(QM_t.Mag)
             QM_t.Maglines.append(ln)
+
+
+
+
+
+
+
+#    #Will plot the all replica Qlk_ts
+#    def _plot_all_rep_Qlk_t(self):
+#        """
+#        Will plot all the Qlk vs time lines for each replica
+#        """
+#        self.all_Qlk_t_lines = []
+#        
+#        ax = self.axes['qm_t'][1]
+#        for Qlk_filename in self.all_Qlk_data:
+##                Qlk_filename = 'run-QM-1.xyz'
+#            Qlk_data = self.all_Qlk_data[Qlk_filename]
+#            Qlk_timesteps = Qlk_data[1]
+#            Qlk_data = Qlk_data[0]
+#            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
+#            for iatom in range(1,num_atoms+1):
+##                        if any(iatom == j for j in (2,4,11,8,1)): continue
+#                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
+#                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
+#                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+#                
+#                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
+##                        QM_mag /= np.max(QM_mag)
+#                ln, = ax.plot(Qlk_timesteps, 
+#                              QM_mag, 
+#                              label="atom %i"%iatom, 
+#                              color=self.colors[iatom-1])
+#                self.all_Qlk_t_lines.append(ln)
+#            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
+#            
+#        #Initialise the replica lines
+#        for line in self.all_Qlk_t_lines:
+#            line.set_visible(self.all_reps_Qlk_t)
