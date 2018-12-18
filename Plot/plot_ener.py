@@ -150,10 +150,15 @@ class Energy_Cons(object):
             Energy_Cons.widg_ax, Energy_Cons.plot_ax = axes
             
             Energy_Cons.plot_all_energy_drifts(self)
-            Energy_Cons.plot_ax.ylabel("Energy Drift [Ha]")
+            Energy_Cons.plot_avg_energy_drift(self)
+            
+            Energy_Cons.plot_ax.set_ylabel("Energy Drift [Ha]")
     
     @staticmethod
     def plot_all_energy_drifts(self):
+        """
+        Will plot the all energy drifts on the Energy_Cons.plot_ax 
+        """
         # Total energy
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
@@ -162,4 +167,14 @@ class Energy_Cons(object):
                                      'k-', 
                                      lw=0.5, 
                                      alpha=self.alpha)
+    
+    @staticmethod
+    def plot_avg_energy_drift(self):
+        """
+        Will plot the average energy drift on the Energy_Cons.plot_ax 
+        """
+        Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'], 
+                                 self.tot_ener_mean['E_cons'],
+                                 'k-',
+                                 lw=1.5)
     

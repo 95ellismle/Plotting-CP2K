@@ -29,7 +29,7 @@ class Plot_Norm(object):
         
             #Setting initial default values
             self.avg_reps_norm = True
-            self.all_reps_norm = False
+            self.all_reps_norm = True
             
             #Plotting
             self.all_rep_lines_norm = []

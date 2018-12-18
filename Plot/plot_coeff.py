@@ -7,7 +7,7 @@ Created on Wed Oct  3 14:35:47 2018
 """
 from matplotlib.widgets import CheckButtons
 import matplotlib.pyplot as plt
-
+import numpy as np
 
 class Plot_Coeff(object):
     """
@@ -75,6 +75,15 @@ class Plot_Coeff(object):
             for i in range(self.num_states):
                 self.all_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)[0])
         
+#        import scipy.linalg as LI
+#        for filename in self.all_ham_data:
+#            Hdata, _, timesteps = self.all_ham_data[filename]
+#            
+#            all_coeffs = np.array([np.dot(LI.expm(0+1j*self.all_ham_data['run-hamilt-1-1.xyz'][0][i] * timesteps[i]),np.array([1,0])) for i in range(len(self.all_ham_data['run-hamilt-1-1.xyz'][0]))])    
+#            pops = np.array([[np.linalg.norm(i[0]),np.linalg.norm(i[1])] for i in all_coeffs])
+#            for i in range(2):
+#                self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)
+            
         # Set initial visibility
         for line in self.all_coeff_lines[self.di_or_ad]:
             line.set_visible(self.all_reps_coeff)
@@ -87,7 +96,7 @@ class Plot_Coeff(object):
         coeffs, cols, timesteps, pops = self.all_coeff_data_avg
         for i in range(self.num_states):                    
             self.avg_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], '.', color=self.colors[i])[0])
-        
+                
         # Set initial visibility
         for line in self.avg_coeff_lines[self.di_or_ad]:
             line.set_visible(self.avg_reps_coeff)
