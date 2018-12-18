@@ -24,7 +24,6 @@ def load_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
                                               max_step=max_step, 
                                               stride=stride, 
                                               ignore_steps=ignore_steps)
-    cols[:,:,1] = cols[:,:,1].astype(int)
     return (data, cols), timesteps
 
 # Reads all the Qlk files from a given folder

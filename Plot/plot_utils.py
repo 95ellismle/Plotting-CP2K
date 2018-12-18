@@ -23,7 +23,7 @@ def calc_U_matrix(H):
     """
     H = -H
     
-    E, U = np.linalg.eigh(H) #get eigenvectors
+    E, U = np.linalg.eig(H) #get eigenvectors
 
 #    # Sort eigenvectors by eigenvalues        
 #    idx = E.argsort() #Sort by absolute energy

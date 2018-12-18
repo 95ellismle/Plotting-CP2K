@@ -87,25 +87,6 @@ Filename after regex = '%s' """%(filename, regex_matches[lab], str(reduced_fname
     else:
         raise SystemExit("Sorry I couldn't find the file type (pos, vel, frc, coeff etc...), something went wrong!\n\nFilename = %s"%(filename))     
 
-
-## Will find how many/which replicas are available and return them based on which ones are wanted
-#def sort_reps(folder, reps):
-#    all_files = os.listdir(folder)
-#    labs = ['n-frc', 'd_frc', 'coeff_a', 'n-vel', 'n-pos', 't_frc', 'ham', 'coeff-', 'd_ener', 'QM', 'n-ener_',]
-#    files_sorted = {lab:
-#                   [f for f in all_files if lab in f] for lab in labs }
-#    for lab in labs:
-#        avail_reps = [find_rep_num_in_name(f) for f in files_sorted[lab]]
-#        break
-#            
-#    if type(reps) == str:
-#        reps = avail_reps
-#    elif type(reps) == list:
-#        reps = [i for i in reps if i in avail_reps]
-#        
-#    return reps
-
-
 # Given a list of files and a list of replica numbers find which files match the list of reps
 def files_with_correct_reps(files, reps):
     try:
@@ -157,11 +138,11 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
 
     filename_must_not_contain.append(".sw")
     all_files1 = [folder+i for i in os.listdir(folder) if all(j in i for j in filename_must_contain) and all(k not in i for k in filename_must_not_contain)]
-    if not all_files1: raise SystemExit("\n\n\n\tSorry I can't find any files with the correct filenames!\n\n\n")
+    if not all_files1: print("\n\n\n\tSorry I can't find any files with the correct filenames!\n\n\t\tmust_contain = %s\n\t\tmustn't contain = %s\n\n\n"%(", ".join(filename_must_contain), ", ".join(filename_must_not_contain)))
     all_files2 = files_with_correct_reps(all_files1, reps) # Only read files with the correct rep num
     if not all_files2: 
         valid_rep_nums = [find_rep_num_in_name(f) for f in all_files1]
-        raise SystemExit("\n\n\n\tSorry I can't find any files with the correct replica number!\n\n\n\tValid replica numbers are:\n\t\t* %s"%",\t".join([str(i) for i in valid_rep_nums]))
+        print("\n\n\n\tSorry I can't find any files with the correct replica number!\n\n\n\tValid replica numbers are:\n\t\t* %s"%",\t".join([str(i) for i in valid_rep_nums]))
     args = [[f]+list(args) for f in all_files2]
     all_data = collections.OrderedDict()
     for arg in args:

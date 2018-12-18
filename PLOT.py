@@ -13,6 +13,7 @@ from load import load_QM
 from load import load_pos
 from load import load_inp
 from load import load_tintf
+from load import load_frc
 
 from Plot import plot_utils
 from Plot import plot_coeff
@@ -20,6 +21,7 @@ from Plot import plot_norm
 from Plot import plot_QM
 from Plot import plot_ham
 from Plot import plot_ener
+from Plot import plot_frc
 from Plot import plot_tintf
 
 from IO import Folders as fold
@@ -34,6 +36,7 @@ from collections import OrderedDict
 import time
 import re
 import os
+import pandas as pd
 from multiprocessing import Pool
 
 
@@ -43,34 +46,33 @@ folders = ['',
 #           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_2/TANH_WIDTH=0.00/', 
 #           '/scratch/mellis/surface_hop/scripts-templatess-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.0003/TANH_WIDTH=0.00/',
 #           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.03/TANH_WIDTH=0.00/',
-#           '/scratch/mellis/flavoured-cptk/200Rep_2mol',
+           '/scratch/mellis/flavoured-cptk/200Rep_2mol',
 #           '/scratch/mellis/flavoured-cptk/200Rep_3mol',
+#           '/scratch/mellis/flavoured-cptk/200Rep_3mol_reorder',
 #           '/scratch/mellis/flavoured-cptk/200Rep_8mol',
-           '/scratch/mellis/flavoured-cptk/200Rep_2mol_same',
+#           '/scratch/mellis/flavoured-cptk/200Rep_8mol_reorder',
+#           '/scratch/mellis/flavoured-cptk/200Rep_2mol_same',
 #           '/homes/mellis/Documents/Code_bits_and_bobs/Data/SH_data_state_switch',
 #           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-fssh-0',
            '']
 
-#root_folders = ['/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/',
-#                '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_2/']
+#root_folders = ['',
+#                '/scratch/mellis/flavoured-cptk/Tanh_width_data',
+#                '']
 #folders = []
 #for root_folder in root_folders:
 #    all_files = os.walk(root_folder)
 #    for Dpath, Dnames, Fnames in all_files:
 #        if 'run.inp' in Fnames:
 #            folders.append(Dpath)
-        
+
+
+
 #folders              = ['/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.0003/TANH_WIDTH=8.5e-0',]# '/scratch/mellis/flavoured-cptk/200Rep_2mol_Ehren']
-plotting_parameters = ['|c|^2', 'norm']
-replicas            = [39]
+plotting_parameters = ['|u|^2','norm']
+replicas            = 'all'
 plot                = True
-#
-#folder              = '../Data/200Rep_2mol'  
-#root_folder = '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/Num_Rep_Convergence'
-#folder = fold.make_fold_abs(root_folder) + 'NUMBER_REPLICA=15'
-#plotting_parameters = ['norm']
-#replicas            = 'all'
-###############
+#######################################################
 
 
 
@@ -94,6 +96,7 @@ class Params(object):
         self._get_inp_data()
 
         self._set_title()
+        self.title = r""
 #        self.title += "   (**tanh_width**)"
 #        self.title = r"Quantum Momentum and $\sum_{J}|C_1^{ J}|^2|C_2^{ J}|^2(f_1^{J} - f_2^{J})$ for each cartesian dimension for atom 1"
 #        self.title = r"Adiab coeffs evolution under **CT/Eh** -**irep** reps (with renormalisation)"
@@ -103,10 +106,10 @@ class Params(object):
                        'r','g','b',]
         self.colors = [i for j in range(50) for i in self.colors]
         
-        self._use_control = True
+        self._use_control = False
 #        if self.num_reps == 1: self._use_control = False
         
-        self.max_time      = 100     #(in fs)
+        self.max_time      = 'all'     #(in fs)
         self.min_time      = 0       #(in fs)
         self.quick_stride  = 0.01    #(in fs)
         self.slow_stride   = 0.01    #(in fs)
@@ -160,7 +163,8 @@ max_time, you can use all, or specify a maximum time in fs.""")
                           "fl_fk_CC":"Rlk denominator",
                           'blank':"",
                           "energy_cons":"Energy Conservation",
-                          "coup": r"H$_{12}$"}
+                          "coup": r"H$_{12}$", 
+                          "force": "Nuc. Frc", }
         name_plot_params = self.plot_params[:]
         if 'qm_r' in name_plot_params and 'qm_t' in name_plot_params: 
             name_plot_params.remove("qm_r")
@@ -248,6 +252,7 @@ class LoadData(object):
         self.load_qm()
         self.load_hist_f()
         self.load_tot_ener()
+        self.load_force()
         
         self._average_data()
         self._get_coupling()
@@ -256,8 +261,12 @@ class LoadData(object):
         
     def load_all_ham_data(self):
         """
-        Will load all the hamiltonian data that can be foun_set_Qlk_controld in the folder 
-        specified (dependent on which reps are requested)
+        Will load all the hamiltonian data that can be foun_set_Qlk_controld in 
+        the folder specified (dependent on which reps are requested)
+        
+        N.B. This is always called as it is normally outputted and it is used 
+        to find metadata such as how many steps and reps have been loaded. This
+        can be much better though. I will improve it when I have some time!
         """
         self.load_timings['H'] = time.time()
         print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
@@ -329,7 +338,7 @@ class LoadData(object):
             else: max_step = self.max_step*self.dt
 
             self.all_ad_ener_data = load_ener.load_all_ener_ad(self.folder, 
-                                                               reps=sall_p[0elf.reps, 
+                                                               reps=self.reps, 
                                                                max_time=max_step,
                                                                min_time=self.min_time * self.dt)
             if not self.all_ad_ener_data:
@@ -341,7 +350,7 @@ class LoadData(object):
         Loads the total energy files. These files contain the kinetic energy, 
         temperature, potential energy, total energy and CPU time taken.
         """
-        if 'energy_cons' in self.plot_params:
+        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
             self.load_timings['adiab ener'] = time.time()
 
             self.all_tot_ener = load_ener.load_all_ener_dat(folder   = self.folder, 
@@ -355,7 +364,7 @@ class LoadData(object):
         Will load the quantum momentum file into the format in load_QM.
         """
         if any(['qm' in j  for j in self.plot_params]):
-            self.load_timings['QM'] = time.time()all_p[0
+            self.load_timings['QM'] = time.time()
             print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['QM']['EACH']['MD'][0]
             if type(self.max_step) == str: max_step = self.max_step
             else: max_step = int(self.max_step/print_step)
@@ -391,6 +400,21 @@ class LoadData(object):
                                                                       stride  = self.slow_stride)
             self.load_timings['history forces'] = time.time() - self.load_timings['history forces']
 
+    def load_force(self):
+        """
+        Will load all the nuclear forces.
+        """
+        if any('force' in j for j in self.plot_params):
+            self.load_timings['forces'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['PRINT']['FORCES']['EACH']['MD'][0]
+            if type(self.max_step) == str: max_step = self.max_step
+            else: max_step = int(self.max_step/print_step)
+            self.all_frc_data = load_frc.load_all_frc_in_folder(self.folder, 
+                                                                  reps=self.reps,
+                                                                  max_step=max_step,
+                                                                  min_step=self.min_time,
+                                                                  stride  = self.slow_stride)
+            self.load_timings['forces'] = time.time() - self.load_timings['forces']
 
     def _get_coupling(self):
         """
@@ -433,6 +457,19 @@ class LoadData(object):
             self.sum_tintf_data = plot_utils.sum_hist_f_data(self.all_tintf_data)#, self.all_Acoeff_data)
             self.sum_tintf_CC_data = plot_utils.sum_hist_f_CC_data(self.all_tintf_data, self.all_Acoeff_data)
             self.load_timings['Averaging: ']['history forces'] = time.time() - self.load_timings['Averaging: ']['history forces']
+        
+        if any('force' in j for j in self.plot_params):
+            self.load_timings['Averaging: ']['force'] = time.time()
+            self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
+            # Rename the average key (using average_pos function)
+            self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
+            del self.avg_frc_data['avg_pos']
+            self.load_timings['Averaging: ']['force'] = time.time() - self.load_timings['Averaging: ']['force']
+
+        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
+            self.load_timings['Averaging: ']['Tot. Energy'] = time.time()
+            self.tot_ener_mean = pd.concat(self.all_tot_ener.values()).groupby('Step').mean()
+            self.load_timings['Averaging: ']['Tot. Energy'] = time.time() - self.load_timings['Averaging: ']['Tot. Energy']
 
     def print_timing_info(self, timing_dict, title=""):
         """
@@ -454,7 +491,7 @@ class LoadData(object):
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff, 
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R, 
            plot_QM.QM_t, plot_ham.Site_Ener, plot_tintf.fl_fk, 
-           plot_tintf.fl_fk_CC, plot_ener.Energy_Cons):
+           plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string 
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2']) adiab_state
@@ -516,8 +553,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             plot_tintf.fl_fk_CC.__init__(self, self.axes['fl_fk_cc'])
         if 'fl_fk' in self.plot_params:
             plot_tintf.fl_fk.__init__(self, self.axes['fl_fk'])
-        if 'energy_cons' in self.plot_params:
+        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
             plot_ener.Energy_Cons.__init__(self, self.axes['energy_cons'])
+        if 'force' in self.plot_params:
+            plot_frc.Plot_Frc.__init__(self, self.axes['force'])
         
         if self.plot:
             self.__finalise()
@@ -763,17 +802,17 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             pass
         self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
                         
-        self.f.tight_layout()
         if 'qm_r' not in self.plot_params and len(self.non_qlk_params) > 1:
             self.multi = MultiCursor(self.f.canvas, [i[1] for i in self.axes.values()], color='r', lw=1)
         
 #        if self._use_control:
-#            plt.subplots_adjust(top=0.955,
-#                               bottom=0.075,
-#                               left=0.0,
-#                               right=1.0,
-#                               hspace=0.15,
-#                               wspace=0.0)
+#            plt.subplots_adjust(top=0.945,
+#                                bottom=0.075,
+#                                left=0.14,
+#                                right=0.99,
+#                                hspace=0.084,
+#                                wspace=1.00)
+        self.f.tight_layout()
         plt.show()
         
 
@@ -790,7 +829,9 @@ def do_1_folder(folder):
     return p
 
 if plot:
-    all_p = [do_1_folder(f) for f in folders]
+    all_p = []
+    for i, f in enumerate(folders):
+        all_p.append(do_1_folder(f))
 else:
     num_proc = len(folders)
     if num_proc > 21: num_proc = 21
@@ -802,6 +843,11 @@ else:
     else:
         all_p = [do_1_folder(folders[0])]
 
+#save_place = '/homes/mellis/Documents/Graphs/CTMQC/Testing_tanh'
+#for i, p in enumerate(all_p):
+#    filename = saveplaces[i] #save_place+'/Scaling_Factor='+str(p.run_inp_params['SCALING_FACTOR'])+'/All/CTMQC_TW='+str(p.run_inp_params['TANH_WIDTH'])    
+#    p.f.savefig(filename+'.png')
+    
 #SAVE = all_p[:] #just in case I overwrite all_p
 #p_by_scal = {}
 #for p in all_p:
