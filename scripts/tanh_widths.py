@@ -347,16 +347,45 @@ couplings = {0.0003: [1.0347375772924006,
   132.04664203513948,
   121.22030120635237]}
 
+#import pandas as pd
+#0.03,
+#0.0003, 
+xlim = 0.015
+f, a = plt.subplots(3)
+rgb = ['r','g','b']
+for i, key in enumerate([0.03, 0.003, 0.0003]):#drifts:
+    window = 3
+    x = tanh_widths[key] #pd.Series(tanh_widths[key]).rolling(window=window).mean()
+    y = np.absolute(drifts[key])      #pd.Series(drifts[key]).rolling(window=window).mean()
+    
+    xy = np.array(sorted(zip(x,y)))
+    x = xy[:,0]
+    y = xy[:,1]
+    
+    a[i].plot(x, y, 'o', label=r"Coupling = %.2f meV"%(np.mean(couplings[key])), 
+              color=rgb[i])
+    a[i].set_title("")
+    a[i].set_yscale("log")
+    
+    ytxt = np.max(y) - (np.max(y) - np.min(y))*0.2
+    xtxt = xlim*0.7
+    print(xtxt, ytxt)
+    a[i].annotate(r"Coupling = %.2f meV"%(np.mean(couplings[key])), 
+                     (xtxt, ytxt), fontsize=24)
+    
+    a[i].set_xlim([-0.001,xlim])
+    if i < 2:
+        a[i].tick_params(axis='x', labelbottom=False)
 
-for key in drifts:
-    plt.plot(tanh_widths[key], drifts[key], 'o', label=r"Coupling = %.2f meV"%(np.mean(couplings[key])) )
-    plt.xlabel("Tanh Width [fs]")
-    plt.ylabel(r"Norm Drift [ps$^{-1}$]")
-    plt.title("Tanh Width vs Norm Drift")
-#    plt.yscale("log")
-#    plt.xscale("log")
-plt.legend(loc='lower right')
+a[2].set_xlabel(r"Tanh Width [au$_f$]")
+a[1].set_ylabel(r"Norm Drift [ps$^{-1}$]")
 
+plt.subplots_adjust(top=0.945,
+                    bottom=0.095,
+                    left=0.075,
+                    right=0.95,
+                    hspace=0.134,
+                    wspace=1.0)
 
 
 
