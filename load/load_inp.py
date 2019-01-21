@@ -79,7 +79,9 @@ def parse_setting_line(line):
             value = words[2]      
             return setting, str_to_num(value), unit
         else:
-            return 0,0,0
+            return words[0], '\t'.join(words[1:]), ''
+    else:
+        return words[0], '\t'.join(words[1:]), ''
     
 
 def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=[]):
@@ -87,8 +89,10 @@ def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=
     Will recursively parse the inp file and output this as nested dictionaries.
     
     Inputs:
-        * Dict                 =>  Dict to fill
+        * Dict                 =>  Dict to fill with nested settings
         * non_nested_settings  =>  A dictionary of settings without any nesting
+        * inp_file             =>  The inp_file to parse, this should be the 
+                                    file split by '\n'. [list <str>]
         * line_ind             =>  Line to start parsing (default 0)
         * found_sects  =>  DON'T USE MAY BE DANGEROUS
     
@@ -114,6 +118,7 @@ def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=
                 if not end_sect:
                     end_sect = found_sects[-1]
                 found_sects.remove(end_sect)
+    
         
         elif found_sects:
 #            print("\n")
@@ -127,7 +132,7 @@ def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=
                 if curr_D.get(sect) == None:
                     curr_D[sect] = {}
                 curr_D = curr_D[sect]
-            
+
             setting, value, unit = parse_setting_line(edit_line)
             curr_D[setting] = [value, unit]
             non_nested_settings[setting] = value

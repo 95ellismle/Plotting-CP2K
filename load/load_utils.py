@@ -13,6 +13,10 @@ import collections
 
 # Will find the replica number in the filename
 def find_rep_num_in_name(filename):
+    """
+    Will find the replica number in the output filename. This should be only 
+    the filename and not the folder.
+    """
 #    labs = ['pos','ham','ener','coeff','vel']
     regex_matches = {'n-pos':"-\d*-\d*\.xyz", 
                      'ham':"-\d*-\d*\.xyz",
@@ -90,7 +94,7 @@ Filename after regex = '%s' """%(filename, regex_matches[lab], str(reduced_fname
 # Given a list of files and a list of replica numbers find which files match the list of reps
 def files_with_correct_reps(files, reps):
     try:
-        rep_nums = {f:find_rep_num_in_name(f) for f in files}
+        rep_nums = {f:find_rep_num_in_name(f[f.rfind('/'):]) for f in files}
     except:
         print("""Replica sorting isn't working for this data, switching it off.
 

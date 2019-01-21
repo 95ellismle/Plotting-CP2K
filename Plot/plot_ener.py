@@ -148,10 +148,19 @@ class Energy_Cons(object):
     def __init__(self, axes):
         if self.plot:
             Energy_Cons.widg_ax, Energy_Cons.plot_ax = axes
+
+            Energy_Cons.plot_all = True
+            Energy_Cons.plot_avg = True
+            Energy_Cons.kinetic = False
+            Energy_Cons.potential = False
+            Energy_Cons.total = True
             
             Energy_Cons.plot_all_energy_drifts(self)
             Energy_Cons.plot_avg_energy_drift(self)
             
+            # Set the control panel
+            if self._use_control: Energy_Cons.__set_control()
+                        
             Energy_Cons.plot_ax.set_ylabel("Energy Drift [Ha]")
     
     @staticmethod
@@ -159,22 +168,108 @@ class Energy_Cons(object):
         """
         Will plot the all energy drifts on the Energy_Cons.plot_ax 
         """
+        Energy_Cons.kin_lines = []
+        Energy_Cons.pot_lines = []
+        Energy_Cons.tot_lines = []
         # Total energy
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
-            Energy_Cons.plot_ax.plot(data['Time'], 
-                                     data['E_cons'], 
-                                     'k-', 
-                                     lw=0.5, 
-                                     alpha=self.alpha)
-    
+            ln, = Energy_Cons.plot_ax.plot(data['Time'], 
+                                 data['E_cons'], 
+                                 'k-', 
+                                 lw=0.5, 
+                                 alpha=self.alpha)
+            Energy_Cons.tot_lines.append(ln)
+            ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
+             
+            ln, = Energy_Cons.plot_ax.plot(data['Time'], 
+                                data['Kin'], 
+                                'r-', 
+                                lw=0.5, 
+                                alpha=self.alpha)    
+            Energy_Cons.kin_lines.append(ln)
+            ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
+             
+            ln, = Energy_Cons.plot_ax.plot(data['Time'], 
+                                data['Pot'], 
+                                'g-', 
+                                lw=0.5, 
+                                alpha=self.alpha)               
+            Energy_Cons.pot_lines.append(ln)
+            ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
+            
     @staticmethod
     def plot_avg_energy_drift(self):
         """
         Will plot the average energy drift on the Energy_Cons.plot_ax 
         """
-        Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'], 
-                                 self.tot_ener_mean['E_cons'],
-                                 'k-',
-                                 lw=1.5)
+        Energy_Cons.avg_lines = {}
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'], 
+                             self.tot_ener_mean['E_cons'], 
+                             'k-', 
+                             lw=1.0)
+        Energy_Cons.avg_lines['tot'] = ln
+        ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
+        
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'], 
+                             self.tot_ener_mean['Kin'], 
+                             'r-', 
+                             lw=1.0)               
+        Energy_Cons.avg_lines['kin'] = ln
+        ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
+        
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'], 
+                             self.tot_ener_mean['Pot'], 
+                             'g-', 
+                             lw=1.0)   
+        Energy_Cons.avg_lines['pot'] = ln
+        ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
+        plt.draw()
+        
+    @staticmethod
+    def __set_control():
+        """
+        Will connect the checkbutton control panel with the plotting axis.
+        """
+        Energy_Cons.checkButs = CheckButtons(Energy_Cons.widg_ax, 
+                                             ('all reps', 
+                                              'avg', 
+                                              'Kinetic', 
+                                              'Potential', 
+                                              'Total Energy'), 
+                                             (Energy_Cons.plot_all, 
+                                              Energy_Cons.plot_avg,
+                                              Energy_Cons.kinetic,
+                                              Energy_Cons.potential,
+                                              Energy_Cons.total))
+        Energy_Cons.checkButs.on_clicked(Energy_Cons.__on_click)
+    
+    @staticmethod
+    def __on_click(label):
+        if label == 'all reps': 
+            Energy_Cons.plot_all = not Energy_Cons.plot_all
+        elif label == 'avg':
+            Energy_Cons.plot_avg = not Energy_Cons.plot_avg
+        elif label == 'Kinetic':
+            Energy_Cons.kinetic = not Energy_Cons.kinetic
+        elif label == 'Potential':
+            Energy_Cons.potential = not Energy_Cons.potential
+        elif label == 'Total Energy':
+            Energy_Cons.total = not Energy_Cons.total
+        
+        # Handle the all rep lines
+        for kln, tln, pln in zip(Energy_Cons.kin_lines,
+                                 Energy_Cons.tot_lines,
+                                 Energy_Cons.pot_lines):
+            kln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
+            tln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
+            pln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
+        
+        #Handle the average lines
+        Energy_Cons.avg_lines['tot'].set_visible(Energy_Cons.plot_avg and Energy_Cons.total)
+        Energy_Cons.avg_lines['kin'].set_visible(Energy_Cons.plot_avg and Energy_Cons.kinetic)
+        Energy_Cons.avg_lines['pot'].set_visible(Energy_Cons.plot_avg and Energy_Cons.potential)
+        
+        plt.draw()
+        
     

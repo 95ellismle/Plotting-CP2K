@@ -43,33 +43,25 @@ from multiprocessing import Pool
 ###############
 #CTMQC_low_coup_2mol
 folders = ['',
-#           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_2/TANH_WIDTH=0.00/', 
-#           '/scratch/mellis/surface_hop/scripts-templatess-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.0003/TANH_WIDTH=0.00/',
-#           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.03/TANH_WIDTH=0.00/',
-           '/scratch/mellis/flavoured-cptk/200Rep_2mol',
-#           '/scratch/mellis/flavoured-cptk/200Rep_3mol',
-#           '/scratch/mellis/flavoured-cptk/200Rep_3mol_reorder',
-#           '/scratch/mellis/flavoured-cptk/200Rep_8mol',
-#           '/scratch/mellis/flavoured-cptk/200Rep_8mol_reorder',
-#           '/scratch/mellis/flavoured-cptk/200Rep_2mol_same',
-#           '/homes/mellis/Documents/Code_bits_and_bobs/Data/SH_data_state_switch',
-#           '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-fssh-0',
+   #'/scratch/mellis/CTMQC_Detailed_Balance/test/0.0005/NREP=70/USEQM=F',
+   '/scratch/mellis/flavoured-cptk/200Rep_2mol/',
+   '',
+]
+
+root_folders = ['',
+           '/scratch/mellis/CTMQC_Detailed_Balance/test/0.05/',
            '']
 
-#root_folders = ['',
-#                '/scratch/mellis/flavoured-cptk/Tanh_width_data',
-#                '']
 #folders = []
 #for root_folder in root_folders:
-#    all_files = os.walk(root_folder)
-#    for Dpath, Dnames, Fnames in all_files:
-#        if 'run.inp' in Fnames:
-#            folders.append(Dpath)
-
-
+#    if root_folder and os.path.isdir(root_folder):
+#        for folder, Dpaths, files in os.walk(root_folder):
+#            if 'run.inp' in files:
+#                folders.append(folder)
+            
 
 #folders              = ['/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/TANH_WIDTH_CONV2_1/Scal=0.0003/TANH_WIDTH=8.5e-0',]# '/scratch/mellis/flavoured-cptk/200Rep_2mol_Ehren']
-plotting_parameters = ['|u|^2','norm']
+plotting_parameters = ['norm', 'energy_cons', 'qm_t']
 replicas            = 'all'
 plot                = True
 #######################################################
@@ -79,40 +71,33 @@ plot                = True
 
 
 class Params(object):
-    """TANH_WIDTH=0.001
-    Will store all the parameters needed to plot the graphs. Will also calculate
-    parameters such as alpha etc...
     """
-    
+    Will store all the parameters needed to plot the graphs. Will also 
+    calculate parameters such as alpha etc...
+    """
     def __init__(self, folder, reps, plot_params):
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
         self.non_qlk_params = [i for i in self.plot_params if 'qm_r' not in i]
-        
         self._set_coeff_params()
-        
         self._correct_plot_params()
         self._get_inp_data()
 
         self._set_title()
         self.title = r""
 #        self.title += "   (**tanh_width**)"
-#        self.title = r"Quantum Momentum and $\sum_{J}|C_1^{ J}|^2|C_2^{ J}|^2(f_1^{J} - f_2^{J})$ for each cartesian dimension for atom 1"
-#        self.title = r"Adiab coeffs evolution under **CT/Eh** -**irep** reps (with renormalisation)"
 
-        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd', 
+        self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-                       'r','g','b',]
+                       'r', 'g', 'b',]
         self.colors = [i for j in range(50) for i in self.colors]
-        
-        self._use_control = False
+        self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
-        
-        self.max_time      = 'all'     #(in fs)
-        self.min_time      = 0       #(in fs)
-        self.quick_stride  = 0.01    #(in fs)
-        self.slow_stride   = 0.01    #(in fs)
+        self.max_time      = 33     # (in fs)
+        self.min_time      = 0       # (in fs)
+        self.quick_stride  = 0    # (in fs)
+        self.slow_stride   = 0    # (in fs)
         self.dt = self.run_inp_params['NUCLEAR_TIMESTEP']
         
         self._fix_load_timings()
@@ -206,7 +191,8 @@ max_time, you can use all, or specify a maximum time in fs.""")
 #                                'qm_r', 'norm_traj', 'site_ener', 'fl_fk',
 #                                'fl_fk_CC']
  
-        self.plot_params = list(set([i.strip().lower() for i in self.plot_params]))
+        self.plot_params = pd.Series([i.strip().lower() for i in self.plot_params])
+        self.plot_params = list(self.plot_params.unique())
         
         for short_name in ['adiab_state', 'coup']:
             self.plot_params = [short_name if short_name in i else i for i in self.plot_params]
@@ -220,7 +206,7 @@ max_time, you can use all, or specify a maximum time in fs.""")
         self.coeff_widg_axes = {}
         self.coeff_plot_axes = {}
 
-class LoadData(object):
+class LoadData(Params):
     """
     Will load all data in the folder. Takes 3 inputs:
         * folder      = folder in which to look for data
@@ -234,15 +220,53 @@ class LoadData(object):
                             - 'qm'
                             - 'site_ener'
                             - 'fk_fl' or 'fl_fk'
+        * avg_on      = Whether to average the data or not (default = True)
     
     NOTE: Should be in plot_utils
     """
+    #Decide which things to load when the params are inputted 
+    #     (avoids loading multiple times of some dependencies)
+    dependencies = {'qm_r':['pos','qm'],
+                    'pos' : ['pos'],
+                    '|c|^2' : ['|c|^2'],
+                    'qm_t' : ['qm'],
+                    'site_ener' : ['ham'],
+                    'coup' : ['ham'],
+                    '|u|^2' : ['|u|^2'],
+                    'energy_cons' : ['tot_ener'],
+                    'adiab_state' : ['ad_ener'],
+                    'fl_fk_CC' : ['fl_fk', '|c|^2'],
+                    'fl_fk' : ['fl_fk'],
+                    'norm' : ['|u|^2'],
+                    'forces' : ['force'],
+                    }
+    
+#    # Tell python which settings require which files
+#    requirements = { 'qm_r' :  ["['MOTION']['CTMQC']['PRINT']['QM']['EACH']['MD']"],
+#                     'pos'  :  ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     '|c|^2':  ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'qm_t' :  ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'site_ener'   : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'coup' :  ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     '|u|^2':  ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'energy_cons' : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'ad_state'    : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'fl_fk_CC'    : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'fl_fk'       : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'norm': ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                     'frc' : ["['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD']"],
+#                   }
+    
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
+        if folder[-1] != '/': folder += '/'
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
         self.avg_on = avg_on
+        Params.__init__(self, folder, reps, plot_params)
         
+        
+        self.decideDependencies()
         self.load_timings = OrderedDict()
         
         self.load_all_ham_data()
@@ -250,14 +274,30 @@ class LoadData(object):
         self.load_all_ad_coeffs()
         self.load_ad_ener()
         self.load_qm()
+        self.load_pos()
         self.load_hist_f()
         self.load_tot_ener()
         self.load_force()
         
-        self._average_data()
+        if self.avg_on:     self._average_data()
         self._get_coupling()
         
         self.print_timing_info(self.load_timings, "Timing Data for Reading Data")
+    
+    def decideDependencies(self):
+        """
+        Will decide which parameters to load from the inputs, i.e. if the |u|^2
+        , and norm are requested then it makes no sense to load |u|^2 twice...
+        """
+        self.load_params = []
+        for i in self.plot_params:
+            for j in self.dependencies[i.lower()]:
+                self.load_params.append(j)
+        self.load_params = list(set(self.load_params))
+        
+        #Print some feedback
+        for i in self.load_params:
+            print("Loading %s"%i)
         
     def load_all_ham_data(self):
         """
@@ -272,6 +312,13 @@ class LoadData(object):
         print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
         if type(self.max_step) == str: max_step = self.max_step
         else: max_step = int(self.max_step/print_step)
+#        if 'ham' not in self.load_params:
+#            self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, 
+#                                                                reps=self.reps, 
+#                                                                max_step=max_step, 
+#                                                                min_step=self.min_time, 
+#                                                                stride=10)
+#        else:
         self.all_ham_data = load_ham.load_all_ham_in_folder(self.folder, 
                                                             reps=self.reps, 
                                                             max_step=max_step, 
@@ -292,7 +339,7 @@ class LoadData(object):
         """ 
         Loads all the diabatic coefficients, no input. Saves diabatic coeffs as self.all_Dcoeff_data
         """
-        if any(j in i for j in ('norm','|u|^2') for i in self.plot_params):
+        if '|u|^2' in self.load_params:
             self.load_timings['di coeff'] = time.time()
             print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['COEFFICIENTS']['EACH']['MD'][0]
             if type(self.max_step) == str: max_step = self.max_step
@@ -311,8 +358,7 @@ class LoadData(object):
         """ 
         Loads all the adiabatic coefficients, no input. Saves adiabatic coeffs as self.all_Acoeff_data.
         """
-        if '|c|^2' in self.plot_params or \
-           (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
+        if '|c|^2' in self.load_params:
             try:
                 print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['AD_COEFF']['EACH']['MD'][0]
             except KeyError:
@@ -332,7 +378,7 @@ class LoadData(object):
         """
         Loads the adiabatic energy
         """
-        if 'adiab_state' in self.plot_params:
+        if 'ad_ener' in self.load_params:
             self.load_timings['adiab ener'] = time.time()
             if type(self.max_step) == str: max_step = self.max_step
             else: max_step = self.max_step*self.dt
@@ -350,20 +396,20 @@ class LoadData(object):
         Loads the total energy files. These files contain the kinetic energy, 
         temperature, potential energy, total energy and CPU time taken.
         """
-        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
-            self.load_timings['adiab ener'] = time.time()
+        if 'tot_ener' in self.load_params:
+            self.load_timings['tot ener'] = time.time()
 
             self.all_tot_ener = load_ener.load_all_ener_dat(folder   = self.folder, 
                                                             reps     = self.reps, 
                                                             max_time = self.max_time)
 
-            self.load_timings['adiab ener'] = time.time() - self.load_timings['adiab ener']
+            self.load_timings['tot ener'] = time.time() - self.load_timings['tot ener']
 
     def load_qm(self):
         """
         Will load the quantum momentum file into the format in load_QM.
         """
-        if any(['qm' in j  for j in self.plot_params]):
+        if 'qm' in self.load_params:
             self.load_timings['QM'] = time.time()
             print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['QM']['EACH']['MD'][0]
             if type(self.max_step) == str: max_step = self.max_step
@@ -373,22 +419,29 @@ class LoadData(object):
                                                                 max_step=max_step, 
                                                                 min_step=self.min_time, 
                                                                 stride=self.slow_stride)
-            if 'qm_r' in self.plot_params:
-                print_step = self.nested_inp_params['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD'][0]
-                if type(self.max_step) == str: max_step = self.max_step
-                else: max_step = int(self.max_step/print_step)
-                self.all_pos_data = load_pos.load_all_pos_in_folder(self.folder, 
-                                                                    reps=self.reps,
-                                                                    max_step=max_step, 
-                                                                    min_step=self.min_time, 
-                                                                    stride=self.slow_stride)
             self.load_timings['QM'] = time.time() - self.load_timings['QM']
+    
+    def load_pos(self):
+        """
+        Will load the positions
+        """
+        if 'pos' in self.plot_params:
+            self.load_timings['positions'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD'][0]
+            if type(self.max_step) == str: max_step = self.max_step
+            else: max_step = int(self.max_step/print_step)
+            self.all_pos_data = load_pos.load_all_pos_in_folder(self.folder, 
+                                                                reps=self.reps,
+                                                                max_step=max_step, 
+                                                                min_step=self.min_time, 
+                                                                stride=self.slow_stride)
+            self.load_timings['positions'] = time.time() - self.load_timings['positions']
     
     def load_hist_f(self):
         """
         Will load all the time-integrated history forces in a folder.
         """
-        if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
+        if 'fl_fk' in self.load_params:
             self.load_timings['history forces'] = time.time()
             print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['T_INT_FORCE']['EACH']['MD'][0]
             if type(self.max_step) == str: max_step = self.max_step
@@ -404,7 +457,7 @@ class LoadData(object):
         """
         Will load all the nuclear forces.
         """
-        if any('force' in j for j in self.plot_params):
+        if 'frc' in self.load_params:
             self.load_timings['forces'] = time.time()
             print_step = self.nested_inp_params['MOTION']['PRINT']['FORCES']['EACH']['MD'][0]
             if type(self.max_step) == str: max_step = self.max_step
@@ -429,36 +482,35 @@ class LoadData(object):
         Will average the coefficient data and save as new arrays
         """
         self.load_timings['Averaging: '] = OrderedDict()
-        if any(j in i for j in ('norm','|u|^2') for i in self.plot_params) and list(self.all_Dcoeff_data.keys())[0] != 0:
+        if "|u|^2" in self.load_params:
             self.load_timings['Averaging: ']['di coeff'] = time.time()
             self.all_Dcoeff_data_avg = plot_utils.avg_coeff_data(self.all_Dcoeff_data)
             self.load_timings['Averaging: ']['di coeff'] = time.time() - self.load_timings['Averaging: ']['di coeff']
         
-        if "|c|^2" in self.plot_params and list(self.all_Acoeff_data.keys())[0] != 0 or \
-          (any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params])):
+        if "|c|^2" in self.load_params:
             self.load_timings['Averaging: ']['ad coeff'] = time.time()
             self.all_Acoeff_data_avg = plot_utils.avg_coeff_data(self.all_Acoeff_data)
             self.load_timings['Averaging: ']['ad coeff'] = time.time() - self.load_timings['Averaging: ']['ad coeff']
         
-        if 'adiab_state' in self.plot_params:
+        if 'ad_ener' in self.load_params:
             self.load_timings['Averaging: ']['adiab_ener'] = time.time()
             self.all_ad_ener_data_avg = plot_utils.avg_E_data_dict(self.all_ad_ener_data)
             self.load_timings['Averaging: ']['adiab_ener'] = time.time() - self.load_timings['Averaging: ']['adiab_ener']
         
-        if any(['qm' in j  for j in self.plot_params]):
+        if 'qm' in self.load_params:
             self.load_timings['Averaging: ']['qm'] = time.time()
             if 'qm_r' in self.plot_params:
                 self.avg_pos_data = plot_utils.avg_pos_data(self.all_pos_data)
             self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - self.load_timings['Averaging: ']['qm']
         
-        if any(['fk' in j for j in self.plot_params]) and any(["fl" in j for j in self.plot_params]):
+        if 'fl_fk' in self.load_params:
             self.load_timings['Averaging: ']['history forces'] = time.time()
             self.sum_tintf_data = plot_utils.sum_hist_f_data(self.all_tintf_data)#, self.all_Acoeff_data)
             self.sum_tintf_CC_data = plot_utils.sum_hist_f_CC_data(self.all_tintf_data, self.all_Acoeff_data)
             self.load_timings['Averaging: ']['history forces'] = time.time() - self.load_timings['Averaging: ']['history forces']
         
-        if any('force' in j for j in self.plot_params):
+        if 'frc' in self.load_params:
             self.load_timings['Averaging: ']['force'] = time.time()
             self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
             # Rename the average key (using average_pos function)
@@ -466,7 +518,7 @@ class LoadData(object):
             del self.avg_frc_data['avg_pos']
             self.load_timings['Averaging: ']['force'] = time.time() - self.load_timings['Averaging: ']['force']
 
-        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
+        if 'tot_ener' in self.load_params:
             self.load_timings['Averaging: ']['Tot. Energy'] = time.time()
             self.tot_ener_mean = pd.concat(self.all_tot_ener.values()).groupby('Step').mean()
             self.load_timings['Averaging: ']['Tot. Energy'] = time.time() - self.load_timings['Averaging: ']['Tot. Energy']
@@ -511,20 +563,28 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                
         folder         =>  The folder containing the data
         reps           =>  Which replica numbers to plot (can be 'all')
+        plot           =>  Can be True or False or 'close' to create the graphs but not display.
+                            If True will plot to screen, if False will just analyse data
+                            If 'close' then will not display the graph but hold it in memory (as self.f).
     """
     
     def __init__(self, plot_params, folder, reps, plot):
         print("Starting on folder ", folder)
         self.plot_params = plot_params
         self._correct_plot_params()
-        Params.__init__(self, folder, reps, self.plot_params)
+#        Params.__init__(self, folder, reps, self.plot_params)
         LoadData.__init__(self, folder, reps, self.plot_params)
         self.reps = reps
         self.xlabel = "Time (fs)"
         self.plot_info = {}
-        self.plot = plot
+        if type(plot) == str:
+            if plot.lower() == 'close': self.plot = True
+            self._create_ax_fig_layout(close=True)
+        else:
+            self.plot = plot
+            self._create_ax_fig_layout(close=False)
+            
         
-        self._create_ax_fig_layout()
 #        
         ### REMOVE WHEN ALL CLASS PLOTS ARE CREATED ###
         self.plot_all_reps = True
@@ -533,34 +593,37 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         ###############################################
         
         self.plot_blank()
-        if 'norm' in self.plot_params:
-            plot_norm.Plot_Norm.__init__(self, self.axes['norm'])
-        if '|u|^2' in self.plot_params:
-            plot_coeff.Plot_Coeff.__init__(self, self.axes['|u|^2'])
-        if '|c|^2' in self.plot_params:
-            plot_coeff.Plot_Coeff.__init__(self, self.axes['|c|^2'])            
-        if 'adiab_state' in self.plot_params:
-            plot_ener.Adiab_States.__init__(self, self.axes['adiab_state'])
-        if 'coup' in self.plot_params:
-            plot_ham.Coupling.__init__(self, self.axes['coup'])
         if 'qm_r' in self.plot_params:
-            plot_QM.QM_R.__init__(self, self.axes['qm_r'])
+            self.mQMRPlot = plot_QM.QM_R.__init__(self, self.axes['qm_r'])
         if 'qm_t' in self.plot_params:
-            plot_QM.QM_t.__init__(self, self.axes['qm_t'])
+            self.mQMTPlot = plot_QM.QM_t.__init__(self, self.axes['qm_t'])
+        if 'norm' in self.plot_params:
+            self.mNormPlot = plot_norm.Plot_Norm.__init__(self, self.axes['norm'])
+        if '|u|^2' in self.plot_params:
+            self.mDCoeffPlot = plot_coeff.Plot_Coeff.__init__(self, self.axes['|u|^2'])
+        if '|c|^2' in self.plot_params:
+            self.mACoeffPlot = plot_coeff.Plot_Coeff.__init__(self, self.axes['|c|^2'])            
+        if 'adiab_state' in self.plot_params:
+            self.mAStatesPlot = plot_ener.Adiab_States.__init__(self, self.axes['adiab_state'])
+        if 'coup' in self.plot_params:
+            self.mCoupPlot = plot_ham.Coupling.__init__(self, self.axes['coup'])
         if 'site_ener' in self.plot_params:
-            plot_ham.Site_Ener.__init__(self, self.axes['site_ener'])
+            self.mSiteEnerPlot = plot_ham.Site_Ener.__init__(self, self.axes['site_ener'])
         if 'fl_fk_cc' in self.plot_params:
-            plot_tintf.fl_fk_CC.__init__(self, self.axes['fl_fk_cc'])
+            self.mTintfCCPlot = plot_tintf.fl_fk_CC.__init__(self, self.axes['fl_fk_cc'])
         if 'fl_fk' in self.plot_params:
-            plot_tintf.fl_fk.__init__(self, self.axes['fl_fk'])
-        if all(j in i for i in self.plot_params for j in ['ener', 'cons']):
-            plot_ener.Energy_Cons.__init__(self, self.axes['energy_cons'])
+            self.mTintfPlot = plot_tintf.fl_fk.__init__(self, self.axes['fl_fk'])
+        if any(all([j in i for j in ['ener', 'cons']]) for i in self.plot_params ):
+            self.mEnerConsPlot = plot_ener.Energy_Cons.__init__(self, self.axes['energy_cons'])
         if 'force' in self.plot_params:
-            plot_frc.Plot_Frc.__init__(self, self.axes['force'])
+            self.mForcePlot = plot_frc.Plot_Frc.__init__(self, self.axes['force'])
         
         if self.plot:
             self.__finalise()
         self.print_final_info()
+        
+        if type(plot) == str and plot == 'close': plt.close('all')
+            
   
     def _clean_widget_axes(self, axis):
         """
@@ -603,41 +666,45 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
     
     def _N_pane_special_case(self, num_panes, ax_name):
         """
-        Will create a special case control panel for axes with 2 panes. The 
+        Will create a special case control panel for axes with 2 panes. The
         slightly odd ax_name input is to enable multiple substring matches
-        in a string. It is a list of substrings that are in the axis name. 
-        
-        E.g. if ax_name = ['fl', 'fk'] all axes with both fl and fk in their 
+        in a string. It is a list of substrings that are in the axis name.
+
+        E.g. if ax_name = ['fl', 'fk'] all axes with both fl and fk in their
              name will be found. If ax_name = ['qm_t'] then all axes with qm_t
-             in their name will be found etc...        
+             in their name will be found etc...
         """
         if all([any(name in j for j in self.plot_params) for name in ax_name]):
             ax_name = '_'.join(ax_name).strip('_')
-            if ax_name not in self.plot_params: return
+            if ax_name not in self.plot_params:
+                return
             widg_ax = []
             for i in range(num_panes):
                 widg_ax.append(plt.subplot2grid( (len(self.plot_params)*num_panes,7),
-                                          (self.plot_params.index(ax_name)*num_panes+i,0), 
+                                          (self.plot_params.index(ax_name)*num_panes+i,0),
                                           colspan=1))
             self.axes[ax_name] = [widg_ax,
-                           plt.subplot2grid( (len(self.plot_params),7),
-                                          (self.plot_params.index(ax_name),1), 
-                                          colspan=6)]
+                           plt.subplot2grid((len(self.plot_params),7),
+                                            (self.plot_params.index(ax_name),1),
+                                            colspan=6)]
             for i in range(num_panes):
                 self.axes[ax_name][0][i] = self._clean_widget_axes(self.axes[ax_name][0][i])
-    
+
     #Decides what arrangement of axes to use
-    def _create_ax_fig_layout(self):
+    def _create_ax_fig_layout(self, close=False):
         """
-        Will create the layout for the plots and assign an axis to each plotting
-        parameter. This will create the self.f and self.axes variables.
-        
+        Will create the layout for the plots and assign an axis to each
+        plotting parameter. This will create the self.f and self.axes
+        variables.
+
         The self.axes variable is a dictionary with the plot parameter as a key
         and the axis that has been assigned to it as the value.
         """
         if self.plot:
             self.f = plt.figure()
+            if close: plt.close('all')
             self.axes = OrderedDict()
+            for i in self.plot_params: self.axes[i] = '' # Give structure to the OrderedDict
             if len(self.plot_params) <= 4:   
                 for i,param in enumerate(self.plot_params):
                     a = []
@@ -669,7 +736,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         
         if 'blank' in self.plot_params:
             widgs, ax = self.axes['blank']
-            hdata, _ , timesteps = p.avg_ham_data['avg_ham']
+            hdata, _ , timesteps = self.avg_ham_data['avg_ham']
             all_Es = np.array([plot_utils.calc_U_matrix(H)[0] for H in hdata])
             ax.plot(timesteps, all_Es[:,0])
             ax.plot(timesteps, all_Es[:,1])
@@ -824,35 +891,33 @@ folders = [i for i in folders if os.path.isfile(i+'run.inp')]
 if len(folders) > 7 and plot:
     raise SystemExit("It seems you are trying to plot %i images!\n\n\nThat is a lot of figures to load, these would probably be better being saved as png files."%len(folders))
 
-def do_1_folder(folder):
+def do_1_folder(folder, plotting_parameters, replicas, plot):
+    p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas, plot=plot)
+    return p
+
+def do_1_fold_PL(folder):
     p = Plot(plot_params=plotting_parameters, folder=folder, reps=replicas, plot=plot)
     return p
 
 if plot:
     all_p = []
     for i, f in enumerate(folders):
-        all_p.append(do_1_folder(f))
+        all_p.append(do_1_fold_PL(f))
 else:
-    num_proc = len(folders)
+    num_proc = 4#len(folders)
     if num_proc > 21: num_proc = 21
     print("Num Proc = ", num_proc)
     if num_proc > 1:
         p = Pool(num_proc)
         if __name__ == '__main__':
-            all_p = p.map(do_1_folder, folders)
+            all_p = p.map(do_1_fold_PL, folders)
     else:
-        all_p = [do_1_folder(folders[0])]
+        all_p = [do_1_fold_PL(folders[0])]
 
-#save_place = '/homes/mellis/Documents/Graphs/CTMQC/Testing_tanh'
-#for i, p in enumerate(all_p):
-#    filename = saveplaces[i] #save_place+'/Scaling_Factor='+str(p.run_inp_params['SCALING_FACTOR'])+'/All/CTMQC_TW='+str(p.run_inp_params['TANH_WIDTH'])    
-#    p.f.savefig(filename+'.png')
-    
-#SAVE = all_p[:] #just in case I overwrite all_p
-#p_by_scal = {}
-#for p in all_p:
-#    scal = p.run_inp_params['SCALING_FACTOR']
-#    if scal not in p_by_scal: p_by_scal[scal] = []
-#    p_by_scal[scal].append(p)
-#tanh_widths = {scal:[p.run_inp_params['TANH_WIDTH'] for p in p_by_scal[scal]] for scal in p_by_scal}
-#norm_drifts = {scal:[p.norm_drift for p in p_by_scal[scal]] for scal in p_by_scal}
+
+
+
+
+
+
+
