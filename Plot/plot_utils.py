@@ -147,28 +147,35 @@ def avg_pos_data(all_pos_data):
                        np.mean(all_pos[2], axis=0)]}   
     return avg_pos
 
+
 def avg_Qlk_data(all_Qlk_data):
     """
     Will average the Qlk data and return a dictionary with the data.
-    
+
     Inputs:
         * all_Qlk_data  =>  A dictionary containing all the data to be averaged
-    
+
     Outputs:
         The averaged Qlk_data in the same format as the inputted dictionary.
     """
-    avg_Qlk_data = np.mean([all_Qlk_data[rep][0][0] for rep in all_Qlk_data], axis=0)
-    avg_Qlk_timesteps = np.mean([all_Qlk_data[rep][1] for rep in all_Qlk_data], axis=0)
-    
+    minLen = min([len(all_Qlk_data[rep][0][0]) for rep in all_Qlk_data])
+
+    avg_Qlk_data = np.mean([all_Qlk_data[rep][0][0][:minLen]
+                            for rep in all_Qlk_data], axis=0)
+    avg_Qlk_timesteps = np.mean([all_Qlk_data[rep][1][:minLen]
+                                 for rep in all_Qlk_data], axis=0)
+
     avg_Qlk_data = np.array(avg_Qlk_data)
     avg_Qlk_timesteps = np.array(avg_Qlk_timesteps)
-    
+
     Qkeys = list(all_Qlk_data.keys())
-    avg_Qlk_data = {'avg_Qlk':
-                              [ [avg_Qlk_data,
+    avg_Qlk_data = {'avg_Qlk': [
+                                [avg_Qlk_data,
                                  all_Qlk_data[Qkeys[0]][0][1]],
-                               avg_Qlk_timesteps]}
+                                avg_Qlk_timesteps
+                               ]}
     return avg_Qlk_data
+
 
 def sum_hist_f_data(all_tintf_data):
     """

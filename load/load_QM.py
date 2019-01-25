@@ -61,28 +61,31 @@ def _get_all_Qlk_col_vals_(cols, ind):
     return list(set(cols[:,:,ind][0]))
 
 
-
 # Will help in picking out certain parts of the Qlk data
 def find_in_Qlk(Qlk_data, params):
     """
     Will find data corresponding to the params entered.
-    
+
     Inputs:
-        Qlk_data  =>  the qlk to search in (must just be a tuple of data and 
+        Qlk_data  =>  the qlk to search in (must just be a tuple of data and
                                             cols)
-        params    =>  A dictionary with the parameters to search for. 
+        params    =>  A dictionary with the parameters to search for.
                       The optional key labels are:
                           * at_num    [int]
                           * cart_dim  [int]
                           * lk        [list or tuple <int> dimension 2]
+                          * step_num  [int or list of ints]
     """
     data, cols = Qlk_data
-    if params.get('at_num'):
+    if params.get("step_num") is not None:
+        data = data[params['step_num']]
+        cols = cols[params['step_num']]
+    if params.get('at_num') is not None:
         data, cols = _get_in_Qlk_int_(data, cols, 0, params['at_num'])
-    if params.get('cart_dim'):
+    if params.get('cart_dim') is not None:
         data, cols = _get_in_Qlk_int_(data, cols, 1, params['cart_dim'])
-    if params.get('lk'):
+    if params.get('lk') is not None:
         max_val, min_val = np.max(params['lk']), np.min(params['lk'])
-        data, cols = _get_in_Qlk_int_(data, cols, 2, max_val) #get l
-        data, cols = _get_in_Qlk_int_(data, cols, 3, min_val) #then get k
+        data, cols = _get_in_Qlk_int_(data, cols, 2, max_val)  # get l
+        data, cols = _get_in_Qlk_int_(data, cols, 3, min_val)  # then get k
     return data

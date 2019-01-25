@@ -14,7 +14,7 @@ from PLOT import Plot
 ###############
 # CTMQC_low_coup_2mol
 folders = ['',
-           '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=10meV/',
+           '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=100meV',
            '',
            ]
 
@@ -23,7 +23,7 @@ root_folders = ['',
                 '']
 
 
-plotting_parameters = ['energy_cons', '|C|^2']
+plotting_parameters = ['norm', 'energy_cons']
 replicas            = 'all'
 plot                = True
 #######################################################

@@ -26,70 +26,91 @@ class Plot_Norm(object):
         if self.plot: 
             self.widget_ax = axes[0]
             self.plot_ax = axes[1]
-        
-            #Setting initial default values
+
+            # Setting initial default values
             self.avg_reps_norm = True
             self.all_reps_norm = True
-            
-            #Plotting
+
+            # Plotting
             self.all_rep_lines_norm = []
-            
+
             self._plot_all_rep_norm()
             self._plot_norm_graph()
-            #Connect checkboxes to plot control
-            if self._use_control:    self._set_norm_control()
-            
+            # Connect checkboxes to plot control
+            if self._use_control:
+                self._set_norm_control()
+
             self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
 
         Plot_Norm._get_all_rep_norms(self)
         Plot_Norm.put_drift_annotation(self)
-            
+
     def _check_settings_norm(self, label):
-        if label == 'all replicas': #Pressed the all replicas button
+        if label == 'all replicas':  # Pressed the all replicas button
             for line in self.all_rep_lines_norm:
                 line.set_visible(not line.get_visible())
-                
+
         elif label == 'average':
-            self.avg_line_norm.set_visible(not self.avg_line_norm.get_visible())
+            self.avg_line_norm.set_visible(
+                                           not self.avg_line_norm.get_visible()
+                                          )
         plt.draw()
-            
-    #Will set the control panel for norm graph
+
+    # Will set the control panel for norm graph
     def _set_norm_control(self):
-        self.check_norm = CheckButtons(self.widget_ax, ('all replicas', 'average'), (self.all_reps_norm, self.avg_reps_norm))
+        self.check_norm = CheckButtons(self.widget_ax,
+                                       ('all replicas', 'average'),
+                                       (self.all_reps_norm, self.avg_reps_norm)
+                                       )
         self.check_norm.on_clicked(self._check_settings_norm)
-        
-    #Will plot the all replica norms
+
+    # Will plot the all replica norms
     def _plot_all_rep_norm(self):
         """
         Will plot all the replicas as thin red lines.
         """
-        
-        
-            
+
         self.all_rep_lines_norm = []
         for Dfilename in self.all_Dcoeff_data:
             coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
             norms = np.sum(pops, axis=1)
-            self.all_rep_lines_norm.append(self.plot_ax.plot(timesteps, norms, alpha=self.alpha, color='r', lw=1)[0])
+            self.all_rep_lines_norm.append(self.plot_ax.plot(timesteps,
+                                                             norms,
+                                                             alpha=self.alpha,
+                                                             color='r',
+                                                             lw=1
+                                                             )[0])
 
-                
-        #Initialise the replica lines
+        # Initialise the replica lines
         for line in self.all_rep_lines_norm:
             line.set_visible(self.all_reps_norm)
-    
+
     @staticmethod
     def _get_all_rep_norms(self):
-        self.norm_drift_per_rep = []  
+        """
+        Will get all the norm drifts from each replica.
+        """
+        self.norm_drift_per_rep = []
         for Dfilename in self.all_Dcoeff_data:
             coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
             norms = np.sum(pops, axis=1)
             fit = np.polyfit(timesteps, norms, 1)
             errs = [1e-10]+[1e-6]*(len(timesteps)-1)
-            fit2, pcov = curve_fit(linear_fit, timesteps, norms, p0=[fit[0], 1], sigma=errs)
+            fit2, pcov = curve_fit(linear_fit,
+                                   timesteps,
+                                   norms,
+                                   p0=[fit[0], 1],
+                                   sigma=errs)
             self.norm_drift_per_rep.append(fit2[0]*1000)
-        self.worst_rep = np.argmax(np.absolute(self.norm_drift_per_rep))+1
-        self.best_rep = np.argmin(np.absolute(self.norm_drift_per_rep))+1
-    
+
+        self.norm_drift_per_rep = np.array(self.norm_drift_per_rep)
+        self.worst_reps['norm'] = np.argmax(
+                                           np.absolute(self.norm_drift_per_rep)
+                                           ) + 1
+        self.best_reps['norm'] = np.argmin(
+                                           np.absolute(self.norm_drift_per_rep)
+                                          ) + 1
+
     @staticmethod
     def put_drift_annotation(self):
         """
@@ -99,13 +120,18 @@ class Plot_Norm(object):
         norms = np.sum(pops, axis=1)
         fit = np.polyfit(timesteps, norms, 1)
         errs = [1e-10]+[1e-6]*(len(timesteps)-1)
-        fit2, pcov = curve_fit(linear_fit, timesteps, norms, p0=[fit[0], 1], sigma=errs)
-        text = r"Avg drift per rep = %.2g ps$^{-1}$"%(fit2[0]*1000)
-                        
-        if self.plot:        
+        fit2, pcov = curve_fit(linear_fit,
+                               timesteps,
+                               norms,
+                               p0=[fit[0], 1],
+                               sigma=errs)
+        text = r"Avg drift per rep = %.2g ps$^{-1}$" % (fit2[0] * 1000)
+
+        if self.plot:
             y1 = np.polyval(fit2, timesteps)
             self.plot_ax.plot(timesteps, y1, 'k--', lw=0.5)
-            all_norms = [np.sum(self.all_Dcoeff_data[i][3], axis=1) for i in self.all_Dcoeff_data]
+            all_norms = [np.sum(self.all_Dcoeff_data[i][3], axis=1)
+                         for i in self.all_Dcoeff_data]
             min_len = np.min([len(i) for i in all_norms])
             all_norms = [i[:min_len] for i in all_norms]
             timesteps = timesteps[:min_len]
