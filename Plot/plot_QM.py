@@ -188,22 +188,9 @@ class QM_R(object):
         self.MD_dt = self.run_inp_params['NUCLEAR_TIMESTEP']
 
         QM_R.Qlk_dt_slider = Slider(QM_R.widg_ax, 'Time step', 0, self.Qlk_ntimesteps-1, valinit=0, valstep=1)
-        QM_R.SELF = self #Need this for the on_changed function... there is probably a better way though.
+        QM_R.SELF = self  # Need this for the on_changed function... 
         QM_R.Qlk_dt_slider.on_changed(QM_R._set_Qlk_slider_control)
-        
-#        self.Qlk_vlines = [self.axes[param][1].axvline(QM_R.current_dt*self.MD_dt) for param in self.non_qlk_params]
-    
-#    def _Qlk_cart_dim_control(self, label):
-#        """
-#        Will control which cartesian dimensions are plotted. 
-#        (see plt.CheckButton docs)
-#        
-#        Inputs:
-#            *label   =>  The label of the checkbutton pressed
-#        """
-#        for i, dim in enumerate(["X","Y","Z"]):
-#            if label == dim: QM_R.cart_dims[i] = not QM_R.cart_dims[i]
-#        self._set_Qlk_slider_control(self.Qlk_dt_slider.val)
+
     
     @staticmethod
     def _set_Qlk_slider_control(val):
@@ -213,57 +200,35 @@ class QM_R(object):
         # Need to be an int as it indexes
         val = int(val)
         QM_R._set_qm_vs_pos_all_reps(QM_R.SELF, val)
-        
-#        # Draw the time lines
-#        for line in self.Qlk_vlines: line.remove()
-#        self.Qlk_vlines = [self.axes[param][1].axvline(val*self.MD_dt) for param in self.non_qlk_params]
-#        
-#        plt.figure(self.f.number)
-#        plt.draw()
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 class QM_t(object):
     """
     Will plot the Qlk against time graph.
-    
+
     Inputs:
-        axes  => a list of the axes to plot on. The first item_plot_site_ener should be the 
+        axes  => a list of the axes to plot on. The first item should be the
                  widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):
         if self.plot:
             QM_t.widget_ax = axes[0]
             QM_t.plot_ax = axes[1]
-            
-            #Setting initial default values
+
+            # Setting initial default values
             QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag = [False, False, False, True]
-            
-            #Plotting
-    #        self._plot_all_rep_Qlk_t()
+            QM_t._show_all, QM_t._show_avg = True, False
+
+            # Plotting
             QM_t._plot_avg_QM_t(self)
-            
-            #Connect checkboxes to plot control
-            if self._use_control:    QM_t._set_Qlk_t_control()
-            
+            QM_t._plot_all(self)
+
+            # Connect checkboxes to plot control
+            if self._use_control:
+                QM_t._set_Qlk_t_control()
+
             QM_t.plot_ax.set_ylabel(r"$Q_{12,\nu}^{(I)}$ [$\frac{Ha s}{l}$]")
-    
+
     @staticmethod
     def _check_settings_Qlk_t(label):
         if label == 'X':
@@ -283,31 +248,46 @@ class QM_t(object):
             for ln in QM_t.Maglines:
                 ln.set_visible(QM_t.Mag)
         plt.draw()
-    
+
     @staticmethod
     def _turn_on_atoms(Min, Max, type_switch='opposite'):
         """
-        Will turn on atoms in a given range dependent on the current state of 
+        Will turn on atoms in a given range dependent on the current state of
         the X, Y, Z and Mag checkboxes
+
+        Inputs:
+            * Min => min atom to plot in range
+            * Max => max atom to plot in range
+            * type_switch => the visibility of the line (opposite means
+                             opposite of the current state).
         """
-        poss_lines   = [QM_t.Xlines, QM_t.Ylines, QM_t.Zlines, QM_t.Maglines]
+        # First handle the X, Y, Z, Mag lines (averages)
+        poss_lines = [QM_t.Xlines, QM_t.Ylines, QM_t.Zlines, QM_t.Maglines]
         all_switches = [QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag]
         for i, test in enumerate(all_switches):
             if test:
-                for ln in poss_lines[i][ Min:Max ]:
+                for ln in poss_lines[i][Min: Max]:
                     if type_switch == 'opposite':
                         ln.set_visible(not ln.set_visible)
                     else:
                         ln.set_visible(type_switch)
+
+        # Then handle the all replica lines
+        for iat, linelist in enumerate(QM_t.all_rep_lines[Min: Max]):
+            for ln in linelist:
+                if type_switch == 'opposite':
+                    ln.set_visible(not ln.get_visible())
+                else:
+                    ln.set_visible(type_switch)
         plt.draw()
-        
+
     @staticmethod
     def _submit_text(text):
         """
         Will decide which atoms to plot from the submitted text in the text box
         """
         if text == 'all':
-            QM_t._turn_on_atoms(0,len(QM_t.Xlines), True)
+            QM_t._turn_on_atoms(0, len(QM_t.Xlines), True)
         else:
             text = text.split(',')
             for item in text:
@@ -319,31 +299,33 @@ class QM_t(object):
                     try:
                         Min = int(Min)
                         Max = int(Max)
-                    except:
-                        print("Tried to convert '%s' to ints but couldn't"%item)
+                    except ValueError:
+                        print("Tried to convert '%s' to ints" +
+                              " but couldn't" % item)
                 elif len(minmax) == 1:
                     try:
                         Min = int(minmax[0])
                         Max = int(minmax[0])+1
-                    except:
-                        print("Tried to convert '%s' to ints but couldn't"%item)
+                    except ValueError:
+                        print("Tried to convert '%s' to ints but" +
+                              " couldn't" % item)
                 if Max > len(QM_t.Xlines):
                     Max = len(QM_t.Xlines)
-                QM_t._turn_on_atoms(0,len(QM_t.Xlines), False)
-                QM_t._turn_on_atoms(Min, Max, True)
-        
-    #Will set the control panel for Qlk_t graph
+                QM_t._turn_on_atoms(0, len(QM_t.Xlines), False)  # Turn all off
+                QM_t._turn_on_atoms(Min, Max, True)  # Turn the correct ones on
+
+    # Will set the control panel for Qlk_t graph
     @staticmethod
     def _set_Qlk_t_control():
-        QM_t.check_Qlk_t = CheckButtons(QM_t.widget_ax[0], ('X', 'Y', 'Z', 'Magnitude'), [QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag])
+        QM_t.check_Qlk_t = CheckButtons(QM_t.widget_ax[0],
+                                        ('X', 'Y', 'Z', 'Magnitude'),
+                                        [QM_t.X, QM_t.Y, QM_t.Z, QM_t.Mag])
         QM_t.check_Qlk_t.on_clicked(QM_t._check_settings_Qlk_t)
-        
+
         QM_t.textbox = TextBox(QM_t.widget_ax[1], 'Atoms:', initial="all")
         QM_t.textbox.on_submit(QM_t._submit_text)
-        
 
-
-    #Will plot the Quantum Momentum term
+    # Will plot the Quantum Momentum term
     @staticmethod
     def _plot_avg_QM_t(self):
         """
@@ -354,84 +336,91 @@ class QM_t(object):
         Qlk_data = self.avg_Qlk_data[Qlk_filename]
         Qlk_timesteps = Qlk_data[1]
         Qlk_data = Qlk_data[0]
-        num_atoms = int(np.shape(Qlk_data[0])[1]/3)
-        
+
         QM_t.Xlines = []
         QM_t.Ylines = []
         QM_t.Zlines = []
         QM_t.Maglines = []
-        
-        for iatom in range(1,num_atoms+1):
-            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
+
+        for iatom in range(1, self.num_atoms+1):
+            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                        'lk': (1, 2),
+                                                        'cart_dim': 1})
+            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                        'lk': (1, 2),
+                                                        'cart_dim': 2})
+            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                        'lk': (1, 2),
+                                                        'cart_dim': 3})
             QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
-            
-            ln, = ax.plot(Qlk_timesteps, 
-                          QMX, 
+
+            # Plot X
+            ln, = ax.plot(Qlk_timesteps,
+                          QMX,
                           color=self.colors[0])
-            ln.set_visible(QM_t.X)
+            ln.set_visible(QM_t.X and QM_t._show_avg)
             QM_t.Xlines.append(ln)
-            
-            ln, = ax.plot(Qlk_timesteps, 
-                          QMY, 
+
+            # Plot Y
+            ln, = ax.plot(Qlk_timesteps,
+                          QMY,
                           color=self.colors[1])
-            ln.set_visible(QM_t.Y)
+            ln.set_visible(QM_t.Y and QM_t._show_avg)
             QM_t.Ylines.append(ln)
-            
-            ln, = ax.plot(Qlk_timesteps, 
-                          QMZ, 
+
+            # Plot Z
+            ln, = ax.plot(Qlk_timesteps,
+                          QMZ,
                           color=self.colors[2])
-            ln.set_visible(QM_t.Z)
+            ln.set_visible(QM_t.Z and QM_t._show_avg)
             QM_t.Zlines.append(ln)
-            
-#            print(np.mean(QM_mag))
-#            print(np.std(QM_mag))
-#            ax.axhline(np.mean(QM_mag))
-            self.QM_mag = QM_mag
-#            ax.axhline(np.mean(QM_mag)+np.std(QM_mag)*2, color=self.colors[iatom-1])
-            ln, = ax.plot(Qlk_timesteps, 
-                          QM_mag[:,0], 
-                          '--', 
+
+            # Plot Mag
+            ln, = ax.plot(Qlk_timesteps,
+                          QM_mag[:, 0],
+                          '--',
                           color=self.colors[iatom-1])
-            ln.set_visible(QM_t.Mag)
+            ln.set_visible(QM_t.Mag and QM_t._show_avg)
             QM_t.Maglines.append(ln)
 
+    # Will plot the all replica Qlk_ts
+    @staticmethod
+    def _plot_all(self):
+        """
+        Will plot all the Qlk vs time lines for each replica and save all the
+        line in a 2D list called
+        """
+        QM_t.all_rep_lines = [[] for i in range(self.num_atoms)]
 
+        ax = self.axes['qm_t'][1]
+        for Qlk_filename in self.all_Qlk_data:
+            Qlk_data = self.all_Qlk_data[Qlk_filename]  # list of all qlk_data
+            Qlk_timesteps = Qlk_data[1]  # grab timesteps from qlk_data list
+            Qlk_data = Qlk_data[0]  # grab actual data from qlk_data list
+            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
 
+            for iatom in range(1, num_atoms+1):
+                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                            'lk': (1, 2),
+                                                            'cart_dim': 1})
+                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                            'lk': (1, 2),
+                                                            'cart_dim': 2})
+                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
+                                                            'lk': (1, 2),
+                                                            'cart_dim': 3})
+                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
 
+                ln, = ax.plot(Qlk_timesteps,
+                              QM_mag[:, 0],
+                              '-',
+                              color=self.colors[iatom-1],
+                              alpha=self.alpha,
+                              lw=0.7)
+                QM_t.all_rep_lines[iatom-1].append(ln)
+            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
 
-
-
-#    #Will plot the all replica Qlk_ts
-#    def _plot_all_rep_Qlk_t(self):
-#        """
-#        Will plot all the Qlk vs time lines for each replica
-#        """
-#        self.all_Qlk_t_lines = []
-#        
-#        ax = self.axes['qm_t'][1]
-#        for Qlk_filename in self.all_Qlk_data:
-##                Qlk_filename = 'run-QM-1.xyz'
-#            Qlk_data = self.all_Qlk_data[Qlk_filename]
-#            Qlk_timesteps = Qlk_data[1]
-#            Qlk_data = Qlk_data[0]
-#            num_atoms = int(np.shape(Qlk_data[0])[1]/3)
-#            for iatom in range(1,num_atoms+1):
-##                        if any(iatom == j for j in (2,4,11,8,1)): continue
-#                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':1})
-#                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':2})
-#                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num':iatom, 'lk':(1,2), 'cart_dim':3})
-#                
-#                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
-##                        QM_mag /= np.max(QM_mag)
-#                ln, = ax.plot(Qlk_timesteps, 
-#                              QM_mag, 
-#                              label="atom %i"%iatom, 
-#                              color=self.colors[iatom-1])
-#                self.all_Qlk_t_lines.append(ln)
-#            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
-#            
-#        #Initialise the replica lines
-#        for line in self.all_Qlk_t_lines:
-#            line.set_visible(self.all_reps_Qlk_t)
+        # Initialise the replica lines
+        for atlist in QM_t.all_rep_lines:
+            for line in atlist:
+                line.set_visible(QM_t._show_all)
