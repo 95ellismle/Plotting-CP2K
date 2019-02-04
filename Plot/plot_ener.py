@@ -193,24 +193,24 @@ class Energy_Cons(object):
             ln, = Energy_Cons.plot_ax.plot(data['Time'],
                                            data['E_cons'],
                                            'k-',
-                                           lw=0.5,
-                                           alpha=self.alpha)
+                                           lw=0.9,
+                                           alpha=self.alpha+0.1)
             Energy_Cons.tot_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
             ln, = Energy_Cons.plot_ax.plot(data['Time'],
                                            data['Kin'],
                                            'r-',
-                                           lw=0.5,
-                                           alpha=self.alpha)
+                                           lw=0.9,
+                                           alpha=self.alpha+0.1)
             Energy_Cons.kin_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
             ln, = Energy_Cons.plot_ax.plot(data['Time'],
                                            data['Pot'],
                                            'g-',
-                                           lw=0.5,
-                                           alpha=self.alpha)
+                                           lw=0.9,
+                                           alpha=self.alpha+0.1)
             Energy_Cons.pot_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
 
@@ -223,21 +223,21 @@ class Energy_Cons(object):
         ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
                                        self.tot_ener_mean['E_cons'],
                                        'k-',
-                                       lw=1.0)
+                                       lw=1.3)
         Energy_Cons.avg_lines['tot'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
         ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
                                        self.tot_ener_mean['Kin'],
                                        'r-',
-                                       lw=1.0)
+                                       lw=1.3)
         Energy_Cons.avg_lines['kin'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
         ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
                                        self.tot_ener_mean['Pot'],
                                        'g-',
-                                       lw=1.0)
+                                       lw=1.3)
         Energy_Cons.avg_lines['pot'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
 
@@ -337,11 +337,11 @@ class Energy_Cons(object):
         allTotEner = [self.all_tot_ener[irep]['E_cons']
                       for irep in self.all_tot_ener]
         rangeX = np.max(self.tot_ener_mean['Time']) - minX
-        rangeY = np.max(allTotEner) - minY
+        rangeY = np.max([np.max(i) for i in allTotEner]) - minY
 
         x, y = minX + (rangeX * 0.1), minY + (rangeY * 0.9)
         e = self.Tot_Avg_Energy_Drift
         ann_txt = "Average Total Energy Drift = " + \
             r"%.2g $\frac{Ha}{ps \ atom}$" % e
         Energy_Cons.plot_ax.annotate(ann_txt,
-                                     (x, y), fontsize=24)
+                                     (x, y), fontsize=18)

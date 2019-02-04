@@ -10,20 +10,22 @@ import matplotlib.pyplot as plt
 import numpy as np
 from scipy.optimize import curve_fit
 
-def linear_fit(x, m ,c):
-    return m*x + c
+
+def linear_fit(x, m, c):
+    return m * x + c
+
 
 class Plot_Norm(object):
     """
     Will plot the normalisation graph.
-    
+
     Inputs:
-        axes  => a list of the axes to plot on. The first item should be the 
+        axes  => a list of the axes to plot on. The first item should be the
                  widget axis the second will be the axis to plot the data.
     """
     def __init__(self, axes):
         self.plot_info['Norm'] = []
-        if self.plot: 
+        if self.plot:
             self.widget_ax = axes[0]
             self.plot_ax = axes[1]
 
@@ -135,22 +137,29 @@ class Plot_Norm(object):
             min_len = np.min([len(i) for i in all_norms])
             all_norms = [i[:min_len] for i in all_norms]
             timesteps = timesteps[:min_len]
+
             min_x, min_y = min(timesteps), np.min(all_norms)
-            range_x, range_y = max(timesteps) - min(timesteps), np.max(all_norms) - np.min(all_norms)
-            loc = (min_x+0.05*range_x, min_y + 0.85*range_y)
+            range_x = max(timesteps) - min(timesteps)
+            range_y = np.max(all_norms) - np.min(all_norms)
+            loc = (min_x + 0.05 * range_x,
+                   min_y + 0.85 * range_y)
+
             self.plot_ax.annotate(text, loc, fontsize=18)
-        
+
         self.norm_drift = fit2[0]*1000
         self.plot_info['Norm'].append(text[:text.find('ps')])
 
-    #Will plot normal of diabatic coeffs
+    # Will plot normal of diabatic coeffs
     def _plot_norm_graph(self):
         """
-        Will plot the normal of the diabatic coefficients. Will sum the 
+        Will plot the normal of the diabatic coefficients. Will sum the
         populations and plot on the norm axis.
         """
         coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
         norms = np.sum(pops, axis=1)
-        self.avg_line_norm, = self.plot_ax.plot(timesteps, norms, lw=2, color='g')
-        
+        self.avg_line_norm, = self.plot_ax.plot(timesteps,
+                                                norms,
+                                                lw=2,
+                                                color='g')
+
         self.avg_line_norm.set_visible(self.avg_reps_norm)

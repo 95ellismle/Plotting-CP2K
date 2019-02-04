@@ -18,40 +18,43 @@ def find_rep_num_in_name(filename):
     the filename and not the folder.
     """
 #    labs = ['pos','ham','ener','coeff','vel']
-    regex_matches = {'n-pos':"-\d*-\d*\.xyz", 
-                     'ham':"-\d*-\d*\.xyz",
-                     'n-ener_':"_\d*-\d*\.dat",
-                     'coeff-':"f-\d*-\d*\.xyz",
-                     'n-vel':"-\d*-\d*\.xyz",
-                     'n-frc':"_\d*-\d*\.xyz",
-                     't_frc':"_\d*\.xyz",
-                     'd_frc':"_\d*\.xyz",
-                     "coeff_a":"_\d*-\d*\.xyz",
-                     "QM":"-\d*\.xyz",
-                     "d_ener":"-\d*-\d*\.csv",}
-    regex_matches2 = {'n-pos':"\d*-\d*\.", 
-                     'ham':"\d*-\d*\.",
-                     'n-ener_':"\d*-\d*\.",
-                     'coeff-':"\d*-\d*\.",
-                     'n-vel':"\d*-\d*\.",
-                     'n-frc':"\d*-\d*\.",
-                     't_frc':"\d*\.",
-                     'd_frc':"\d*\.",
-                     "coeff_a":"\d*-\d*\.",
-                     "QM":"\d*\.",
-                     "d_ener":"\d*-\d*\.",}
-    final_delim = {'n-pos':"-", 
-                   'ham':"-",
-                   'n-ener_':"-",
-                   'coeff-':"-",
-                   'n-vel':"-",
-                   'n-frc':"-",
-                   't_frc':".",
-                   'd_frc':".",
-                   "coeff_a":"-",
-                   "QM":".",
-                   "d_ener":"-",}
-    
+    regex_matches = {'n-pos': r"-\d*-\d*\.xyz",
+                     'ham': r"-\d*-\d*\.xyz",
+                     'n-ener_': r"_\d*-\d*\.dat",
+                     'coeff-': r"f-\d*-\d*\.xyz",
+                     'n-vel': r"-\d*-\d*\.xyz",
+                     'n-frc': r"_\d*-\d*\.xyz",
+                     't_frc': r"_\d*\.xyz",
+                     'd_frc': r"_\d*\.xyz",
+                     "coeff_a": r"_\d*-\d*\.xyz",
+                     "QM": r"-\d*\.xyz",
+                     "d_ener": r"-\d*-\d*\.csv"}
+
+    regex_matches2 = {'n-pos': r"\d*-\d*\.",
+                      'ham': r"\d*-\d*\.",
+                      'n-ener_': r"\d*-\d*\.",
+                      'coeff-': r"\d*-\d*\.",
+                      'n-vel': r"\d*-\d*\.",
+                      'n-frc': r"\d*-\d*\.",
+                      't_frc': r"\d*\.",
+                      'd_frc': r"\d*\.",
+                      "coeff_a": r"\d*-\d*\.",
+                      "QM": r"\d*\.",
+                      "d_ener": r"\d*-\d*\."}
+    final_delim = {'n-pos': r"-",
+                   'ham': r"-",
+                   'n-ener_': r"-",
+                   'coeff-': r"-",
+                   'n-vel': r"-",
+                   'n-frc': r"-",
+                   't_frc': r".",
+                   'd_frc': r".",
+                   "coeff_a": r"-",
+                   "QM": r".",
+                   "d_ener": r"-"}
+    if 'run-rlk-' in filename:
+        return 1
+
     for lab in regex_matches:
         if lab in filename:
             reduced_fname = re.findall(regex_matches[lab], filename)
