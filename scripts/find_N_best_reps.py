@@ -6,15 +6,15 @@ Created on Wed Jan 23 13:31:22 2019
 @author: mellis
 """
 
-import os; os.chdir('..')
+import os; os.chdir('..')  # This is basically a hack due to bad code structure
 import matplotlib.pyplot as plt
 import numpy as np
 
 import PLOT
 
-numReps = 200
-folder = '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=1meV/'
-
+numReps = 50
+folder = '/scratch/mellis/flavoured-cptk/200Rep_2mol/'
+#
 p = PLOT.Plot(plot_params=['energy_cons', 'norm', '|C|^2'],
               folder=folder,
               reps='all',

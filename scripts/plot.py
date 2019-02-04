@@ -14,7 +14,9 @@ from PLOT import Plot
 ###############
 # CTMQC_low_coup_2mol
 folders = ['',
-           '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=100meV',
+#            '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=10meV',
+           "/scratch/mellis/flavoured-cptk/200Rep_2mol/",
+#           "/scratch/mellis/flavoured-cptk/Spare/NOTANH",
            '',
            ]
 
@@ -23,9 +25,9 @@ root_folders = ['',
                 '']
 
 
-plotting_parameters = ['norm', 'energy_cons']
-replicas            = 'all'
-plot                = True
+plotting_parameters = ['norm', 'qm_t', 'rlk']
+replicas = 'all'
+plot = True
 #######################################################
 
 folders = [fold.make_fold_abs(i) for i in folders if os.path.isdir(i)]
