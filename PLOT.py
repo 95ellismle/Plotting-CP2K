@@ -16,6 +16,7 @@ from load import load_xyz
 from load import load_tintf
 from load import load_frc
 from load import load_sigma
+from load import load_K
 
 from Plot import plot_utils
 from Plot import plot_coeff
@@ -26,6 +27,7 @@ from Plot import plot_ener
 from Plot import plot_frc
 from Plot import plot_tintf
 from Plot import plot_pos
+from Plot import plot_K
 
 # External Modules
 import matplotlib.pyplot as plt
@@ -64,13 +66,12 @@ class Params(object):
         self.colors = [i for j in range(50) for i in self.colors]
         self._use_control = False
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 200  # (in fs)
+        self.max_time = 'all'  # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
         self.dt = self.run_inp_params['NUCLEAR_TIMESTEP']
-        self.atoms_to_plot = [2, 3, 5, 6, 8, 9, 11, 12]
-        # [1, 4, 7, 10]  # Atom indices 0th is 1
+        self.atoms_to_plot = 'all'
 
         self.worst_reps = {}
         self.best_reps = {}
@@ -239,6 +240,7 @@ class LoadData(Params):
                     'alpha':       ['qm', 'rlk'],
                     'pos_sigma':   ['sigma', 'pos'],
                     'sum(ylk)':    ['fl_fk', '|c|^2'],
+                    'k':           ['k'],
                     }
 
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
@@ -264,6 +266,7 @@ class LoadData(Params):
         self.load_tot_ener()
         self.load_force()
         self.load_sigmas()
+        self.load_k()
 
         self.calc_alpha()
         self._get_transparency()
@@ -342,7 +345,8 @@ class LoadData(Params):
         if 'ham' in self.load_params:
             exitCode = self.__load_ham(self.quick_stride, max_step)
         else:
-            if max_step <= 100:
+            if type(max_step) == str or \
+                                   (type(max_step) == int and max_step <= 100):
                 stride = 1
             else:
                 ham_file = [i for i in os.listdir(self.folder)
@@ -507,6 +511,31 @@ class LoadData(Params):
 
             # Find metadata
             Keys = list(self.all_sigma.keys())
+            self.num_reps = len(Keys)
+
+    def load_k(self):
+        """
+        Will load the K data from a simulation (the k data is the C_ctmqc)
+        """
+        if 'k' in self.load_params:
+            self.load_timings['K'] = time.time()
+            if type(self.max_step) == str:
+                max_step = self.max_step
+            else:
+                max_step = self.max_step*self.dt
+
+            self.all_K = load_K.load_all_K_in_folder(
+                                                       folder=self.folder,
+                                                       reps=self.reps,
+                                                       max_step=max_step,
+                                                       min_step=self.min_time,
+                                                       stride=self.quick_stride
+                                                           )
+            self.load_timings['K'] = time.time() - \
+                self.load_timings['K']
+
+            # Find metadata
+            Keys = list(self.all_K.keys())
             self.num_reps = len(Keys)
 
     def calc_alpha(self):
@@ -843,6 +872,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                  self.axes['rlk'])
         if 'alpha' in self.plot_params:
             self.mAlphaPlot = plot_QM.Alpha.__init__(self, self.axes['alpha'])
+
+        if 'k' in self.plot_params:
+            self.mKPlot = plot_K.K.__init__(self, self.axes['k'])
 
         # Coefficients
         if 'norm' in self.plot_params:

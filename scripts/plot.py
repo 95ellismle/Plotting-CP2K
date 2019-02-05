@@ -14,18 +14,11 @@ from PLOT import Plot
 ###############
 # CTMQC_low_coup_2mol
 folders = ['',
-#            '/scratch/mellis/flavoured-cptk/DiffScalings/Coup=10meV',
-           "/scratch/mellis/flavoured-cptk/200Rep_2mol/",
-#           "/scratch/mellis/flavoured-cptk/Spare/NOTANH",
+           "/home/oem/Data/CTMQC/K/200Rep",
            '',
            ]
 
-root_folders = ['',
-                '/scratch/mellis/CTMQC_Detailed_Balance/test/0.05/',
-                '']
-
-
-plotting_parameters = ['norm', 'qm_t', 'rlk']
+plotting_parameters = ['norm', 'qm_t', 'K']
 replicas = 'all'
 plot = True
 #######################################################
