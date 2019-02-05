@@ -13,7 +13,7 @@ import numpy as np
 import PLOT
 
 numReps = 50
-folder = '/scratch/mellis/flavoured-cptk/200Rep_2mol/'
+folder = '/home/oem/Data/CTMQC/K/200Rep'
 #
 p = PLOT.Plot(plot_params=['energy_cons', 'norm', '|C|^2'],
               folder=folder,

@@ -28,7 +28,9 @@ def find_rep_num_in_name(filename):
                      'd_frc': r"_\d*\.xyz",
                      "coeff_a": r"_\d*-\d*\.xyz",
                      "QM": r"-\d*\.xyz",
-                     "d_ener": r"-\d*-\d*\.csv"}
+                     "d_ener": r"-\d*-\d*\.csv",
+                     "n-K": r"-K-\d*.list",
+                     }
 
     regex_matches2 = {'n-pos': r"\d*-\d*\.",
                       'ham': r"\d*-\d*\.",
@@ -40,7 +42,9 @@ def find_rep_num_in_name(filename):
                       'd_frc': r"\d*\.",
                       "coeff_a": r"\d*-\d*\.",
                       "QM": r"\d*\.",
-                      "d_ener": r"\d*-\d*\."}
+                      "d_ener": r"\d*-\d*\.",
+                      "n-K": r"\d*\.",
+                      }
     final_delim = {'n-pos': r"-",
                    'ham': r"-",
                    'n-ener_': r"-",
@@ -51,7 +55,9 @@ def find_rep_num_in_name(filename):
                    'd_frc': r".",
                    "coeff_a": r"-",
                    "QM": r".",
-                   "d_ener": r"-"}
+                   "d_ener": r"-",
+                   "n-K": r".",
+                   }
     if 'run-rlk-' in filename:
         return 1
 
@@ -66,7 +72,7 @@ def find_rep_num_in_name(filename):
                             try:    
                                 rep = int(rep[0][:ichar])
                                 return rep
-                            except TypeError:
+                            except ValueError:
                                 print("Sorry something went wrong extracting the replica number from a file")
                                 print("Cannot convert %s to an integer"%str(rep[0][:ichar]))
                                 print("\nFilename = %s"%filename)
