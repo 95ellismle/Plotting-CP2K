@@ -27,7 +27,7 @@ class K(object):
 
             K._plotAll(self)
 
-            K.plotAx.set_ylabel("$X_{ctmqc}$")
+            K.plotAx.set_ylabel("$X_{ctmqc, l}^{(I)}$")
 
     @staticmethod
     def _plotAll(self):
@@ -39,5 +39,5 @@ class K(object):
             data, timesteps = self.all_K[filename]
             for i in range(self.num_states):
                 K.plotAx.plot(timesteps, data[:, i],
-                              alpha=self.alpha, lw=1,
+                              alpha=0.7, lw=1,
                               color=self.colors[i])

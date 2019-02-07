@@ -18,7 +18,7 @@ folders = ['',
            '',
            ]
 
-plotting_parameters = ['norm', 'qm_t', 'K']
+plotting_parameters = ['|C|^2', 'K', 'qm_t']
 replicas = 'all'
 plot = True
 #######################################################
