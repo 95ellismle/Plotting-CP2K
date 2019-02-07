@@ -64,7 +64,7 @@ class Params(object):
         self.colors = [i for j in range(50) for i in self.colors]
         self._use_control = False
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 200  # (in fs)
+        self.max_time = 'all'  # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
