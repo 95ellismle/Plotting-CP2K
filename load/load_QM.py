@@ -86,6 +86,12 @@ def _get_in_Qlk_int_(data, cols, ind, val):
             mask = cols[:, :, ind] == val
         elif len(np.shape(data)) == 2:
             mask = cols[:, ind] == val
+        if len(mask) != len(data) or len(mask) != len(cols):
+            minLen = np.min([len(mask), len(data), len(cols)])
+            data = data[:minLen]
+            cols = cols[:minLen]
+            mask = mask[:minLen]
+
         data = data[mask]
         cols = cols[mask]
     else:
