@@ -27,7 +27,9 @@ def find_rep_num_in_name(filename):
                      't_frc': r"_\d*\.xyz",
                      'd_frc': r"_\d*\.xyz",
                      "coeff_a": r"_\d*-\d*\.xyz",
-                     "QM": r"-\d*\.xyz",
+                     "QM-": r"-\d*\.xyz",
+                     "QM_": r"-\d*\.xyz",
+                     "sigma": r"-\d*\.list",
                      "d_ener": r"-\d*-\d*\.csv",
                      "n-K": r"-K-\d*.list",
                      }
@@ -41,7 +43,9 @@ def find_rep_num_in_name(filename):
                       't_frc': r"\d*\.",
                       'd_frc': r"\d*\.",
                       "coeff_a": r"\d*-\d*\.",
-                      "QM": r"\d*\.",
+                      "QM-": r"\d*\.",
+                      "QM_": r"\d*\.",
+                      "sigma": r"\d*\.",
                       "d_ener": r"\d*-\d*\.",
                       "n-K": r"\d*\.",
                       }
@@ -54,7 +58,9 @@ def find_rep_num_in_name(filename):
                    't_frc': r".",
                    'd_frc': r".",
                    "coeff_a": r"-",
-                   "QM": r".",
+                   "QM-": r".",
+                   "QM_": r".",
+                   "sigma": r".",
                    "d_ener": r"-",
                    "n-K": r".",
                    }
@@ -102,20 +108,20 @@ Filename after regex = '%s' """%(filename, regex_matches[lab], str(reduced_fname
 
 # Given a list of files and a list of replica numbers find which files match the list of reps
 def files_with_correct_reps(files, reps):
-    try:
-        rep_nums = {f:find_rep_num_in_name(f[f.rfind('/'):]) for f in files}
-    except:
-        print("""Replica sorting isn't working for this data, switching it off.
-
-This means all data files will be read. 
-
-If this is Surface Hopping this is OK as it does not output different trajectory
-info in the same format as CTMQC.
-
-
-
-""")
-        return files
+#    try:  # The try except is for SH compatibility
+    rep_nums = {f:find_rep_num_in_name(f[f.rfind('/'):]) for f in files}
+#    except:
+#        print("""Replica sorting isn't working for this data, switching it off.
+#
+#This means all data files will be read. 
+#
+#If this is Surface Hopping this is OK as it does not output different trajectory
+#info in the same format as CTMQC.
+#
+#
+#
+#""")
+#        return files
     files = [i[1] for i in sorted(zip(rep_nums.values(), rep_nums.keys()))]
     if type(reps) == int:
         reps = [reps]

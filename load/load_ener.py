@@ -32,7 +32,6 @@ def load_all_ener_dat(folder, reps, max_time):
 # Will load the adiabtic energy csv
 def load_ener_ad(filepath, max_time, min_time):
     data = pd.read_csv(filepath)
-    print(min_time)
     if min_time > 0:
         data = data[data['Time'] > min_time]
     if max_time == 'all':

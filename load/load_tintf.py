@@ -31,3 +31,38 @@ def load_all_tintf_in_folder(folder, min_step=0, max_step='all', stride=1, ignor
                                     filename_must_not_contain=[], 
                                     reps=reps)
 
+
+def find_in_histF(data, cols, params):
+    """
+    Will find the data corresponding to the params in the dictionary.
+
+    Inputs:
+        * data = just the data from load_tintf
+        * cols = just the cols from load_tintf
+        * params = Dictionary of paramters:
+            - 'step_num': int,
+            - 'at_num': int,
+            - 'state': int
+    """
+    params['state'] += 1
+    # Get vital metadata
+    num_atoms = sum(cols[0, :, 1] == '1')
+    num_states = len(set(cols[0, :, 1]))
+
+    # Get the data from atom i
+    if 'at_num' in params:
+        at_nums = [params['at_num'] + (num_atoms*i) for i in range(num_states)]
+        data = data[:, at_nums]
+        cols = cols[:, at_nums, :]
+
+    # Get data from state i
+    if 'state' in params:
+        data = data[cols[:, :, 1] == str(params['state'])]
+
+    # Get data from step i
+    if 'step_num' in params:
+        data = data[params['step_num']]
+
+    return data
+        
+

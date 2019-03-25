@@ -148,6 +148,33 @@ def avg_pos_data(all_pos_data):
     return avg_pos
 
 
+def avg_QM0_data(all_qm_data):
+    """
+    Will average the quantum momentum (in the QM_0 format) over all replicas
+
+    Inputs:
+        * all_qm_data => the QM data in the QM_0 format
+    """
+    shapes = [all_qm_data[i][0][0].shape for i in all_qm_data]
+    shape = np.min(shapes, axis=0)
+
+    # Average the quantum momentum data
+    avg_qm_data = np.zeros(shape)
+    for qmF in all_qm_data:
+        avg_qm_data += all_qm_data[qmF][0][0][:shape[0], :shape[1], :shape[2]]
+    avg_qm_data /= len(all_qm_data)
+
+    # Average the timesteps
+    lens = [len(all_qm_data[i][1]) for i in all_qm_data]
+    minLen = min(lens)
+    timesteps = np.zeros(minLen)
+    for qmF in all_qm_data:
+        timesteps += all_qm_data[qmF][1][:minLen]
+    timesteps /= len(all_qm_data)
+
+    return avg_qm_data
+
+
 def avg_Qlk_data(all_Qlk_data):
     """
     Will average the Qlk data and return a dictionary with the data.
@@ -389,7 +416,7 @@ def get_num_reps(all_data, avg_on, found_num_reps):
     
 #Will get the avg_coupling, site_ener_diff 
 def get_coup_data(H_data, key):
-    site_ener = H_data[key][0][:,0,0]-H_data[key][0][:,1,1]
+    site_ener = H_data[key][0][:, 0, 0] - H_data[key][0][:, 1, 1]
     couplings = H_data[key][0][:,0,1]
     avg_couplings = np.mean(couplings)
     timesteps = H_data[key][2]

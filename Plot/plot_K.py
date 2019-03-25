@@ -5,8 +5,8 @@ Created on Tue Feb  5 12:17:40 2019
 
 @author: oem
 """
-from matplotlib.widgets import CheckButtons
-import matplotlib.pyplot as plt
+#from matplotlib.widgets import CheckButtons
+#import matplotlib.pyplot as plt
 
 
 class K(object):

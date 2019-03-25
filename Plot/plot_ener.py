@@ -100,7 +100,9 @@ class Adiab_States(object):
             max_diff, min_diff = np.max(y1_y2), np.min(y1_y2)
             normed_diffs = (y1_y2 - min_diff)/(max_diff - min_diff)
 
-            for dt, timestep in enumerate(self.all_ad_ener_data_avg['Time'][:-1]):
+            for dt, timestep in enumerate(
+                                         self.all_ad_ener_data_avg['Time'][:-1]
+                                          ):
                 T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
                 y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
                 y2 = self.all_ad_ener_data_avg[
@@ -190,11 +192,14 @@ class Energy_Cons(object):
         # Total energy
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
+            alpha = self.alpha + 0.1
+            if alpha > 1:
+                alpha = 1
             ln, = Energy_Cons.plot_ax.plot(data['Time'],
                                            data['E_cons'],
                                            'k-',
                                            lw=0.9,
-                                           alpha=self.alpha+0.1)
+                                           alpha=alpha)
             Energy_Cons.tot_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
@@ -202,7 +207,7 @@ class Energy_Cons(object):
                                            data['Kin'],
                                            'r-',
                                            lw=0.9,
-                                           alpha=self.alpha+0.1)
+                                           alpha=alpha)
             Energy_Cons.kin_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
@@ -210,7 +215,7 @@ class Energy_Cons(object):
                                            data['Pot'],
                                            'g-',
                                            lw=0.9,
-                                           alpha=self.alpha+0.1)
+                                           alpha=alpha)
             Energy_Cons.pot_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
 

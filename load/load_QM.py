@@ -17,6 +17,45 @@ params_to_ind_conv = {'at_num': 0,
                       'cart_dim': 1}
 
 
+def load_QM_0(filepath,
+              min_step=0,
+              max_step='all',
+              stride=1,
+              ignore_steps=[]):
+    """
+    Will load a single traj QM_0 (the quantum momentum without the lk indices)
+    """
+    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
+                                              num_data_cols=3,
+                                              min_step=min_step,
+                                              max_step=max_step,
+                                              stride=stride,
+                                              ignore_steps=ignore_steps)
+    cols = np.array(cols).astype(int)
+    return (data, cols), timesteps
+
+
+# Reads all the Qlk files from a given folder
+def load_all_QM_0_in_folder(folder,
+                            min_step=0,
+                            max_step='all',
+                            stride=1,
+                            ignore_steps=[],
+                            reps='all'):
+    """
+    Will load all the QM_0 files in 1 folder.
+    """
+    return Utils.load_all_in_folder(folder=folder,
+                                    func=load_QM_0,
+                                    args=[min_step,
+                                          max_step,
+                                          stride,
+                                          ignore_steps],
+                                    filename_must_contain=['QM_0', 'xyz'],
+                                    filename_must_not_contain=[],
+                                    reps=reps)
+
+
 # Reads 1 QM file
 def load_Qlk(filepath,
              min_step=0,
