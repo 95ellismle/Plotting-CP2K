@@ -64,9 +64,9 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = False
+        self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 'all'  # (in fs)
+        self.max_time = 'all'   # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -555,6 +555,53 @@ class LoadData(Params):
             self.load_timings['alpha'] = time.time() - \
                 self.load_timings['alpha']
 
+    def get_qm_type(self):
+        """
+        Will check if the quantum momentum type saved is the Qlk kind or QM_0.
+        """
+        qmFiles = [i for i in os.listdir(self.folder) if 'run-QM' in i]
+        if 'QM-' in qmFiles[0]:
+            self.QM_type = "Qlk"
+        else:
+            self.QM_type = "QM_0"
+
+    def load_qlk(self, max_step):
+        """
+        Will load the Quantum Momentum in the Qlk form
+        """
+        self.all_Qlk_data = load_QM.load_all_Qlk_in_folder(
+                                                        self.folder,
+                                                        reps=self.reps,
+                                                        max_step=max_step,
+                                                        min_step=self.min_time,
+                                                        stride=self.slow_stride
+                                                                   )
+        # Find metadata
+        Keys = list(self.all_Qlk_data.keys())
+        self.num_reps = len(Keys)
+        cols = self.all_Qlk_data[Keys[0]][0][1]
+        self.num_qm_steps = len(cols)
+        self.num_active_atoms = max(cols[0, :, 0])
+        self.num_states = max(cols[0, :, 2])
+        
+    def load_qm_0(self, max_step):
+        """
+        Will load the Quantum Momentum in the QM_0 form
+        """
+        self.all_QM_0_data = load_QM.load_all_QM_0_in_folder(
+                                                        self.folder,
+                                                        reps=self.reps,
+                                                        max_step=max_step,
+                                                        min_step=self.min_time,
+                                                        stride=self.slow_stride
+                                                            )
+        # Find metadata
+        Keys = list(self.all_QM_0_data.keys())
+        self.num_reps = len(Keys)
+        cols = self.all_QM_0_data[Keys[0]][0][1]
+        self.num_qm_steps = len(cols)
+        self.num_active_atoms = max(cols[0, :, 0])
+
     def load_qm(self):
         """
         Will load the quantum momentum file into the format in load_QM.
@@ -566,22 +613,13 @@ class LoadData(Params):
                 max_step = self.max_step
             else:
                 max_step = int(self.max_step/print_step)
-            self.all_Qlk_data = load_QM.load_all_Qlk_in_folder(
-                                                        self.folder,
-                                                        reps=self.reps,
-                                                        max_step=max_step,
-                                                        min_step=self.min_time,
-                                                        stride=self.slow_stride
-                                                               )
-            self.load_timings['QM'] = time.time() - self.load_timings['QM']
+            self.get_qm_type()
+            if self.QM_type == "Qlk":
+                self.load_qlk(max_step)
+            elif self.QM_type == "QM_0":
+                self.load_qm_0(max_step)
 
-            # Find metadata
-            Keys = list(self.all_Qlk_data.keys())
-            self.num_reps = len(Keys)
-            cols = self.all_Qlk_data[Keys[0]][0][1]
-            self.num_qm_steps = len(cols)
-            self.num_active_atoms = max(cols[0, :, 0])
-            self.num_states = max(cols[0, :, 2])
+            self.load_timings['QM'] = time.time() - self.load_timings['QM']
 
     def load_rlk(self):
         """
@@ -743,7 +781,10 @@ class LoadData(Params):
 
         if 'qm' in self.load_params:
             self.load_timings['Averaging: ']['qm'] = time.time()
-            self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
+            if self.QM_type == "Qlk":
+                self.avg_Qlk_data = plot_utils.avg_Qlk_data(self.all_Qlk_data)
+            elif self.QM_type == "QM_0":
+                self.avg_QM0_data = plot_utils.avg_QM0_data(self.all_QM_0_data)
             self.load_timings['Averaging: ']['qm'] = time.time() - \
                 self.load_timings['Averaging: ']['qm']
 
@@ -801,10 +842,10 @@ class LoadData(Params):
 
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R,
-           plot_QM.QM_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
+           plot_QM.Qlk_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PlotPosSig,
-           plot_tintf.sumYlk):
+           plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -865,8 +906,12 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.mQMRPlot = plot_QM.QM_R.__init__(self,
                                                   self.axes['qm_r'])
         if 'qm_t' in self.plot_params:
-            self.mQMTPlot = plot_QM.QM_t.__init__(self,
-                                                  self.axes['qm_t'])
+            if self.QM_type == "Qlk":
+                self.mQlkTPlot = plot_QM.Qlk_t.__init__(self,
+                                                        self.axes['qm_t'])
+            elif self.QM_type == "QM_0":
+                self.mQM0TPlot = plot_QM.QM0_t.__init__(self,
+                                                        self.axes['qm_t'])
         if 'rlk' in self.plot_params:
             self.mRlkPlot = plot_QM.Rlk.__init__(self,
                                                  self.axes['rlk'])
@@ -1098,7 +1143,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             strs.append("Coupling  =  %s meV" % self.coupling)
 
             # Section 2
-            if not self.run_inp_params['USE_QM']:
+            use_qm = self.run_inp_params['USE_QM_COEFF'] \
+                * self.run_inp_params['USE_QM_FORCE']
+            if not use_qm:
                 strs = str_sections['Ehrenfest']
                 if not self.run_inp_params.get('FAST_EHRENFEST'):
                     strs.append("Commutator was ON")
@@ -1160,7 +1207,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 self.title = self.title.replace("**comm**", "on")
 
             # Ehrenfest or CTMQC
-            if self.run_inp_params['USE_QM']:
+            use_qm = self.run_inp_params['USE_QM_COEFF'] \
+                * self.run_inp_params['USE_QM_FORCE']
+            if use_qm:
                 self.title = self.title.replace("**CT/Eh**", "CTMQC")
                 tmp = str(self.run_inp_params['TANH_WIDTH'])
                 self.title = self.title.replace("**tanh_width**",

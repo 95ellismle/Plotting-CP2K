@@ -7,37 +7,46 @@ Created on Wed Oct  3 14:35:47 2018
 """
 from matplotlib.widgets import CheckButtons
 import matplotlib.pyplot as plt
-import numpy as np
+# import numpy as np
+
 
 class Plot_Coeff(object):
     """
-    Will plot the coefficient data. 
-        
+    Will plot the coefficient data.
+
     Inputs:
-        axes  => a list of the axes to plot on. The first item should be the 
-                 widget axis the second will be the axis to plot the data.  
-    
-    NOTE: This really is a bit of a hack, I should really go back and have a 
+        axes  => a list of the axes to plot on. The first item should be the
+                 widget axis the second will be the axis to plot the data.
+
+    NOTE: This really is a bit of a hack, I should really go back and have a
           think of a more elegant to code this later.
     """
     def __init__(self, axes):
         self._set_di_or_ad()
         if self.plot:
-            self.coeff_widg_axes[self.di_or_ad] = axes[0]        
-            self.coeff_plot_axes[self.di_or_ad] = axes[1]        
-            
+            self.coeff_widg_axes[self.di_or_ad] = axes[0]
+            self.coeff_plot_axes[self.di_or_ad] = axes[1]
+
             self.all_reps_coeff = True
             self.avg_reps_coeff = True
-            
+
             if self._use_control:
                 self._set_coeff_control()
             self._set_coeff_data()
-            
+
             self._plot_all_reps_coeff()
             self._plot_avg_reps_coeff()
-            
+
             self.coeff_plot_axes[self.di_or_ad].set_ylabel(self.ylabel)
-        
+            
+            # Fix the y limits on axis
+            ylims = list(self.coeff_plot_axes[self.di_or_ad].get_ylim())
+            if (ylims[0] > 0):
+                ylims[0] = 0
+            if (ylims[1] < 1):
+                ylims[1] = 1
+            self.coeff_plot_axes[self.di_or_ad].set_ylim(ylims)
+
     def _set_coeff_data(self):
         """
         Will set which data is being used (adiabatic or diabatic)
@@ -46,25 +55,25 @@ class Plot_Coeff(object):
             self.coeff_data = self.all_Dcoeff_data
             self.all_coeff_data_avg = self.all_Dcoeff_data_avg
             self.num_states = len(self.all_Dcoeff_data_avg[0][0])
-            self.ylabel     = r"$|u_l|^2$"
-            
+            self.ylabel = r"$|u_l|^2$"
+
         elif self.di_or_ad == "|c|^2":
             self.coeff_data = self.all_Acoeff_data
             self.all_coeff_data_avg = self.all_Acoeff_data_avg
             self.num_states = len(self.all_Acoeff_data_avg[0][0])
-            self.ylabel     = r"$|C_l|^2$"
-    
+            self.ylabel = r"$|C_l|^2$"
+
     def _set_di_or_ad(self):
         """
-        Will determine whether we are working with adiabatic data or diabatic data
+        Will determine whether we are working with adiabatic data or diabatic
+        data
         """
-        if '|u|^2' in self.plot_paramsC: 
+        if '|u|^2' in self.plot_paramsC:
             self.di_or_ad = '|u|^2'
             self.plot_paramsC.remove("|u|^2")
         elif '|c|^2' in self.plot_paramsC:
             self.di_or_ad = '|c|^2'
-        
-        
+
     def _plot_all_reps_coeff(self):
         """
         Will plot the graph showing all the replicas
@@ -73,17 +82,15 @@ class Plot_Coeff(object):
         for filename in self.coeff_data:
             coeffs, cols, timesteps, pops = self.coeff_data[filename]
             for i in range(self.num_states):
-                self.all_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)[0])
-        
-#        import scipy.linalg as LI
-#        for filename in self.all_ham_data:
-#            Hdata, _, timesteps = self.all_ham_data[filename]
-#            
-#            all_coeffs = np.array([np.dot(LI.expm(0+1j*self.all_ham_data['run-hamilt-1-1.xyz'][0][i] * timesteps[i]),np.array([1,0])) for i in range(len(self.all_ham_data['run-hamilt-1-1.xyz'][0]))])    
-#            pops = np.array([[np.linalg.norm(i[0]),np.linalg.norm(i[1])] for i in all_coeffs])
-#            for i in range(2):
-#                self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], color=self.colors[i], alpha=self.alpha, lw=0.7)
-            
+                self.all_coeff_lines[self.di_or_ad].append(
+                        self.coeff_plot_axes[self.di_or_ad].plot(
+                                                          timesteps,
+                                                          pops[:, i],
+                                                          color=self.colors[i],
+                                                          alpha=self.alpha,
+                                                          lw=0.7
+                                                                )[0]
+                                                          )
         # Set initial visibility
         for line in self.all_coeff_lines[self.di_or_ad]:
             line.set_visible(self.all_reps_coeff)
@@ -94,21 +101,35 @@ class Plot_Coeff(object):
         """
         self.avg_coeff_lines[self.di_or_ad] = []
         coeffs, cols, timesteps, pops = self.all_coeff_data_avg
-        for i in range(self.num_states):                    
-            self.avg_coeff_lines[self.di_or_ad].append(self.coeff_plot_axes[self.di_or_ad].plot(timesteps, pops[:,i], '.', color=self.colors[i])[0])
-                
+        for i in range(self.num_states):
+            self.avg_coeff_lines[self.di_or_ad].append(
+                    self.coeff_plot_axes[self.di_or_ad].plot(
+                                                       timesteps,
+                                                       pops[:, i],
+                                                       '.',
+                                                       color=self.colors[i]
+                                                            )[0]
+                                                      )
+
         # Set initial visibility
         for line in self.avg_coeff_lines[self.di_or_ad]:
             line.set_visible(self.avg_reps_coeff)
-                
+
     def _set_coeff_control(self):
         """
         Will set the control panel for the coeff graphs
         """
         if self.di_or_ad == '|u|^2':
-            self.check_control_coeff[self.di_or_ad] = CheckButtons(self.coeff_widg_axes[self.di_or_ad], ('all Dreplicas', 'Daverage'), (self.all_reps_coeff, self.avg_reps_coeff))
-            self.check_control_coeff[self.di_or_ad].on_clicked(self._check_settings_coeff)
-        
+            self.check_control_coeff[self.di_or_ad] = CheckButtons(
+                                           self.coeff_widg_axes[self.di_or_ad],
+                                           ('all Dreplicas', 'Daverage'),
+                                           (self.all_reps_coeff,
+                                            self.avg_reps_coeff)
+                                                                  )
+            self.check_control_coeff[self.di_or_ad].on_clicked(
+                                                     self._check_settings_coeff
+                                                               )
+
         elif self.di_or_ad == '|c|^2':
             self.check_control_coeff[self.di_or_ad] = CheckButtons(self.coeff_widg_axes[self.di_or_ad], ('all replicas', 'average'), (self.all_reps_coeff, self.avg_reps_coeff))
             self.check_control_coeff[self.di_or_ad].on_clicked(self._check_settings_coeff)

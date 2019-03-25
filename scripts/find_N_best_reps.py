@@ -12,8 +12,8 @@ import numpy as np
 
 import PLOT
 
-numReps = 50
-folder = '/home/oem/Data/CTMQC/K/200Rep'
+numReps = 70
+folder = "/scratch/mellis/flavoured-cptk/200Rep_2mol/"
 #
 p = PLOT.Plot(plot_params=['energy_cons', 'norm', '|C|^2'],
               folder=folder,
@@ -37,7 +37,7 @@ timesteps = p.all_Acoeff_data['run-coeff_ad_1-1.xyz'][2]
 numSteps = len(timesteps)
 coeffData = np.zeros((numReps, numSteps, numStates))
 
-for repi, rep in enumerate(bestEnerReps):
+for repi, rep in enumerate(bestNormReps):
     coeffFileName = 'run-coeff_ad_%i-1.xyz' % (rep + 1)
     coeffData[repi] = p.all_Acoeff_data[coeffFileName][3]  # Populations
 avgCoeffData = np.mean(coeffData, axis=0)
@@ -68,7 +68,7 @@ a.plot(timesteps[-lastNumSteps:],
        lw=1)
 
 totReps = p.run_inp_params['NREP']
-a.set_title("Best %i/%i Replicas (norm cons)" % (numReps, totReps))
+a.set_title("Best %i/%i Replicas (ener_cons)" % (numReps, totReps))
 a.set_ylabel(r"|C|$^2$")
 a.set_xlabel(r"Timestep [fs]")
 
