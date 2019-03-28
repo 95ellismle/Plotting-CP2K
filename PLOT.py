@@ -241,6 +241,7 @@ class LoadData(Params):
                     'pos_sigma':   ['sigma', 'pos'],
                     'sum(ylk)':    ['fl_fk', '|c|^2'],
                     'k':           ['k'],
+                    'pos_plane':   ['pos'],
                     }
 
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
@@ -336,8 +337,9 @@ class LoadData(Params):
         to find metadata such as how many steps and reps have been loaded. This
         can be much better though. I will improve it when I have some time!
         """
+        print("Loading ham")
         print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
-        if type(self.max_step) == str:
+        if type(self.max_step) == str and self.max_step == "all":
             max_step = self.max_step
         else:
             max_step = int(self.max_step/print_step)
@@ -355,12 +357,11 @@ class LoadData(Params):
                     ltxt = f.read().split('\n')
                 tmp = load_xyz.get_xyz_step_metadata(ltxt, ham_file)
                 _, _, lines_in_step, num_title_lines = tmp
-                num_steps = len(ltxt) / (lines_in_step)
-                stride = int(num_steps / 100)
+                num_steps = len(ltxt) // (lines_in_step)
+                stride = int(num_steps / 1000)
                 if stride < 1:
                     stride = 1
                 max_step = num_steps
-
             exitCode = self.__load_ham(stride, max_step)
 
         self.coupling = "?"
@@ -985,6 +986,11 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                         self,
                                                         self.axes['pos_sigma'],
                                                             )
+        if 'pos_plane' in self.plot_params:
+            self.mPosPlanePlot = plot_pos.PosPlane.__init__(
+                                                        self,
+                                                        self.axes['pos_plane']
+                                                           )
 
         # Finish up
         if self.plot:
@@ -1162,8 +1168,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 strs.append("Num Replicas = %i" % self.num_reps)
                 strs.append("Initial Width =" +
                             " %.3g" % self.run_inp_params['INITIAL_SIGMA'])
-                strs.append("Tanh Width = " +
-                            "%.2g" % (self.run_inp_params['TANH_WIDTH']))
+                if "TANH_WIDTH" in self.run_inp_params:
+                    strs.append("Tanh Width = " +
+                                "%.2g" % (self.run_inp_params['TANH_WIDTH']))
 
             # Find max len of string and add a hash to the end of each line
             max_len_str = np.max([len(i) for j in str_sections
@@ -1211,9 +1218,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 * self.run_inp_params['USE_QM_FORCE']
             if use_qm:
                 self.title = self.title.replace("**CT/Eh**", "CTMQC")
-                tmp = str(self.run_inp_params['TANH_WIDTH'])
-                self.title = self.title.replace("**tanh_width**",
-                                                "tanh width = " + tmp)
+                if 'TANH_WIDTH' in self.run_inp_params:
+                    tmp = str(self.run_inp_params['TANH_WIDTH'])
+                    self.title = self.title.replace("**tanh_width**",
+                                                    "tanh width = " + tmp)
             else:
                 self.title = self.title.replace("**CT/Eh**", "Ehrenfest")
         else:

@@ -15,10 +15,22 @@ from scipy.optimize import curve_fit
 def linear_fit(x, m, c):
     return m * x + c
 
+class PosPlane(object):
+    """
+    Will plot the positions in a plane with trajectories shown as trails.
+    
+    Inputs:
+        axes => a list of the axes to plot on. The first item should be the
+                widget axis, the second is the plot axis.
+    """
+    def __init__(self, axes):
+        if self.plot:
+            PlotPos.widget_ax = axes[0]
+            PlotPos.plot_ax = axes[1]
 
 class PlotPos(object):
     """
-    Will plot the normalisation graph.
+    Will plot the positions vs time graph.
 
     Inputs:
         axes  => a list of the axes to plot on. The first item should be the
