@@ -81,7 +81,7 @@ class Plot_Coeff(object):
         self.all_coeff_lines[self.di_or_ad] = []
         for filename in self.coeff_data:
             coeffs, cols, timesteps, pops = self.coeff_data[filename]
-            for i in range(self.num_states):
+            for i in range(len(pops[0])):
                 self.all_coeff_lines[self.di_or_ad].append(
                         self.coeff_plot_axes[self.di_or_ad].plot(
                                                           timesteps,

@@ -9,6 +9,8 @@ Created on Tue Aug  7 15:24:40 2018
 from load import load_xyz as XYZ
 from load import load_utils as Utils
 
+import os
+
 # Will try and find the dimension of the hamiltonian
 def find_num_basis(filepath):
     with open(filepath, 'r') as f:
@@ -24,24 +26,45 @@ def find_num_basis(filepath):
     return num_basis
 
 # Will load a single hamiltonian file
-def load_ham(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
-    num_basis = find_num_basis(filepath)
+def load_ham(filepath,
+             num_basis,
+             metadata,
+             min_step=0,
+             max_step='all',
+             stride=1,
+             ignore_steps=[]):
     data, cols, timesteps = XYZ.read_xyz_file(filepath, 
-                                              num_basis, 
+                                              num_basis,
                                               min_step=min_step, 
                                               max_step=max_step, 
                                               stride=stride, 
-                                              ignore_steps=ignore_steps)
+                                              ignore_steps=ignore_steps,
+                                              metadata=metadata)
     return data, cols, timesteps
 
 
 # Reads all the Qlk files from a given folder
-def load_all_ham_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
-    return Utils.load_all_in_folder(folder = folder, 
-                                    func=load_ham, 
-                                    args=[min_step, max_step, stride, ignore_steps], 
-                                    filename_must_contain=['ham','xyz'], 
-                                    filename_must_not_contain=[], 
+def load_all_ham_in_folder(folder,
+                           min_step=0,
+                           max_step='all',
+                           stride=1,
+                           ignore_steps=[],
+                           reps='all'):
+    allHamFiles = [i for i in os.listdir(folder) if 'run-ham' in i]
+    filepath = folder + allHamFiles[0]
+
+    num_basis = find_num_basis(filepath)
+    metadata = XYZ.get_xyz_step_metadata2(filepath)
+    return Utils.load_all_in_folder(folder=folder,
+                                    func=load_ham,
+                                    args=[num_basis,
+                                          metadata,
+                                          min_step,
+                                          max_step,
+                                          stride,
+                                          ignore_steps],
+                                    filename_must_contain=['ham','xyz'],
+                                    filename_must_not_contain=[],
                                     reps=reps)
 
 

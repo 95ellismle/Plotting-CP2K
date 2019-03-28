@@ -5,14 +5,6 @@ Created on Mon Oct 29 11:41:22 2018
 
 @author: mellis
 
-
-
-TODO:
-    * make the code work for new quantum momentum (without lk)
-      This will involve translating the input parameter (qm_t) to
-      either qlk or qm0 in the PLOT class. Once this is done I will
-      just need to write a new plotting class/loading function for
-      the qm0 case.
 """
 import os; os.chdir('..')
 from multiprocessing import Pool
@@ -28,21 +20,24 @@ from PLOT import Plot
 #           '',
 #           ]
 
-root_fold = '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/' + \
-            "GENERATOR_FSSH_OS/TANH_WIDTH_CONV300K_Proper_1/" + \
-            "Scal=0.0003/TANH_WIDTH=0.0001"
-root_fold = "/scratch/mellis/flavoured-cptk/200Rep_2mol/"
+# root_fold = '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/' + \
+#             "GENERATOR_FSSH_OS/TANH_WIDTH_CONV300K_Proper_1/" + \
+#             "Scal=0.0003/TANH_WIDTH=0.0001"
+root_fold = "/home/oem/Data/CTMQC/PlotMe"
 folders = []
 for dname, dirs, files in os.walk(root_fold):
     if 'run.inp' in files:
         folders.append(dname)
+
+
 # folders = folders[:1]
-plotting_parameters = ['norm', 'qm_t']
+plotting_parameters = ['|C|^2']
 replicas = 'all'
 plot = True
 num_proc = 'auto'
 #######################################################
 
+folders = ["/home/oem/Data/CTMQC/PlotMe"]
 folders = [fold.make_fold_abs(i) for i in folders if os.path.isdir(i)]
 folders = [i for i in folders if os.path.isfile(i+'run.inp')]
 
@@ -83,9 +78,9 @@ else:
     else:
         all_p = [do_1_fold_PL(folders[0])]
 
-if replicas == 'all':
-    print "Worst Reps = ", all_p[0].worst_reps
-    print "Best Reps = ", all_p[0].best_reps
+#if replicas == 'all':
+#    print ("Worst Reps = ", all_p[0].worst_reps)
+#    print ("Best Reps = ", all_p[0].best_reps)
 
 #plt.figure()
 #for key in p.all_tot_ener:

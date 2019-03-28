@@ -9,6 +9,7 @@ Created on Tue Aug  7 15:39:12 2018
 import os
 import re
 import collections
+import multiprocessing as mp
 
 
 # Will find the replica number in the filename
@@ -130,6 +131,13 @@ def files_with_correct_reps(files, reps):
     files = [f for f in files if rep_nums[f] in reps]
     return files    
 
+
+# A helper function for parallelising the loading of the files
+def helperLoad(args):
+    func, args = args
+    return func(*args)
+
+
 # Will apply a function to load all relevant files in a folder
 def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
     """
@@ -154,7 +162,6 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
     else:
         if folder[-1] != '/':
             folder = folder + '/'
-
     filename_must_not_contain.append(".sw")
     all_files1 = [folder+i for i in os.listdir(folder) if all(j in i for j in filename_must_contain) and all(k not in i for k in filename_must_not_contain)]
     if not all_files1: print("\n\n\n\tSorry I can't find any files with the correct filenames!\n\n\t\tmust_contain = %s\n\t\tmustn't contain = %s\n\n\n"%(", ".join(filename_must_contain), ", ".join(filename_must_not_contain)))
@@ -162,10 +169,23 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
     if not all_files2: 
         valid_rep_nums = [find_rep_num_in_name(f) for f in all_files1]
         print("\n\n\n\tSorry I can't find any files with the correct replica number!\n\n\n\tValid replica numbers are:\n\t\t* %s"%",\t".join([str(i) for i in valid_rep_nums]))
-    args = [[f]+list(args) for f in all_files2]
+
     all_data = collections.OrderedDict()
-    for arg in args:
-        all_data[arg[0][arg[0].rfind('/')+1:]] = func(*arg)
+    doParallel = True
+    if doParallel:
+        args = [(func, [f]+list(args)) for f in all_files2]
+        with mp.Pool(mp.cpu_count()-3) as p:
+            res = p.map(helperLoad, args)
+
+        for arg, result in zip(args, res):
+            fName = arg[1][0][arg[1][0].rfind('/')+1:]
+            all_data[fName] = result
+    else:
+        args = [[f]+list(args) for f in all_files2]
+        for arg in args:
+            fName = arg[0][arg[0].rfind('/')+1:]
+            all_data[fName] = func(*arg)
+
     if not all_data:
         return False
     return all_data

@@ -133,13 +133,15 @@ def get_xyz_step_metadata2(filename, ltxt=False):
         num_title_lines = find_num_title_lines(step_data[1])
 
     nsteps = int(len(ltxt)/lines_in_step)
-    time_delim, time_ind = find_time_delimeter(step_data[1][:num_title_lines],
-                                               filename)
-    return {'time_delim': time_delim,
-            'time_ind': time_ind,
-            'lines_in_step': lines_in_step,
-            'num_title_lines': num_title_lines,
-            'nsteps': nsteps}
+    time_delim, time_ind = find_time_delimeter(step_data[1][:num_title_lines], filename)
+    timelines = [ltxt[time_ind+(i*lines_in_step)] for i in range(nsteps)]
+    timesteps = np.array([string_between(line, "time = ", time_delim) for line in  timelines]).astype(np.float64)
+    return {'time_delim':time_delim,
+            'time_ind':time_ind,
+            'lines_in_step':lines_in_step,
+            'num_title_lines':num_title_lines,
+            'nsteps':nsteps,
+            'tsteps':timesteps}
 
 
 # Reads an xyz_file
@@ -172,10 +174,9 @@ def read_xyz_file(filename, num_data_cols,
     ltxt = open_read(filename).split('\n')
     if metadata is False:
         metadata = get_xyz_step_metadata2(filename, ltxt)
+
     lines_in_step = metadata['lines_in_step']
     num_title_lines = metadata['num_title_lines']
-    time_ind = metadata['time_ind']
-    time_delim = metadata['time_delim']
 
     abs_max_step = int(len(ltxt)/lines_in_step)
     if max_step == 'all' or max_step > abs_max_step:
@@ -185,15 +186,6 @@ def read_xyz_file(filename, num_data_cols,
     step_data = OrderedDict()  # keeps order of frames -Important
     all_steps = [i for i in range(min_step, max_step, stride)
                  if i not in ignore_steps]
-    
-    # Get the timesteps
-    timelines = np.array([ltxt[time_ind+(i*lines_in_step)] for i in all_steps])
-    timesteps = [string_between(line, "time = ", time_delim)
-                 for line in timelines]
-    timesteps = np.array(timesteps)
-    timesteps = timesteps.astype(np.float32)
-    
-    # Get the actual data
     for i in all_steps:
         step_data[i] = ltxt[i*lines_in_step:(i+1)*lines_in_step]
         step_data[i] = (step_data[i][:num_title_lines],
@@ -205,9 +197,9 @@ def read_xyz_file(filename, num_data_cols,
 
     step_data = np.array(list(step_data.values()))
     data = step_data[:, :, num_data_cols:].astype(float)
-    cols = step_data[:, :, :num_data_cols]
+    metadata['cols'] = step_data[0][0][:num_data_cols]
 
-    return data, cols, timesteps
+    return data, metadata
 
 
 # Reads a file and closes it

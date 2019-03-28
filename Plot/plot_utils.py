@@ -97,6 +97,7 @@ def avg_C_data_dict(all_coeff_data):
 def avg_coeff_data(all_coeff_data):
     #Find the max length of data that all arrays can give
     max_len = np.min([[len(all_coeff_data[f][i]) for f in all_coeff_data] for i in range(4)])
+    print(max_len)
     #Splice to the max length
     all_coeff =  [[all_coeff_data[f][0][:max_len] for f in all_coeff_data],
                     '',
