@@ -35,6 +35,7 @@ import matplotlib.patches as mpatches
 import numpy as np
 import datetime
 from matplotlib.widgets import MultiCursor
+from mpl_toolkits.mplot3d import Axes3D
 from collections import OrderedDict
 import time
 import re
@@ -241,7 +242,7 @@ class LoadData(Params):
                     'pos_sigma':   ['sigma', 'pos'],
                     'sum(ylk)':    ['fl_fk', '|c|^2'],
                     'k':           ['k'],
-                    'pos_plane':   ['pos'],
+                    'pos3d':   ['pos'],
                     }
 
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
@@ -986,10 +987,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                         self,
                                                         self.axes['pos_sigma'],
                                                             )
-        if 'pos_plane' in self.plot_params:
-            self.mPosPlanePlot = plot_pos.PosPlane.__init__(
+        if 'pos3d' in self.plot_params:
+            self.mPos3DPlot = plot_pos.Pos3D.__init__(
                                                         self,
-                                                        self.axes['pos_plane']
+                                                        self.axes['pos3d']
                                                            )
 
         # Finish up
@@ -1062,9 +1063,17 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         """
         if self.plot:
             self.f = plt.figure()
+            self.axes = OrderedDict()
+            if 'pos3d' in self.plot_params:
+                if len(self.plot_params) != 1:
+                    msg = "Sorry I don't support plotting 3D and 2D together"
+                    msg += " yet, please don't mix `pos3d` with other inputs"
+                    raise SystemExit(msg)
+                self.axes['pos3d'] = [self.f.add_subplot(111, projection="3d"),
+                                      False]
+                return 0
             if close:
                 plt.close('all')
-            self.axes = OrderedDict()
 
             plot_params = self.plot_params[:]
 
@@ -1264,21 +1273,26 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         # For all axes
         for ax in self.axes:
             AX = self.axes[ax][1]
-            AX.spines['top'].set_visible(False)
-            AX.spines['right'].set_visible(False)
-            AX.spines['bottom'].set_visible(False)
-            AX.spines['left'].set_visible(True)
-            AX.grid('on', alpha=0.5)
-            if type(self.max_time) != str and ax != 'qm_r':
-                AX.set_xlim([self.min_time*0.95*self.dt, self.max_time*1.05])
+            if AX:
+                AX.spines['top'].set_visible(False)
+                AX.spines['right'].set_visible(False)
+                AX.spines['bottom'].set_visible(False)
+                AX.spines['left'].set_visible(True)
+                AX.grid('on', alpha=0.5)
+                if type(self.max_time) != str and ax != 'qm_r':
+                    AX.set_xlim([self.min_time*0.95*self.dt,
+                                 self.max_time*1.05])
 #            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis
         try:
             lastNonQlkAxis = self.axes[self.non_qlk_params[-1]][1]
-            lastNonQlkAxis.set_xlabel("Time (fs)", fontsize=27)
+            if lastNonQlkAxis:
+                lastNonQlkAxis.set_xlabel("Time (fs)", fontsize=27)
         except IndexError:
             pass
-        self.axes[self.plot_params[-1]][1].spines['bottom'].set_visible(True)
+        ax = self.axes[self.plot_params[-1]][1]
+        if ax:
+            ax.spines['bottom'].set_visible(True)
 
         if 'qm_r' not in self.plot_params and len(self.non_qlk_params) > 1:
             self.multi = MultiCursor(self.f.canvas,
