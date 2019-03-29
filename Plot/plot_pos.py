@@ -15,18 +15,77 @@ from scipy.optimize import curve_fit
 def linear_fit(x, m, c):
     return m * x + c
 
-class PosPlane(object):
+class Pos3D(object):
     """
     Will plot the positions in a plane with trajectories shown as trails.
     
     Inputs:
-        axes => a list of the axes to plot on. The first item should be the
-                widget axis, the second is the plot axis.
+        axes => the 3D axes to plot on
     """
-    def __init__(self, axes):
+    def __init__(self, axis):
         if self.plot:
-            PlotPos.widget_ax = axes[0]
-            PlotPos.plot_ax = axes[1]
+            Pos3D.ax = axis[0]
+            
+            Pos3D._plotAll(self)
+            
+            # Get rid of the ugly panes
+            Pos3D.ax.w_xaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            Pos3D.ax.w_yaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            Pos3D.ax.w_zaxis.set_pane_color((1.0, 1.0, 1.0, 0.0))
+            # Get rid of the ugly spines
+            Pos3D.ax.w_xaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+            Pos3D.ax.w_yaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+            Pos3D.ax.w_zaxis.line.set_color((1.0, 1.0, 1.0, 0.0))
+            # Get rid of the ticks
+            xticks = Pos3D.ax.get_xticks()
+            yticks = Pos3D.ax.get_yticks()
+            zticks = Pos3D.ax.get_zticks()
+
+            xticks = np.linspace(xticks[1], xticks[-2], 2)
+            yticks = np.linspace(yticks[1], yticks[-2], 2)
+            zticks = np.linspace(zticks[1], zticks[-2], 2)
+
+            Pos3D.ax.set_xticks(xticks)
+            Pos3D.ax.set_yticks(yticks)
+            Pos3D.ax.set_zticks(zticks)
+
+            Pos3D.ax.set_xlabel(r"$Pos_{x}$ [bohr]")
+            Pos3D.ax.set_ylabel(r"$Pos_{y}$ [bohr]")
+            Pos3D.ax.set_zlabel(r"$Pos_{z}$ [bohr]")
+
+    @staticmethod
+    def _plotAll(self):
+        """
+        Will plot all positions the from each replica on a 3D axis. The traj is
+        shown by a thin line.
+        """
+        for pKey in self.all_pos_data:
+            pos, cols = self.all_pos_data[pKey][0]
+            ats = np.arange(len(pos[0]))
+            CAtoms = ats[cols[0, :, 0] == 'C']
+            HAtoms = ats[cols[0, :, 0] == 'H']
+    
+            # Plot first timestep
+            for v in CAtoms:
+                Pos3D.ax.plot([pos[0, v, 0]],
+                              [pos[0, v, 1]],
+                              [pos[0, v, 2]], 'ko', alpha=self.alpha)
+            for v in HAtoms:
+                Pos3D.ax.plot([pos[0, v, 0]],
+                              [pos[0, v, 1]],
+                              [pos[0, v, 2]], 'yo', alpha=self.alpha)
+            # Plot Carbons
+            for v in CAtoms:
+                Pos3D.ax.plot(pos[:, v, 0],
+                              pos[:, v, 1],
+                              pos[:, v, 2], 'k-', alpha=self.alpha)
+    
+            # Plot Carbons
+            for v in HAtoms:
+                Pos3D.ax.plot(pos[:, v, 0],
+                              pos[:, v, 1],
+                              pos[:, v, 2], 'y-', alpha=self.alpha)
+
 
 class PlotPos(object):
     """
@@ -51,7 +110,8 @@ class PlotPos(object):
             if self._use_control:
                 PlotPos.__set_control(self)
 
-            PlotPos.plot_ax.set_ylabel(r"Pos")
+            axLab = r"$|\mathbf{R}_{\nu}^{(I)} - origin|$ [bohr]"
+            PlotPos.plot_ax.set_ylabel(axLab)
 
     @staticmethod
     def __button_control(self, label):

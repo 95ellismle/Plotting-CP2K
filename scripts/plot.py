@@ -31,7 +31,7 @@ for dname, dirs, files in os.walk(root_fold):
 
 
 # folders = folders[:1]
-plotting_parameters = ['|C|^2']
+plotting_parameters = ['pos3D']
 replicas = 'all'
 plot = True
 num_proc = 'auto'
