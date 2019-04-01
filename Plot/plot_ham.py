@@ -87,14 +87,12 @@ class Site_Ener(object):
         for line in Site_Ener.all_rep_lines:
            line.set_visible(Site_Ener.avg_reps)
         self.plot_ax.legend()
-        
-       
 
 
 class Coupling(object):
     """
     Will plot the couplings in the hamiltonian
-    
+
     Inputs:
         * axes => axes to plot upon. First in list is the control panel axis.
                   Second is the plotting axis [list of plt.axes]
@@ -102,53 +100,63 @@ class Coupling(object):
     def __init__(self, axes):
         if self.plot:
             self.coup_widg_ax, self.coup_plot_ax = axes
-            
-            #Setting initial default values
+
+            # Setting initial default values
             self.avg_reps_coup = True
             self.all_reps_coup = False
-            
-            #Plotting
+
+            # Plotting
             self.all_rep_lines_coup = []
-    #        self._plot_all_rep_coup()
+            self._plot_all_rep_coup()
             self._plot_avg_coup()
-            
-            #Connect checkboxes to plot control
-            if self._use_control:    self._set_coup_control()
-            
-            self.coup_plot_ax.set_ylabel(r"$H_{ab}$")
-    
+
+            # Connect checkboxes to plot control
+            if self._use_control:
+                self._set_coup_control()
+
+            self.coup_plot_ax.set_ylabel(r"$H_{ab}$ [meV]")
+
     def _check_settings_coup(self, label):
-        if label == 'all replicas': #Pressed the all replicas button
+        if label == 'all replicas':  # Pressed the all replicas button
             for line in self.all_rep_lines_coup:
                 line.set_visible(not line.get_visible())
-                
+
         elif label == 'average':
-            self.avg_line_coup.set_visible(not self.avg_line_coup.get_visible())
+            self.avg_line_coup.set_visible(
+                                           not self.avg_line_coup.get_visible()
+                                          )
         plt.draw()
-            
-    #Will set the control panel for coup graph
+
+    # Will set the control panel for coup graph
     def _set_coup_control(self):
-        self.check_coup = CheckButtons(self.coup_widg_ax, ('all replicas', 'average'), (self.all_reps_coup, self.avg_reps_coup))
+        self.check_coup = CheckButtons(self.coup_widg_ax,
+                                       ('all replicas', 'average'),
+                                       (self.all_reps_coup,
+                                        self.avg_reps_coup))
+
         self.check_coup.on_clicked(self._check_settings_coup)
-        
-#    #Will plot the all replica couplings
-#    def _plot_all_rep_coup(self):
-#        self.all_rep_lines_coup = []
-#        for Dfilename in self.all_Dcoeff_data:
-#            coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
-#            coups = np.sum(pops, axis=1)
-#            self.all_rep_lines_coup.append(self.plot_ax.plot(timesteps, coups, alpha=self.alpha, color='r', lw=1)[0])
-#        
-#        #Initialise the replica lines
-#        for line in self.all_rep_lines_coup:
-#            line.set_visible(self.all_reps_coup)
 
+    def _plot_all_rep_coup(self):
+        """
+        Will plot the coupling for each replica and save the lines in
+        all_rep_lines_coup.
+        """
+        self.all_rep_lines_coup = []
+        for Hkey in self.all_meta_ham:
+            ln, = self.coup_plot_ax.plot(self.all_meta_ham[Hkey]['tsteps'],
+                                         self.all_meta_ham[Hkey]['coup'],
+                                         'k-', alpha=self.alpha)
+            self.all_rep_lines_coup.append(ln)
 
-    #Will plot coup of diabatic coeffs
+        # Initialise the replica lines
+        for line in self.all_rep_lines_coup:
+            line.set_visible(self.all_reps_coup)
+
     def _plot_avg_coup(self):
         """
-        Will plot the off-diagonal hamiltonian elements.
+        Will plot the off-diagonal hamiltonian elements average over all reps.
         """
         avg_Hs, _, timesteps = self.avg_ham_data['avg_ham']
-        avg_coups = avg_Hs[:,0,1]
-        self.coup_plot_ax.plot(timesteps, avg_coups)        
+        avg_coups = avg_Hs[:, 0, 1]
+        ln, = self.coup_plot_ax.plot(timesteps, avg_coups)
+        self.avg_line_coup = ln

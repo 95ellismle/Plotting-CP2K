@@ -174,7 +174,7 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
     doParallel = True
     if doParallel:
         args = [(func, [f]+list(args)) for f in all_files2]
-        with mp.Pool(mp.cpu_count()-2) as p:
+        with mp.Pool(mp.cpu_count()) as p:
             res = p.map(helperLoad, args)
 
         for arg, result in zip(args, res):
