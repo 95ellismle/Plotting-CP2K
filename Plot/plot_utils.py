@@ -113,18 +113,24 @@ def avg_coeff_data(all_coeff_data):
 
     return coeff_avg
 
+
 # Will average the hamiltonians
 def avg_H_data_dict(all_ham_data):
-    min_len = np.min([[len(all_ham_data[f][i]) for f in all_ham_data] for i in range(3)])
-    all_hams = [[all_ham_data[f][0][:min_len] for f in all_ham_data ],
+    """
+    Will average the hamiltonian data.
+    """
+    min_len = np.min([[len(all_ham_data[f][i]) for f in all_ham_data]
+                      for i in range(3)])
+    all_hams = [[all_ham_data[f][0][:min_len] for f in all_ham_data],
                 '',
-                [all_ham_data[f][2][:min_len] for f in all_ham_data ]]
+                [all_ham_data[f][2][:min_len] for f in all_ham_data]]
     avg_hams = {}
     if all_hams[0]:
-        avg_hams = {'avg_ham':[np.mean(all_hams[0], axis=0),
-                       '', 
-                       np.mean(all_hams[2], axis=0)]}   
+        avg_hams = {'avg_ham': [np.mean(all_hams[0], axis=0),
+                                '',
+                                np.mean(all_hams[2], axis=0)]}
     return avg_hams
+
 
 def avg_pos_data(all_pos_data):
     """
@@ -417,11 +423,20 @@ def get_num_reps(all_data, avg_on, found_num_reps):
     
 #Will get the avg_coupling, site_ener_diff 
 def get_coup_data(H_data, key):
+    """
+    Will get the couping data and site energy difference in some Hamiltonian
+    data.
+    
+    Inputs:
+        * H_data => [dict] containing the hamiltonian data (in the `read all in
+                                                            folder` format)
+        * key => the key in the dict to find the data (i.e. run-hamilt-1-1.xyz)
+    """
     site_ener = H_data[key][0][:, 0, 0] - H_data[key][0][:, 1, 1]
     couplings = H_data[key][0][:,0,1]
     avg_couplings = np.mean(couplings)
     timesteps = H_data[key][2]
-    
+
     return site_ener, couplings, avg_couplings, timesteps
 
 

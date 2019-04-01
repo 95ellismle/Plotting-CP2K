@@ -67,7 +67,7 @@ class Params(object):
         self.colors = [i for j in range(50) for i in self.colors]
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 'all'   # (in fs)
+        self.max_time = 10000   # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -338,7 +338,6 @@ class LoadData(Params):
         to find metadata such as how many steps and reps have been loaded. This
         can be much better though. I will improve it when I have some time!
         """
-        print("Loading ham")
         print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
         if type(self.max_step) == str and self.max_step == "all":
             max_step = self.max_step
@@ -347,6 +346,13 @@ class LoadData(Params):
 
         if 'ham' in self.load_params:
             exitCode = self.__load_ham(self.quick_stride, max_step)
+            self.all_meta_ham = {}
+            for Hkey in self.all_ham_data:
+                tmp = plot_utils.get_coup_data(self.all_ham_data, Hkey)
+                site_ener, couplings, _, timesteps = tmp
+                self.all_meta_ham[Hkey] = {'site_ener_diff': site_ener,
+                                           'coup': couplings,
+                                           'tsteps': timesteps}
         else:
             if type(max_step) == str or \
                                    (type(max_step) == int and max_step <= 100):

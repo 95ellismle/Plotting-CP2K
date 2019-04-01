@@ -23,7 +23,7 @@ from PLOT import Plot
 # root_fold = '/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/' + \
 #             "GENERATOR_FSSH_OS/TANH_WIDTH_CONV300K_Proper_1/" + \
 #             "Scal=0.0003/TANH_WIDTH=0.0001"
-root_fold = "/home/oem/Data/CTMQC/PlotMe"
+root_fold = "/home/oem/Data/CTMQC/EhForce/0.003"
 folders = []
 for dname, dirs, files in os.walk(root_fold):
     if 'run.inp' in files:
@@ -31,13 +31,13 @@ for dname, dirs, files in os.walk(root_fold):
 
 
 # folders = folders[:1]
-plotting_parameters = ['pos3D']
+plotting_parameters = ['pos']
 replicas = 'all'
 plot = True
 num_proc = 'auto'
 #######################################################
 
-folders = ["/home/oem/Data/CTMQC/PlotMe"]
+#folders = ["/home/oem/Data/CTMQC/PlotMe"]
 folders = [fold.make_fold_abs(i) for i in folders if os.path.isdir(i)]
 folders = [i for i in folders if os.path.isfile(i+'run.inp')]
 
