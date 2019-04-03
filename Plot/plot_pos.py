@@ -61,30 +61,47 @@ class Pos3D(object):
         """
         for pKey in self.all_pos_data:
             pos, cols = self.all_pos_data[pKey][0]
-            ats = np.arange(len(pos[0]))
-            CAtoms = ats[cols[0, :, 0] == 'C']
-            HAtoms = ats[cols[0, :, 0] == 'H']
-    
-            # Plot first timestep
-            for v in CAtoms:
-                Pos3D.ax.plot([pos[0, v, 0]],
-                              [pos[0, v, 1]],
-                              [pos[0, v, 2]], 'ko', alpha=self.alpha)
-            for v in HAtoms:
-                Pos3D.ax.plot([pos[0, v, 0]],
-                              [pos[0, v, 1]],
-                              [pos[0, v, 2]], 'yo', alpha=self.alpha)
-            # Plot Carbons
-            for v in CAtoms:
-                Pos3D.ax.plot(pos[:, v, 0],
-                              pos[:, v, 1],
-                              pos[:, v, 2], 'k-', alpha=self.alpha)
-    
-            # Plot Carbons
-            for v in HAtoms:
-                Pos3D.ax.plot(pos[:, v, 0],
-                              pos[:, v, 1],
-                              pos[:, v, 2], 'y-', alpha=self.alpha)
+
+            molAts = [np.arange(mol*6, (mol+1)*6)
+                      for mol in range(self.num_states)]
+            molCCols, molHCols = Pos3D.__get_mol_col(self)
+            CAtoms, HAtoms = [], []
+            for mol in molAts:
+                CAtoms.append(mol[cols[0, mol] == 'C'])
+                HAtoms.append(mol[cols[0, mol] == 'H'])
+
+            for mol in range(self.num_states):
+                # Plot first timestep
+                for v in CAtoms[mol]:
+                    Pos3D.ax.plot([pos[0, v, 0]],
+                                  [pos[0, v, 1]],
+                                  [pos[0, v, 2]], 'o', alpha=0.6,
+                                  color=molCCols[mol])
+                for v in HAtoms[mol]:
+                    Pos3D.ax.plot([pos[0, v, 0]],
+                                  [pos[0, v, 1]],
+                                  [pos[0, v, 2]], 'o', alpha=0.6,
+                                  color=molHCols[mol])
+                # Plot Carbons
+                for v in CAtoms[mol]:
+                    Pos3D.ax.plot(pos[:, v, 0],
+                                  pos[:, v, 1],
+                                  pos[:, v, 2], '-', alpha=0.6,
+                                  color=molCCols[mol])
+                for v in HAtoms[mol]:
+                    Pos3D.ax.plot(pos[:, v, 0],
+                                  pos[:, v, 1],
+                                  pos[:, v, 2], '-', alpha=0.6,
+                                  color=molHCols[mol])
+
+    @staticmethod
+    def __get_mol_col(self):
+        """
+        Will return the colors of the atoms of each mol.
+        """
+        molCCols = [(i, i, i) for i in np.linspace(0, 0.4, self.num_states)]
+        molHCols = [(i, i, 0) for i in np.linspace(1, 0.6, self.num_states)]
+        return molCCols, molHCols
 
 
 class PlotPos(object):

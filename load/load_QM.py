@@ -52,7 +52,7 @@ def load_all_QM_0_in_folder(folder,
                                           stride,
                                           ignore_steps],
                                     filename_must_contain=['QM_0', 'xyz'],
-                                    filename_must_not_contain=[],
+                                    filename_must_not_contain=['force'],
                                     reps=reps)
 
 

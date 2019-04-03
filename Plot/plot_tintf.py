@@ -6,7 +6,7 @@ Created on Tue Oct 16 16:42:54 2018
 @author: mellis
 """
 import matplotlib.pyplot as plt
-from matplotlib.widgets import CheckButtons, RadioButtons, TextBox
+from matplotlib.widgets import CheckButtons, RadioButtons  # ,TextBox
 import itertools as IT
 import numpy as np
 
@@ -267,10 +267,10 @@ class fl_fk_CC(object):
                                               ['atom', 'xyz'])
         fl_fk_CC.color_control.on_clicked(fl_fk_CC._color_control)
 
-        fl_fk_CC.textbox = TextBox(fl_fk_CC.widget_ax[2],
-                                   'Atoms:',
-                                   initial="all")
-        fl_fk_CC.textbox.on_submit(fl_fk_CC._submit_text)
+#        fl_fk_CC.textbox = TextBox(fl_fk_CC.widget_ax[2],
+#                                   'Atoms:',
+#                                   initial="all")
+#        fl_fk_CC.textbox.on_submit(fl_fk_CC._submit_text)
 
     @staticmethod
     def _atom_control(label):
@@ -426,5 +426,5 @@ def set_control(class_obj):
     class_obj.color_control = RadioButtons(class_obj.widget_ax[1], ['atom', 'xyz'])
     class_obj.color_control.on_clicked(class_obj._color_control)
     
-    class_obj.textbox = TextBox(class_obj.widget_ax[2], 'Atoms:', initial="all")
-    class_obj.textbox.on_submit(class_obj._submit_text)
+#    class_obj.textbox = TextBox(class_obj.widget_ax[2], 'Atoms:', initial="all")
+#    class_obj.textbox.on_submit(class_obj._submit_text)

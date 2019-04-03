@@ -67,7 +67,7 @@ class Params(object):
         self.colors = [i for j in range(50) for i in self.colors]
         self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 10000   # (in fs)
+        self.max_time = 'all'   # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -608,7 +608,7 @@ class LoadData(Params):
         self.num_reps = len(Keys)
         cols = self.all_QM_0_data[Keys[0]][0][1]
         self.num_qm_steps = len(cols)
-        self.num_active_atoms = max(cols[0, :, 0])
+        self.num_active_atoms = max(cols[0, :])
 
     def load_qm(self):
         """
@@ -853,7 +853,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_QM.Qlk_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PlotPosSig,
-           plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t):
+           plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -1142,7 +1142,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         """
         if self.run_inp_params['METHOD_PROPAGATION'] == 'CTMQC':
             # Build the strs list
-            str_sections = {'Vitals': [], 'Ehrenfest': [], 'CTMQC': []}
+            str_sections = {'Vitals': [], 'Ehrenfest': [], 'CTMQC': [], 'Best/Worst Reps':[]}
             for i in self.plot_info:
                 str_sections[i] = self.plot_info[i]
 
@@ -1186,6 +1186,24 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 if "TANH_WIDTH" in self.run_inp_params:
                     strs.append("Tanh Width = " +
                                 "%.2g" % (self.run_inp_params['TANH_WIDTH']))
+            if self.best_reps:
+               strs = str_sections['Best/Worst Reps']
+               strs.append("  Best Replicas")
+               strs.append("Due to        | Rep")
+               for qualType in self.best_reps:
+                  numSpacesL = 14 - len(qualType)
+                  spacesL = " "*numSpacesL
+                  strs.append("%s%s|  %s" % (qualType, spacesL, self.best_reps[qualType]))
+
+            if self.worst_reps:
+               strs = str_sections['Best/Worst Reps']
+               strs.append("     ------------   ")
+               strs.append("  Worst Replicas")
+               strs.append("Due to        | Rep")
+               for qualType in self.worst_reps:
+                  numSpacesL = 14 - len(qualType)
+                  spacesL = " "*numSpacesL
+                  strs.append("%s%s|  %s" % (qualType, spacesL, self.worst_reps[qualType]))
 
             # Find max len of string and add a hash to the end of each line
             max_len_str = np.max([len(i) for j in str_sections

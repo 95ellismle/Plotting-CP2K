@@ -18,6 +18,7 @@ def load_coeff(filepath,
                stride=1,
                ignore_steps=[],
                metadata=False):
+
     data, cols, timesteps = XYZ.read_xyz_file(filename=filepath, 
                                               num_data_cols=2, 
                                               min_step=min_step, 
@@ -25,6 +26,7 @@ def load_coeff(filepath,
                                               stride=stride, 
                                               ignore_steps=ignore_steps,
                                               metadata=metadata)
+
     pops = np.linalg.norm(data, axis=2)**2
     data = np.array([np.array([complex(*j) for j in i]) for i in data])
     return np.array(data), np.array(cols), np.array(timesteps), np.array(pops)

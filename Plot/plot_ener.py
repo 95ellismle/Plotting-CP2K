@@ -229,21 +229,21 @@ class Energy_Cons(object):
                                        self.tot_ener_mean['E_cons'],
                                        'k-',
                                        lw=1.3)
-        Energy_Cons.avg_lines['tot'] = ln
+        Energy_Cons.avg_lines['Total'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
         ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
                                        self.tot_ener_mean['Kin'],
                                        'r-',
                                        lw=1.3)
-        Energy_Cons.avg_lines['kin'] = ln
+        Energy_Cons.avg_lines['Kinetic'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
         ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
                                        self.tot_ener_mean['Pot'],
                                        'g-',
                                        lw=1.3)
-        Energy_Cons.avg_lines['pot'] = ln
+        Energy_Cons.avg_lines['Potential'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
 
         Energy_Cons.__calc_avg_ener_drift(self)
@@ -290,11 +290,11 @@ class Energy_Cons(object):
             pln.set_visible(Energy_Cons.plot_all and Energy_Cons.potential)
 
         # Handle the average lines
-        Energy_Cons.avg_lines['tot'].set_visible(Energy_Cons.plot_avg and
+        Energy_Cons.avg_lines['Total'].set_visible(Energy_Cons.plot_avg and
                                                  Energy_Cons.total)
-        Energy_Cons.avg_lines['kin'].set_visible(Energy_Cons.plot_avg and
+        Energy_Cons.avg_lines['Kinetic'].set_visible(Energy_Cons.plot_avg and
                                                  Energy_Cons.kinetic)
-        Energy_Cons.avg_lines['pot'].set_visible(Energy_Cons.plot_avg and
+        Energy_Cons.avg_lines['Potential'].set_visible(Energy_Cons.plot_avg and
                                                  Energy_Cons.potential)
 
         plt.draw()
@@ -304,10 +304,10 @@ class Energy_Cons(object):
         """
         Will get the energy drift for each replica
         """
-        lab_to_name_map = {'Kin': 'kin', 'Pot': 'pot', 'E_cons': 'tot'}
+        lab_to_name_map = {'Kin': 'Kinetic', 'Pot': 'Potential', 'E_cons': 'Total'}
 
         # Find drifts
-        self.ener_drift_per_rep = {'kin': [], 'pot': [], 'tot': []}
+        self.ener_drift_per_rep = {'Kinetic': [], 'Potential': [], 'Total': []}
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
             for lab in ('E_cons', 'Kin', 'Pot'):
@@ -330,7 +330,7 @@ class Energy_Cons(object):
         """
         Energy_Cons.__get_all_rep_drifts(self)
 
-        self.Tot_Avg_Energy_Drift = np.mean(self.ener_drift_per_rep['tot'])
+        self.Tot_Avg_Energy_Drift = np.mean(self.ener_drift_per_rep['Total'])
 
     @staticmethod
     def __put_avg_ener_drift(self):
