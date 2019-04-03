@@ -129,7 +129,7 @@ def files_with_correct_reps(files, reps):
     elif 'all' in reps:
         return files
     files = [f for f in files if rep_nums[f] in reps]
-    return files    
+    return files
 
 
 # A helper function for parallelising the loading of the files
@@ -139,20 +139,21 @@ def helperLoad(args):
 
 
 # Will apply a function to load all relevant files in a folder
-def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
+def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[],
+                       filename_must_contain=[], reps='all'):
     """
-    Will repeat a file loading function for all files in a folder depending on 
+    Will repeat a file loading function for all files in a folder depending on
     what rules for finding the files are specified in the arguments.
-    
+
     Inputs:
         * folder  =>  folder to look in for files [str]
         * func    =>  func to apply to each file  [func]
-        * args    =>  arguments to be applied to the file loading function in 
+        * args    =>  arguments to be applied to the file loading function in
                       order [list]
         * filename_must_not_contain => any strs the filenames must not contain
         * filename_must_contain     => any strs the filenames must contain
         * reps    => Which reps to load (can be 'all' or list of ints)
-    
+
     Outputs:
         * A dictionary with filenames as keys and the return of the func passed
           as values.
@@ -163,35 +164,54 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[], file
         if folder[-1] != '/':
             folder = folder + '/'
     filename_must_not_contain.append(".sw")
-    all_files1 = [folder+i for i in os.listdir(folder) if all(j in i for j in filename_must_contain) and all(k not in i for k in filename_must_not_contain)]
-    if not all_files1: print("\n\n\n\tSorry I can't find any files with the correct filenames!\n\n\t\tmust_contain = %s\n\t\tmustn't contain = %s\n\n\n"%(", ".join(filename_must_contain), ", ".join(filename_must_not_contain)))
-    all_files2 = files_with_correct_reps(all_files1, reps) # Only read files with the correct rep num
-    if not all_files2: 
-        valid_rep_nums = [find_rep_num_in_name(f) for f in all_files1]
-        print("\n\n\n\tSorry I can't find any files with the correct replica number!\n\n\n\tValid replica numbers are:\n\t\t* %s"%",\t".join([str(i) for i in valid_rep_nums]))
+    all_files1 = [folder+i for i in os.listdir(folder)
+                  if all(j in i for j in filename_must_contain) and
+                  all(k not in i for k in filename_must_not_contain)]
+    # Error checking
+    if not all_files1:
+        mustntContMsg = ", ".join(filename_must_not_contain)
+        msg = "\n\tSorry I can't find any files with the correct filenames!\n"
+        msg += "\n\n\t\tmust_contain = %s" % (", ".join(filename_must_contain))
+        msg += "\n\t\tmustn't contain = %s" % (mustntContMsg)
+        msg += "\n\n\tFiles found = %s\n\n" % (', '.join(all_files1))
+        print(msg)
 
+    # Only read files with the correct rep num
+    all_files2 = files_with_correct_reps(all_files1, reps)
+    if not all_files2:
+        valid_rep_nums = [find_rep_num_in_name(f) for f in all_files1]
+        corrReps = ",\t".join([str(i) for i in valid_rep_nums])
+        msg = "\n\n\n\tSorry I can't find any files with the correct replica "
+        msg += "number!\n\n\n\t"
+        msg += "Valid replica numbers are:\n\t\t* %s" % corrReps
+        print(msg)
+
+    # The dictionary stores the data
     all_data = collections.OrderedDict()
-    doParallel = True
-    if doParallel:
+    if len(all_files2) > 1:
+      doParallel = True
+    else:
+      doParallel = False
+    if doParallel:  # Read files in parallel
         args = [(func, [f]+list(args)) for f in all_files2]
-        with mp.Pool(mp.cpu_count()) as p:
-            res = p.map(helperLoad, args)
+        numProc = mp.cpu_count()
+        if (numProc > 20):
+            numProc = 20
+        if (numProc > len(args)):
+            numProc = len(args)
+        p = mp.Pool(numProc)
+        res = p.map(helperLoad, args)
 
         for arg, result in zip(args, res):
             fName = arg[1][0][arg[1][0].rfind('/')+1:]
             all_data[fName] = result
-    else:
+    else:  # Read files in serial
         args = [[f]+list(args) for f in all_files2]
         for arg in args:
             fName = arg[0][arg[0].rfind('/')+1:]
+            print(fName)
             all_data[fName] = func(*arg)
 
     if not all_data:
         return False
     return all_data
-
-
-
-
-
-

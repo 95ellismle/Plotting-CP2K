@@ -6,7 +6,7 @@ Created on Tue Oct  9 16:11:09 2018
 @author: mellis
 """
 
-from matplotlib.widgets import Slider, CheckButtons, TextBox
+from matplotlib.widgets import Slider, CheckButtons
 import matplotlib.pyplot as plt
 import numpy as np
 from collections import OrderedDict
@@ -71,9 +71,9 @@ class Qlk_t(object):
             Qlk_t._plot_avg_Qlk_t(self)
             Qlk_t._plot_all(self)
 
-            # Connect checkboxes to plot control
-            if self._use_control:
-                Qlk_t._set_Qlk_t_control()
+#            # Connect checkboxes to plot control
+#            if self._use_control:
+#                Qlk_t._set_Qlk_t_control()
 
             Qlk_t.plot_ax.set_ylabel(r"$\frac{Q_{12,\nu}^{(I)}}{M_{\nu}}$ [$\frac{Ha \ s}{l}$]")
 
@@ -170,8 +170,8 @@ class Qlk_t(object):
                                         [Qlk_t.X, Qlk_t.Y, Qlk_t.Z, Qlk_t.Mag])
         Qlk_t.check_Qlk_t.on_clicked(Qlk_t._check_settings_Qlk_t)
 
-        Qlk_t.textbox = TextBox(Qlk_t.widget_ax[1], 'Atoms:', initial="all")
-        Qlk_t.textbox.on_submit(Qlk_t._submit_text)
+#        Qlk_t.textbox = TextBox(Qlk_t.widget_ax[1], 'Atoms:', initial="all")
+#        Qlk_t.textbox.on_submit(Qlk_t._submit_text)
 
     # Will plot the Quantum Momentum term
     @staticmethod

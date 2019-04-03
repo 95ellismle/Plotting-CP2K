@@ -185,14 +185,14 @@ def read_xyz_file(filename, num_data_cols,
     step_data = OrderedDict()  # keeps order of frames -Important
     all_steps = [i for i in range(min_step, max_step, stride)
                  if i not in ignore_steps]
-    
+
     # Get the timesteps
     timelines = np.array([ltxt[time_ind+(i*lines_in_step)] for i in all_steps])
     timesteps = [string_between(line, "time = ", time_delim)
                  for line in timelines]
     timesteps = np.array(timesteps)
     timesteps = timesteps.astype(np.float32)
-    
+
     # Get the actual data
     for i in all_steps:
         step_data[i] = ltxt[i*lines_in_step:(i+1)*lines_in_step]
@@ -205,7 +205,12 @@ def read_xyz_file(filename, num_data_cols,
 
     step_data = np.array(list(step_data.values()))
     data = step_data[:, :, num_data_cols:].astype(float)
-    cols = step_data[:, :, :num_data_cols]
+
+    # If there is only one column in the cols then don't create another list!
+    if (len(step_data[0, 0]) + num_data_cols) == 1:
+        cols = step_data[:, :, 0]
+    else:
+        cols = step_data[:, :, :num_data_cols]
 
     return data, cols, timesteps
 
