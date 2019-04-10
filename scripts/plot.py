@@ -17,7 +17,7 @@ from PLOT import Plot
 folders = ["/scratch/mellis/flavoured-cptk/200Rep_2mol"]
 
 # folders = folders[:1]
-plotting_parameters = ['norm', 'energy_cons']
+plotting_parameters = ['fl']
 replicas = 'all'
 plot = False
 num_proc = 'auto'

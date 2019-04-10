@@ -9,6 +9,46 @@ Created on Wed Dec  5 12:52:33 2018
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 
+
+class QM_Frc(object):
+    """
+    Will plot the Quantum Momentum forces against time.
+    
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the 
+                 widget axis the second will be the axis to plot the data.
+    """
+    def __init__(self, axes):
+        if self.plot: 
+            QM_Frc.widget_ax = axes[0]
+            QM_Frc.plot_ax = axes[1]
+        
+            #Setting initial default values
+            QM_Frc.avg_reps = True
+            QM_Frc.all_reps = False
+            QM_Frc.atom = 6
+        
+            QM_Frc.all_rep_lines = []
+
+            QM_Frc.plot_all(self)
+
+            QM_Frc.set_ylabel(r"$\mathbf{F}_{qm, \nu}^{(I)}$ [au_f]")
+
+    @staticmethod
+    def plot_all(self):
+      """
+      Will plot the quantum momentum forces for each replica.
+      """
+      for key in self.all_qm_frc_data:
+         data, cols, timesteps = self.all_qm_frc_data[key]
+         for v in range(12):  # self.num_active_atoms:
+            QM_Frc.plot_ax.plot(timesteps,
+                                data[:, v, 0],  # X force
+                                )
+            print("BOB")
+            
+
+
 class Plot_Frc(object):
     """
     Will plot the nuclear force graph.

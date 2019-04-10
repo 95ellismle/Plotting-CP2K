@@ -41,7 +41,34 @@ import time
 import re
 import pandas as pd
 import os
+import difflib
 
+# Decide which things to load when the params are inputted
+#  also gives a comprehensive list of all possible plotting
+#  parameters
+dependencies = {'qm_r':        ['pos', 'qm'],
+                'pos':         ['pos'],
+                '|c|^2':       ['|c|^2'],
+                'qm_t':        ['qm'],
+                'rlk':        ['rlk'],
+                'site_ener':   ['ham'],
+                'coup':        ['ham'],
+                '|u|^2':       ['|u|^2'],
+                'energy_cons': ['tot_ener'],
+                'adiab_state': ['ad_ener'],
+                'ylk/sum(ylk)': ['fl_fk', '|c|^2'],
+                'fl_fk':       ['fl_fk'],
+                'norm':        ['|u|^2'],
+                'forces':      ['force'],
+                'alpha':       ['qm', 'rlk'],
+                'pos_sigma':   ['sigma', 'pos'],
+                'sum(ylk)':    ['fl_fk', '|c|^2'],
+                'k':           ['k'],
+                'pos3d':       ['pos'],
+                'fl':          ['fl_fk'],
+                'fk':          ['fl_fk'],
+                "qm_force":    ['qm_frc'], 
+                }
 
 class Params(object):
     """
@@ -65,9 +92,9 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = True
+        self._use_control = False 
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 'all'   # (in fs)
+        self.max_time = 30    # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -192,6 +219,25 @@ max_time, you can use all, or specify a maximum time in fs.""")
             self.plot_params = [short_name if short_name in i else i
                                 for i in self.plot_params]
 
+        allPossParams = np.array(list(dependencies.keys()))
+        for iprm, param in enumerate(self.plot_params):
+            possParams = [difflib.SequenceMatcher(None,
+                                                 param,
+                                                 paramReal).ratio()
+                          for paramReal in allPossParams]
+            possParams = np.array(possParams)
+            newParamInd = np.argmax(possParams)
+            if (possParams[newParamInd] > 0.7):
+                self.plot_params[iprm] = allPossParams[newParamInd]
+            else:
+               likelyParams = allPossParams[possParams > 0.5]
+               msg = "Sorry I don't understand the parameter `%s`\n" % param
+               msg += "\nThe likely parameters are:\n\t* %s" % "\n\t* ".join(likelyParams)
+               msg += "\n\nAll possible parameters are:\n\t* %s" % "\n\t* ".join(allPossParams)
+               raise SystemExit(msg)
+
+
+                                                 
         self.plot_paramsC = [i for i in self.plot_params
                              if any(i == j for j in ('|u|^2', '|c|^2'))]
 
@@ -222,29 +268,6 @@ class LoadData(Params):
 
     NOTE: Should be in plot_utils
     """
-    # Decide which things to load when the params are inputted
-    #     (avoids loading multiple times of some dependencies)
-    dependencies = {'qm_r':        ['pos', 'qm'],
-                    'pos':         ['pos'],
-                    '|c|^2':       ['|c|^2'],
-                    'qm_t':        ['qm'],
-                    'rlk':        ['rlk'],
-                    'site_ener':   ['ham'],
-                    'coup':        ['ham'],
-                    '|u|^2':       ['|u|^2'],
-                    'energy_cons': ['tot_ener'],
-                    'adiab_state': ['ad_ener'],
-                    'ylk/sum(ylk)': ['fl_fk', '|c|^2'],
-                    'fl_fk':       ['fl_fk'],
-                    'norm':        ['|u|^2'],
-                    'forces':      ['force'],
-                    'alpha':       ['qm', 'rlk'],
-                    'pos_sigma':   ['sigma', 'pos'],
-                    'sum(ylk)':    ['fl_fk', '|c|^2'],
-                    'k':           ['k'],
-                    'pos3d':   ['pos'],
-                    }
-
     def __init__(self, folder, reps, plot_params='all', avg_on=True):
         if folder[-1] != '/':
             folder += '/'
@@ -269,6 +292,7 @@ class LoadData(Params):
         self.load_force()
         self.load_sigmas()
         self.load_k()
+        self.load_qm_frc()
 
         self.calc_alpha()
         self._get_transparency()
@@ -286,7 +310,7 @@ class LoadData(Params):
         """
         self.load_params = []
         for i in self.plot_params:
-            for j in self.dependencies[i.lower()]:
+            for j in dependencies[i.lower()]:
                 self.load_params.append(j)
         self.load_params = list(set(self.load_params))
 
@@ -743,6 +767,34 @@ class LoadData(Params):
             self.num_frc_steps = len(self.all_frc_data[Keys[0]][0])
             self.num_atoms = len(self.all_frc_data[Keys[0]][0][0][0])
 
+    def load_qm_frc(self):
+      """
+      Will load all the quantum momentum forces.
+      """
+      if 'qm_frc' in self.load_params:
+         self.load_timings['qm_forces'] = time.time()
+         print_step = self.nested_inp_params['MOTION']['CTMQC']
+         print_step = print_step['PRINT']['QM_FORCE']['EACH']
+         print_step = print_step['MD'][0]
+         if type(self.max_step) == str:
+            max_step = self.max_step
+         else:
+            max_step = int(self.max_step/print_step)
+
+            self.all_qm_frc_data = load_frc.load_all_qm_frc_in_folder(
+                                                        self.folder,
+                                                        reps=self.reps,
+                                                        max_step=max_step,
+                                                        min_step=self.min_time,
+                                                        stride=self.slow_stride
+                                                               )
+            Keys = list(self.all_qm_frc_data.keys())
+            self.num_reps = len(Keys)
+            #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
+
+         self.load_timings['qm_forces'] = time.time() - \
+            self.load_timings['qm_forces']
+
     def _get_coupling(self):
         """
         Will get the average coupling and print it to the console
@@ -822,6 +874,14 @@ class LoadData(Params):
             self.load_timings['Averaging: ']['force'] = time.time() - \
                 self.load_timings['Averaging: ']['force']
 
+        #if 'qm_frc' in self.load_params:
+        #    self.load_timings['Averaging: ']['qm_force'] = time.time()
+        #    self.avg_frc_data = plot_utils.avg_pos_data(self.all_qm_frc_data)
+        #    # Rename the average key (using average_pos function)
+        #    self.avg_frc_data = self.avg_frc_data['avg_pos']
+        #    self.load_timings['Averaging: ']['qm_force'] = time.time() - \
+        #        self.load_timings['Averaging: ']['qm_force']
+
         if 'tot_ener' in self.load_params:
             self.load_timings['Averaging: ']['Tot. Energy'] = time.time()
             self.tot_ener_mean = pd.concat(
@@ -853,7 +913,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_QM.Qlk_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PlotPosSig,
-           plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D):
+           plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
+           plot_tintf.fl, plot_frc.QM_Frc):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -978,12 +1039,20 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'fl_fk' in self.plot_params:
             self.mTintfPlot = plot_tintf.fl_fk.__init__(self,
                                                         self.axes['fl_fk'])
+        if 'fl' in self.plot_params:
+            self.mFlPlot = plot_tintf.fl.__init__(self,
+                                                  self.axes['fl'])
 
         if 'force' in self.plot_params:
             self.mForcePlot = plot_frc.Plot_Frc.__init__(
                                                          self,
                                                          self.axes['force']
                                                          )
+        if 'qm_frc' in self.plot_params:
+            self.mQMForcePlot = plot_frc.Plot_Frc.__init__(
+                                                         self,
+                                                         self.axes['qm_frc']
+                                                          )
         # Positions
         if 'pos' in self.plot_params:
             self.mPosPlot = plot_pos.PlotPos.__init__(self,

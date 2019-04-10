@@ -13,6 +13,22 @@ from load import load_utils as Utils
 #import numpy as np
 
 
+# Reads all the Qlk files from a given folder
+def load_all_qm_frc_in_folder(folder, min_step=0,
+                              max_step='all', stride=1,
+                              ignore_steps=[], reps='all'):
+    """
+    Loads all diabatic forces in a folder
+    """
+    return Utils.load_all_in_folder(folder=folder, 
+                                    func=load_frc, 
+                                    args=[min_step, max_step, stride, ignore_steps], 
+                                    filename_must_contain=['run-QM_frc','xyz'], 
+                                    filename_must_not_contain=['ad'], 
+                                    reps=reps)
+
+
+
 # Reads 1 frc file
 def load_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
     """
@@ -24,7 +40,8 @@ def load_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
                                               max_step=max_step, 
                                               stride=stride, 
                                               ignore_steps=ignore_steps)
-    return (data, cols), timesteps
+    return data, cols, timesteps
+
 
 # Reads all the Qlk files from a given folder
 def load_all_frc_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
@@ -34,8 +51,8 @@ def load_all_frc_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_
     return Utils.load_all_in_folder(folder=folder, 
                                     func=load_frc, 
                                     args=[min_step, max_step, stride, ignore_steps], 
-                                    filename_must_contain=['frc','xyz'], 
-                                    filename_must_not_contain=['ad'], 
+                                    filename_must_contain=['run-frc_','xyz'], 
+                                    filename_must_not_contain=['ad', 'QM'], 
                                     reps=reps)
 
 
@@ -51,7 +68,8 @@ def load_ad_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[])
                                               stride=stride, 
                                               ignore_steps=ignore_steps)
     cols[:,:,1] = cols[:,:,1].astype(int)
-    return (data, cols), timesteps
+    return data, cols, timesteps
+
 
 # Reads all the Qlk files from a given folder
 def load_all_ad_frc_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
