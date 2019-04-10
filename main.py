@@ -9,24 +9,41 @@ Created on Mon Oct 29 11:41:22 2018
 """
 import os
 from multiprocessing import Pool
+import matplotlib.pyplot as plt
 
 from IO import Folders as fold
 from PLOT import Plot
 
 ###############
-folders = ["/scratch/mellis/flavoured-cptk/LongRuns/QMForces/0.003"]
+# Warning if root folder is set to a folder with other folders in it will crawl 
+# the other folders in search of inputs to plot!
+rootFolder = ["",
+              "/scratch/mellis/flavoured-cptk/CTMQCAll",
+              #"/scratch/mellis/flavoured-cptk/EhrenAll",
+              #"/scratch/mellis/flavoured-cptk/CTMQCForceEhrenCoeff",
+              #"/scratch/mellis/flavoured-cptk/EhrenForceCTMQCCoeff",
+             ]
 
 # folders = folders[:1]
-plotting_parameters = ['energy_cons']
+plotting_parameters = ["QM_force"]
 replicas = 'all' 
 plot = True
 num_proc = 'auto'
 #######################################################
 
-#folders = ["/home/oem/Data/CTMQC/PlotMe"]
-folders = [fold.make_fold_abs(i) for i in folders if os.path.isdir(i)]
-folders = [i for i in folders if os.path.isfile(i+'run.inp')]
+folders = []
+for rootfolder in rootFolder:
+   for dpath, _, files in os.walk(rootfolder):
+       if os.path.isdir(dpath):
+         possFolder = os.path.abspath(dpath)
+         if 'run.inp' in files:
+            folders.append(possFolder)
+            continue
 
+if not folders:
+   print("\t\t#####################")
+   print("\nSorry I can't find any folders to plot!")
+   print("Make sure the run.inp file is in the required folder")
 
 
 def do_1_folder(folder, plotting_parameters, replicas, plot):
@@ -51,7 +68,7 @@ if plot:
     all_p = []
     for i, f in enumerate(folders):
         all_p.append(do_1_fold_PL(f))
-#        plt.close()
+        plt.close()
         print("Done %s" % f)
 else:
     if num_proc > 21:
@@ -63,6 +80,13 @@ else:
             all_p = pool.map(do_1_fold_PL, folders)
     else:
         all_p = [do_1_fold_PL(folders[0])]
+
+#for pNum, p in enumerate(all_p):
+#   folder = folders[pNum]
+#   newSavePath = folder[folder.rfind('/')+1:]
+#   saveFolder = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/BugHunt_DiffTimesteps/RawDataGraphs"
+#   newSavePath = "%s/%s_norm_enerDrift.png" % (saveFolder, newSavePath)
+#   p.f.savefig(newSavePath, dpi=200)
 
 #if replicas == 'all':
 #    print ("Worst Reps = ", all_p[0].worst_reps)

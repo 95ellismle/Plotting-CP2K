@@ -10,6 +10,8 @@ from matplotlib.widgets import CheckButtons, RadioButtons  # ,TextBox
 import itertools as IT
 import numpy as np
 
+from load import load_tintf
+
 class fl_fk(object):
     """
     Will plot the values of f_l - f_k for all l,k combinations.
@@ -180,6 +182,43 @@ class sumYlk(object):
                                               '.',
                                               color='b',
                                               lw=1.2)
+
+
+class fl(object):
+    """
+    Will plot history dependent force term for each state
+    """
+    def __init__(self, axes):
+        if self.plot:
+            fl.widget_ax = axes[0]
+            fl.plot_ax = axes[1]
+            fl.plot_ax.set_autoscale_on(True)
+    
+            fl.plot_all(self)
+            
+            fl.plot_ax.set_ylabel(r"$\mathbf{f}_{l, \nu}^{(I)}$ [bohr$^{-1}$]")
+
+    @staticmethod
+    def plot_all(self):
+        """
+        Will plot data for all replicas
+        """
+        for key in self.all_tintf_data:
+          (data, cols), timesteps = self.all_tintf_data[key]
+          params = {'at_num': 0,
+                    'state': 1}
+
+          for state in range(self.num_states):
+             params['state'] = state
+             paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
+             X = paramData[:, 0]
+             Y = paramData[:, 1]
+             Z = paramData[:, 2]
+
+             fl.plot_ax.plot(timesteps, X,
+                             color=self.colors[state],
+                             alpha=self.alpha, lw=0.8)
+     
 
 
 class fl_fk_CC(object):

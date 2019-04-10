@@ -130,8 +130,8 @@ class Plot_Norm(object):
         text = r"Avg drift per rep = %.2g ps$^{-1}$" % (fit2[0] * 1000)
 
         if self.plot:
-            y1 = np.polyval(fit2, timesteps)
-            self.plot_ax.plot(timesteps, y1, 'k--', lw=0.5)
+            # y1 = np.polyval(fit2, timesteps)
+            # self.plot_ax.plot(timesteps, y1, 'k--', lw=0.5)
             all_norms = [np.sum(self.all_Dcoeff_data[i][3], axis=1)
                          for i in self.all_Dcoeff_data]
             min_len = np.min([len(i) for i in all_norms])

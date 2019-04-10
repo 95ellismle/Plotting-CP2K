@@ -58,11 +58,13 @@ def find_in_histF(data, cols, params):
     # Get data from state i
     if 'state' in params:
         data = data[cols[:, :, 1] == str(params['state'])]
+        cols = cols[cols[:, :, 1] == str(params['state'])]
 
     # Get data from step i
     if 'step_num' in params:
         data = data[params['step_num']]
+        cols = cols[params['step_num']]
 
-    return data
+    return data, cols
         
 
