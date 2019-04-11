@@ -71,16 +71,16 @@ class Pos3D(object):
                 HAtoms.append(mol[cols[0, mol] == 'H'])
 
             for mol in range(self.num_states):
-                # Plot first timestep
+                # Plot last timestep
                 for v in CAtoms[mol]:
-                    Pos3D.ax.plot([pos[0, v, 0]],
-                                  [pos[0, v, 1]],
-                                  [pos[0, v, 2]], 'o', alpha=0.6,
+                    Pos3D.ax.plot([pos[-1, v, 0]],
+                                  [pos[-1, v, 1]],
+                                  [pos[-1, v, 2]], 'o', alpha=0.6,
                                   color=molCCols[mol])
                 for v in HAtoms[mol]:
-                    Pos3D.ax.plot([pos[0, v, 0]],
-                                  [pos[0, v, 1]],
-                                  [pos[0, v, 2]], 'o', alpha=0.6,
+                    Pos3D.ax.plot([pos[-1, v, 0]],
+                                  [pos[-1, v, 1]],
+                                  [pos[-1, v, 2]], 'o', alpha=0.6,
                                   color=molHCols[mol])
                 # Plot Carbons
                 for v in CAtoms[mol]:

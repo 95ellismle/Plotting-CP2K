@@ -7,7 +7,7 @@ Created on Wed Mar 27 11:32:22 2019
 """
 
 
-import os 
+import os
 import difflib as dfl
 from collections import OrderedDict
 import numpy as np

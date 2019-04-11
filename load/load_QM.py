@@ -32,7 +32,7 @@ def load_QM_0(filepath,
                                               stride=stride,
                                               ignore_steps=ignore_steps)
     cols = np.array(cols).astype(int)
-    return (data, cols), timesteps
+    return data, cols, timesteps
 
 
 # Reads all the Qlk files from a given folder

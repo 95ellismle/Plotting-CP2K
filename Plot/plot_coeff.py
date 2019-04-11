@@ -27,8 +27,8 @@ class Plot_Coeff(object):
             self.coeff_widg_axes[self.di_or_ad] = axes[0]
             self.coeff_plot_axes[self.di_or_ad] = axes[1]
 
-            self.all_reps_coeff = False
-            self.avg_reps_coeff = True
+            self.all_reps_coeff = True
+            self.avg_reps_coeff = False
 
             if self._use_control:
                 self._set_coeff_control()

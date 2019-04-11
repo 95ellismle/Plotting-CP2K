@@ -46,28 +46,29 @@ import difflib
 # Decide which things to load when the params are inputted
 #  also gives a comprehensive list of all possible plotting
 #  parameters
-dependencies = {'qm_r':        ['pos', 'qm'],
-                'pos':         ['pos'],
-                '|c|^2':       ['|c|^2'],
-                'qm_t':        ['qm'],
-                'rlk':        ['rlk'],
-                'site_ener':   ['ham'],
-                'coup':        ['ham'],
-                '|u|^2':       ['|u|^2'],
-                'energy_cons': ['tot_ener'],
-                'adiab_state': ['ad_ener'],
+dependencies = {'qm_r':         ['pos', 'qm'],
+                'pos':          ['pos'],
+                '|c|^2':        ['|c|^2'],
+                'qm_t':         ['qm'],
+                'rlk':          ['rlk'],
+                'site_ener':    ['ham'],
+                'coup':         ['ham'],
+                '|u|^2':        ['|u|^2'],
+                'energy_cons':  ['tot_ener'],
+                'energy_drift':  ['tot_ener'],
+                'adiab_state':  ['ad_ener'],
                 'ylk/sum(ylk)': ['fl_fk', '|c|^2'],
-                'fl_fk':       ['fl_fk'],
-                'norm':        ['|u|^2'],
-                'forces':      ['force'],
-                'alpha':       ['qm', 'rlk'],
-                'pos_sigma':   ['sigma', 'pos'],
-                'sum(ylk)':    ['fl_fk', '|c|^2'],
-                'k':           ['k'],
-                'pos3d':       ['pos'],
-                'fl':          ['fl_fk'],
-                'fk':          ['fl_fk'],
-                "qm_force":    ['qm_frc'], 
+                'fl_fk':        ['fl_fk'],
+                'norm':         ['|u|^2'],
+                'tot_force':    ['force'],
+                'alpha':        ['qm', 'rlk'],
+                'pos_sigma':    ['sigma', 'pos'],
+                'sum(ylk)':     ['fl_fk', '|c|^2'],
+                'k':            ['k'],
+                'pos3d':        ['pos'],
+                'fl':           ['fl_fk'],
+                'fk':           ['fl_fk'],
+                "qm_force":     ['qm_frc'], 
                 }
 
 class Params(object):
@@ -94,7 +95,7 @@ class Params(object):
         self.colors = [i for j in range(50) for i in self.colors]
         self._use_control = False 
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 30    # (in fs)
+        self.max_time = 'all'  # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -164,7 +165,7 @@ max_time, you can use all, or specify a maximum time in fs.""")
                           'blank': "",
                           "energy_cons": "Energy Conservation",
                           "coup": r"H$_{12}$",
-                          "force": "Nuc. Frc", }
+                          "tot_force": "Nuc. Frc", }
         name_plot_params = self.plot_params[:]
         if 'qm_r' in name_plot_params and 'qm_t' in name_plot_params:
             name_plot_params.remove("qm_r")
@@ -781,16 +782,16 @@ class LoadData(Params):
          else:
             max_step = int(self.max_step/print_step)
 
-            self.all_qm_frc_data = load_frc.load_all_qm_frc_in_folder(
-                                                        self.folder,
-                                                        reps=self.reps,
-                                                        max_step=max_step,
-                                                        min_step=self.min_time,
-                                                        stride=self.slow_stride
-                                                               )
-            Keys = list(self.all_qm_frc_data.keys())
-            self.num_reps = len(Keys)
-            #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
+         self.all_qm_frc_data = load_frc.load_all_qm_frc_in_folder(
+                                                     self.folder,
+                                                     reps=self.reps,
+                                                     max_step=max_step,
+                                                     min_step=self.min_time,
+                                                     stride=self.slow_stride
+                                                            )
+         Keys = list(self.all_qm_frc_data.keys())
+         self.num_reps = len(Keys)
+         #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
 
          self.load_timings['qm_forces'] = time.time() - \
             self.load_timings['qm_forces']
@@ -865,14 +866,14 @@ class LoadData(Params):
             self.load_timings['Averaging: ']['history forces'] = time.time() -\
                 self.load_timings['Averaging: ']['history forces']
 
-        if 'force' in self.load_params:
-            self.load_timings['Averaging: ']['force'] = time.time()
-            self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
-            # Rename the average key (using average_pos function)
-            self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
-            del self.avg_frc_data['avg_pos']
-            self.load_timings['Averaging: ']['force'] = time.time() - \
-                self.load_timings['Averaging: ']['force']
+        #if 'tot_force' in self.load_params:
+        #    self.load_timings['Averaging: ']['force'] = time.time()
+        #    self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
+        #    # Rename the average key (using average_pos function)
+        #    self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
+        #    del self.avg_frc_data['avg_pos']
+        #    self.load_timings['Averaging: ']['force'] = time.time() - \
+        #        self.load_timings['Averaging: ']['force']
 
         #if 'qm_frc' in self.load_params:
         #    self.load_timings['Averaging: ']['qm_force'] = time.time()
@@ -1024,6 +1025,12 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                        self,
                                                        self.axes['energy_cons']
                                                                )
+        if 'energy_drift' in self.plot_params:
+            self.mEnerConsPlot = plot_ener.Energy_Cons.__init__(
+                                                       self,
+                                                       self.axes['energy_drift']
+                                                               )
+
 
         # Forces
         if 'ylk/sum(ylk)' in self.plot_params:
@@ -1043,15 +1050,15 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.mFlPlot = plot_tintf.fl.__init__(self,
                                                   self.axes['fl'])
 
-        if 'force' in self.plot_params:
+        if 'tot_force' in self.plot_params:
             self.mForcePlot = plot_frc.Plot_Frc.__init__(
                                                          self,
-                                                         self.axes['force']
+                                                         self.axes['tot_force']
                                                          )
-        if 'qm_frc' in self.plot_params:
-            self.mQMForcePlot = plot_frc.Plot_Frc.__init__(
+        if 'qm_force' in self.plot_params:
+            self.mQMForcePlot = plot_frc.QM_Frc.__init__(
                                                          self,
-                                                         self.axes['qm_frc']
+                                                         self.axes['qm_force']
                                                           )
         # Positions
         if 'pos' in self.plot_params:

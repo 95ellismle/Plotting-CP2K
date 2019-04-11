@@ -13,22 +13,22 @@ from load import load_utils as Utils
 
 # Reads 1 QM file
 def load_tintf(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
-    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath, 
+    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
                                               num_data_cols =3,
-                                              min_step=min_step, 
-                                              max_step=max_step, 
-                                              stride=stride, 
+                                              min_step=min_step,
+                                              max_step=max_step,
+                                              stride=stride,
                                               ignore_steps=ignore_steps)
     cols[:,:,1] = cols[:,:,1].astype(int)
-    return (data, cols), timesteps
+    return data, cols, timesteps
 
 # Reads all the Qlk files from a given folder
 def load_all_tintf_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
-    return Utils.load_all_in_folder(folder=folder, 
-                                    func=load_tintf, 
-                                    args=[min_step, max_step, stride, ignore_steps], 
-                                    filename_must_contain=['t_int_frc','xyz'], 
-                                    filename_must_not_contain=[], 
+    return Utils.load_all_in_folder(folder=folder,
+                                    func=load_tintf,
+                                    args=[min_step, max_step, stride, ignore_steps],
+                                    filename_must_contain=['t_int_frc','xyz'],
+                                    filename_must_not_contain=[],
                                     reps=reps)
 
 
@@ -66,5 +66,3 @@ def find_in_histF(data, cols, params):
         cols = cols[params['step_num']]
 
     return data, cols
-        
-
