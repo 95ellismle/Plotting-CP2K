@@ -32,7 +32,7 @@ class QM_Frc(object):
 
             QM_Frc.plot_all(self)
 
-            QM_Frc.set_ylabel(r"$\mathbf{F}_{qm, \nu}^{(I)}$ [au_f]")
+            QM_Frc.plot_ax.set_ylabel(r"$|\mathbf{F}_{qm, \nu}^{(I)}|^2$ [au_f]")
 
     @staticmethod
     def plot_all(self):
@@ -41,12 +41,29 @@ class QM_Frc(object):
       """
       for key in self.all_qm_frc_data:
          data, cols, timesteps = self.all_qm_frc_data[key]
-         for v in range(12):  # self.num_active_atoms:
+         carbonAtoms = [0, 3, 6, 9]
+         hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
+         for v in carbonAtoms:  # self.num_active_atoms:
+            X = data[:, v, 0]  # X force
+            Y = data[:, v, 1]  # Y force
+            Z = data[:, v, 2]  # Z force
+            mag = X**2 + Y**2 + Z**2
+
             QM_Frc.plot_ax.plot(timesteps,
-                                data[:, v, 0],  # X force
-                                )
-            print("BOB")
-            
+                                mag, color='k',
+                                lw=0.7, alpha=self.alpha)
+         
+         for v in hydrogenAtoms:  # self.num_active_atoms:
+            X = data[:, v, 0]  # X force
+            Y = data[:, v, 1]  # Y force
+            Z = data[:, v, 2]  # Z force
+            mag = X**2 + Y**2 + Z**2
+
+            QM_Frc.plot_ax.plot(timesteps,
+                                mag, color='y',
+                                lw=0.7, alpha=self.alpha)
+
+
 
 
 class Plot_Frc(object):
@@ -70,7 +87,7 @@ class Plot_Frc(object):
             Plot_Frc.all_rep_lines = []
             Plot_Frc.avg_rep_lines = []
         
-            Plot_Frc.plot_avg_reps(self)
+            #Plot_Frc.plot_avg_reps(self)
             Plot_Frc.plot_all_reps(self)
             
             
@@ -78,20 +95,20 @@ class Plot_Frc(object):
             #Connect checkboxes to plot control
             if self._use_control:    Plot_Frc._set_control()
             
-            Plot_Frc.plot_ax.set_ylabel(r"F$_{%i}^{I}$"%(Plot_Frc.atom+1))
+            Plot_Frc.plot_ax.set_ylabel(r"|F$_{v}^{I}|^2$")
 
-    @staticmethod
-    def plot_avg_reps(self):
-        """
-        Will plot the average replica force
-        """
-        timesteps = self.avg_frc_data['avg_frc'][1]
-        data = self.avg_frc_data['avg_frc'][0][0] #get all frc data
-        for idim in range(3):
-            Fdata = data[:,Plot_Frc.atom, idim]
-            ln, = Plot_Frc.plot_ax.plot(timesteps, Fdata, lw=2)
-            ln.set_visible(Plot_Frc.avg_rep_lines) #Decide inital visibility
-            Plot_Frc.avg_rep_lines.append(ln)
+    #@staticmethod
+    #def plot_avg_reps(self):
+    #    """
+    #    Will plot the average replica force
+    #    """
+    #    timesteps = self.avg_frc_data['avg_frc'][1]
+    #    data = self.avg_frc_data['avg_frc'][0][0] #get all frc data
+    #    for idim in range(3):
+    #        Fdata = data[:,Plot_Frc.atom, idim]
+    #        ln, = Plot_Frc.plot_ax.plot(timesteps, Fdata, lw=2)
+    #        ln.set_visible(Plot_Frc.avg_rep_lines) #Decide inital visibility
+    #        Plot_Frc.avg_rep_lines.append(ln)
     
     @staticmethod
     def plot_all_reps(self):
@@ -99,12 +116,35 @@ class Plot_Frc(object):
         Will plot all the nuclear force data for each replica
         """
         for fname in self.all_frc_data:
-            (data,_), timesteps = self.all_frc_data[fname]
-            for idim in range(3):
-                Fdata = data[:, Plot_Frc.atom, idim]
-                ln, = Plot_Frc.plot_ax.plot(timesteps, Fdata, alpha=self.alpha, lw=1, color=self.colors[idim])
-                ln.set_visible(Plot_Frc.all_rep_lines) #Decide inital visibility
-                Plot_Frc.all_rep_lines.append(ln)
+            data, _, timesteps = self.all_frc_data[fname]
+            carbonAtoms = [0, 3, 6, 9]
+            hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
+            for v in carbonAtoms:
+               X = data[:, v, 0]  # X force
+               Y = data[:, v, 1]  # Y force
+               Z = data[:, v, 2]  # Z force
+               mag = X**2 + Y**2 + Z**2
+
+               Plot_Frc.plot_ax.plot(timesteps,
+                                    mag, color='k',
+                                    lw=0.7, alpha=self.alpha)
+            
+            for v in hydrogenAtoms:  # self.num_active_atoms:
+               X = data[:, v, 0]  # X force
+               Y = data[:, v, 1]  # Y force
+               Z = data[:, v, 2]  # Z force
+               mag = X**2 + Y**2 + Z**2
+
+               Plot_Frc.plot_ax.plot(timesteps,
+                                    mag, color='y',
+                                    lw=0.7, alpha=self.alpha)
+
+
+        #for idim in range(3):
+        #    Fdata = data[:, Plot_Frc.atom, idim]
+        #    ln, = Plot_Frc.plot_ax.plot(timesteps, Fdata, alpha=self.alpha, lw=1, color=self.colors[idim])
+        #    ln.set_visible(Plot_Frc.all_rep_lines) #Decide inital visibility
+        #    Plot_Frc.all_rep_lines.append(ln)
         
             
     @staticmethod

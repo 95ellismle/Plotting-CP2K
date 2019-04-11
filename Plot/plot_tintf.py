@@ -196,7 +196,7 @@ class fl(object):
     
             fl.plot_all(self)
             
-            fl.plot_ax.set_ylabel(r"$\mathbf{f}_{l, \nu}^{(I)}$ [bohr$^{-1}$]")
+            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|^2$ [bohr$^{-1}$]")
 
     @staticmethod
     def plot_all(self):
@@ -207,18 +207,46 @@ class fl(object):
           (data, cols), timesteps = self.all_tintf_data[key]
           params = {'at_num': 0,
                     'state': 1}
+          
+          carbonAtoms = [0, 3, 6, 9]
+          hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
 
-          for state in range(self.num_states):
-             params['state'] = state
-             paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-             X = paramData[:, 0]
-             Y = paramData[:, 1]
-             Z = paramData[:, 2]
+          for at_num in carbonAtoms:
+             for state in range(self.num_states):
+                params['state'] = state
+                params['at_num'] = at_num
+                paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
+                X = paramData[:, 0]
+                Y = paramData[:, 1]
+                Z = paramData[:, 2]
+   
+                col = self.colors[state].strip('#')
+                col = np.array(tuple(bytes.fromhex(col))).astype(float)
+                col *= 1. #(1 - (0.2 * state)) * col
+                col /= 255
 
-             fl.plot_ax.plot(timesteps, X,
-                             color=self.colors[state],
-                             alpha=self.alpha, lw=0.8)
+                fl.plot_ax.plot(timesteps, X,
+                                color=col,
+                                alpha=self.alpha, lw=0.8)
      
+          for at_num in hydrogenAtoms:
+             for state in range(self.num_states):
+                params['state'] = state
+                params['at_num'] = at_num
+                paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
+                X = paramData[:, 0]
+                Y = paramData[:, 1]
+                Z = paramData[:, 2]
+   
+                col = self.colors[state].strip('#')
+                col = np.array(tuple(bytes.fromhex(col))).astype(float)
+                col *= (1 - (0.2 * state))
+                #col = 1. * col
+                col /= 255
+
+                fl.plot_ax.plot(timesteps, X,
+                                color=col,
+                                alpha=self.alpha, lw=0.8)
 
 
 class fl_fk_CC(object):

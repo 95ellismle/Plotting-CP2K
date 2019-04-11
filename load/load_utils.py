@@ -15,7 +15,7 @@ import multiprocessing as mp
 # Will find the replica number in the filename
 def find_rep_num_in_name(filename):
     """
-    Will find the replica number in the output filename. This should be only 
+    Will find the replica number in the output filename. This should be only
     the filename and not the folder.
     """
 #    labs = ['pos','ham','ener','coeff','vel']
@@ -23,6 +23,7 @@ def find_rep_num_in_name(filename):
                      'ham': r"-\d*-\d*\.xyz",
                      'n-ener_': r"_\d*-\d*\.dat",
                      'coeff-': r"f-\d*-\d*\.xyz",
+                     'coeff_': r"f_\d*-\d*\.xyz",
                      'n-vel': r"-\d*-\d*\.xyz",
                      'n-frc': r"_\d*-\d*\.xyz",
                      't_frc': r"_\d*\.xyz",
@@ -39,6 +40,7 @@ def find_rep_num_in_name(filename):
                       'ham': r"\d*-\d*\.",
                       'n-ener_': r"\d*-\d*\.",
                       'coeff-': r"\d*-\d*\.",
+                      'coeff_': r"\d*-\d*\.",
                       'n-vel': r"\d*-\d*\.",
                       'n-frc': r"\d*-\d*\.",
                       't_frc': r"\d*\.",
@@ -54,6 +56,7 @@ def find_rep_num_in_name(filename):
                    'ham': r"-",
                    'n-ener_': r"-",
                    'coeff-': r"-",
+                   'coeff_': r"-",
                    'n-vel': r"-",
                    'n-frc': r"-",
                    't_frc': r".",
@@ -76,7 +79,7 @@ def find_rep_num_in_name(filename):
                 if len(rep) == 1:
                     for ichar, char in enumerate(rep[0]):
                         if char == final_delim[lab]:
-                            try:    
+                            try:
                                 rep = int(rep[0][:ichar])
                                 return rep
                             except ValueError:
@@ -94,18 +97,18 @@ def find_rep_num_in_name(filename):
                     break
                 else:
                     raise SystemExit("""Sorry I couldn't find the replica number with the regex.
-                                 
+
 Filename = '%s'            regex = '\d*-\d*\.'
 
 Filename after regex = '%s' """%(reduced_fname, str(rep)))
             else:
                 raise SystemExit("""Sorry I the pre-programmed regex doesn't work for this file.
-                                 
+
 Filename = '%s'            regex = '%s'
 
 Filename after regex = '%s' """%(filename, regex_matches[lab], str(reduced_fname)))
     else:
-        raise SystemExit("Sorry I couldn't find the file type (pos, vel, frc, coeff etc...), something went wrong!\n\nFilename = %s"%(filename))     
+        raise SystemExit("Sorry I couldn't find the file type (pos, vel, frc, coeff etc...), something went wrong!\n\nFilename = %s"%(filename))
 
 # Given a list of files and a list of replica numbers find which files match the list of reps
 def files_with_correct_reps(files, reps):
@@ -114,7 +117,7 @@ def files_with_correct_reps(files, reps):
 #    except:
 #        print("""Replica sorting isn't working for this data, switching it off.
 #
-#This means all data files will be read. 
+#This means all data files will be read.
 #
 #If this is Surface Hopping this is OK as it does not output different trajectory
 #info in the same format as CTMQC.
