@@ -13,7 +13,23 @@ from load import load_utils as Utils
 
 # Will load the total energy file
 def load_ener_dat(filepath, max_time):
-    headers = ['Step','Time','Kin','Temp','Pot','E_cons','CPU']
+    headerReplacers = {'StepNr': 'Step','Time_[fs]':'Time',
+                       'Kinetic_[a.u.]': 'Kin',
+                       'Temperature_[K]': 'Temp',
+                       'Potential_[a.u.]': 'Pot',
+                       'ConsQty_[a.u.]': 'E_cons',
+                       'CPU_[s]': 'CPU'}
+
+    headers = []
+    with open(filepath, 'r') as f:
+      for line in f:
+         if line:
+            for elem in line.split():
+               if elem in headerReplacers:
+                   headers.append(headerReplacers[elem])
+               else:
+                   headers.append(elem)
+            break
     data = pd.read_csv(filepath, names=headers, delim_whitespace=True, skiprows=[0])
     if max_time == 'all':
         return data

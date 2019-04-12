@@ -167,8 +167,8 @@ class Energy_Cons(object):
 
             Energy_Cons.plot_all = True
             Energy_Cons.plot_avg = True
-            Energy_Cons.kinetic = False
-            Energy_Cons.potential = False
+            Energy_Cons.kinetic = True
+            Energy_Cons.potential = True
             Energy_Cons.total = True
 
             Energy_Cons.plot_all_energy_drifts(self)
