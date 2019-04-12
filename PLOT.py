@@ -92,9 +92,9 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = False 
+        self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 30    # (in fs)
+        self.max_time = 500    # (in fs)
         self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
@@ -1330,6 +1330,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             tmp = self.run_inp_params['METHOD_PROPAGATION'].title()
             tmp = tmp.replace("_", " ")
             self.title = "%s propagation CP2K" % (tmp)
+            self.title = ""
 
         self.title = self.title.replace("**coup**", "%s" % self.coupling)
         self.title = re.sub(r"\*\*.*\*\*", "", self.title)

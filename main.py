@@ -18,15 +18,16 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              "/scratch/mellis/flavoured-cptk/CTMQCAll",
-              #"/scratch/mellis/flavoured-cptk/EhrenAll",
-              #"/scratch/mellis/flavoured-cptk/CTMQCForceEhrenCoeff",
-              #"/scratch/mellis/flavoured-cptk/EhrenForceCTMQCCoeff",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol", 
+              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_CTMQCCoeff",
+              #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_EhrenCoeff",
+              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_EhrenCoeff",
+              "/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_CTMQCCoeff",
              ]
 
 # folders = folders[:1]
-plotting_parameters = ["QM_force"]
-replicas = 'all' 
+plotting_parameters = ["|C|^2", "fl"]
+replicas = [1] 
 plot = True
 num_proc = 'auto'
 #######################################################

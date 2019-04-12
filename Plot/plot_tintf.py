@@ -196,7 +196,7 @@ class fl(object):
     
             fl.plot_all(self)
             
-            fl.plot_ax.set_ylabel(r"$\mathbf{f}_{l, \nu}^{(I)}$ [bohr$^{-1}$]")
+            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|^2$ [bohr$^{-1}$]")
 
     @staticmethod
     def plot_all(self):
@@ -214,8 +214,9 @@ class fl(object):
              X = paramData[:, 0]
              Y = paramData[:, 1]
              Z = paramData[:, 2]
+             magFl = X**2 + Y**2 + Z**2
 
-             fl.plot_ax.plot(timesteps, X,
+             fl.plot_ax.plot(timesteps, magFl,
                              color=self.colors[state],
                              alpha=self.alpha, lw=0.8)
      
