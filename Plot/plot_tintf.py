@@ -197,7 +197,6 @@ class fl(object):
             fl.plot_all(self)
             
             fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|^2$ [bohr$^{-1}$]")
-            fl.plot_ax.set_ylim([-500, 500])
 
     @staticmethod
     def plot_all(self):
@@ -217,9 +216,9 @@ class fl(object):
                 params['state'] = state
                 params['at_num'] = at_num
                 paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0]
-                Y = paramData[:, 1]
-                Z = paramData[:, 2]
+                X = paramData[:, 0, 0]
+                Y = paramData[:, 0, 1]
+                Z = paramData[:, 0, 2]
    
                 color = self.colors[state].strip('#')
                 color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
@@ -236,9 +235,9 @@ class fl(object):
                 params['state'] = state
                 params['at_num'] = at_num
                 paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0]
-                Y = paramData[:, 1]
-                Z = paramData[:, 2]
+                X = paramData[:, 0, 0]
+                Y = paramData[:, 0, 1]
+                Z = paramData[:, 0, 2]
    
                 color = self.colors[state].strip('#')
                 color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]

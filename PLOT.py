@@ -1388,7 +1388,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 if type(self.max_time) != str and ax != 'qm_r':
                     AX.set_xlim([self.min_time*0.95*self.dt,
                                  self.max_time*1.05])
-                AX.set_xlim([0,100])
 #            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis
         try:
@@ -1415,5 +1414,5 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 #                                hspace=0.084,
 #                                wspace=1.00)
         self.f.tight_layout()
-        plt.ion()
-        plt.show(block=False)
+        # plt.ion()
+        plt.show()  # block=False)

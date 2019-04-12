@@ -19,15 +19,17 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol", 
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_CTMQCCoeff",
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_EhrenCoeff",
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_EhrenCoeff",
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_CTMQCCoeff",
+              #"/home/oem/Data/CTMQC/CTMQCAll",
+              #"/home/oem/Data/CTMQC/EhrenAll",
+              #"/home/oem/Data/CTMQC/CTMQCForceEhrenCoeff",
+              #"/home/oem/Data/CTMQC/EhrenForceCTMQCCoeff",
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              "",
              ]
 
+
 # folders = folders[:1]
-plotting_parameters = ["energy_cons"]
+plotting_parameters = ["energy_cons", "fl"]
 replicas = 'all' 
 plot = True
 num_proc = 'auto'
@@ -90,30 +92,3 @@ else:
     else:
         all_p = [do_1_fold_PL(folders[0])]
 
-
-#for pNum, p in enumerate(all_p):
-#   folder = folders[pNum]
-#   newSavePath = folder[folder.rfind('/')+1:]
-#   saveFolder = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/BugHunt_DiffTimesteps/RawDataGraphs"
-#   newSavePath = "%s/%s_norm_enerDrift.png" % (saveFolder, newSavePath)
-#   p.f.savefig(newSavePath, dpi=200)
-
-#if replicas == 'all':
-#    print ("Worst Reps = ", all_p[0].worst_reps)
-#    print ("Best Reps = ", all_p[0].best_reps)
-
-#plt.figure()
-#for key in p.all_tot_ener:
-#    print(key)
-#    allTimes = []
-#    allFits = []
-#    for iStep in p.all_tot_ener[key]['Time'][2:]:
-#        mask = p.all_tot_ener[key]['Time'] <= iStep
-#        times = p.all_tot_ener[key]['Time'][mask]
-#        eners = p.all_tot_ener[key]['E_cons'][mask]
-#        
-#        fit = np.polyfit(list(times), list(eners),1)
-#        allTimes.append(iStep)
-#        allFits.append(fit[0]*1000./12) 
-#
-#    plt.plot(allTimes, allFits)
