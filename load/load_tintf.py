@@ -9,7 +9,7 @@ Created on Wed Sep 19 16:02:39 2018
 from load import load_xyz as XYZ
 from load import load_utils as Utils
 
-#import numpy as np
+import numpy as np
 
 # Reads 1 QM file
 def load_tintf(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
@@ -36,6 +36,8 @@ def find_in_histF(data, cols, params):
     """
     Will find the data corresponding to the params in the dictionary.
 
+    N.B. Integer index starts at 1
+
     Inputs:
         * data = just the data from load_tintf
         * cols = just the cols from load_tintf
@@ -57,9 +59,10 @@ def find_in_histF(data, cols, params):
 
     # Get data from state i
     if 'state' in params:
-        data = data[cols[:, :, 1] == str(params['state'])]
-        cols = cols[cols[:, :, 1] == str(params['state'])]
-
+        mask = cols[:, :, 1] == str(params['state'])
+        data = np.array([data[i][mask[i]] for i in range(len(mask))])
+        cols = np.array([cols[i][mask[i]] for i in range(len(mask))])
+    
     # Get data from step i
     if 'step_num' in params:
         data = data[params['step_num']]
