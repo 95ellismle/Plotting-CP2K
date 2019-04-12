@@ -27,12 +27,12 @@ rootFolder = ["",
              ]
 
 # folders = folders[:1]
-plotting_parameters = ["energ_cons", 'fl']
+plotting_parameters = ["energy_cons"]
 replicas = 'all' 
 plot = True
 num_proc = 'auto'
 min_time = 0
-max_time = range(49, 100)
+max_time = 'all'
 #######################################################
 
 folders = []
@@ -61,29 +61,23 @@ def do_1_folder(folder, plotting_parameters, replicas, plot):
     return p
 
 
-def do_1_fold_PL(folder, maxTime):
+def do_1_fold_PL(folder):
     p = Plot(plot_params=plotting_parameters,
              folder=folder,
              reps=replicas,
              plot=plot,
              minTime=min_time,
-             maxTime=maxTime)
+             maxTime=max_time)
     return p
 
 if num_proc == 'auto':
     num_proc = len(folders)
 
 if plot:
-    #all_p = []
-    f = folders[0]
-    for i, mT in enumerate(max_time):
-        p = do_1_fold_PL(f, mT)
-        plt.close('all')
-        maxTime = p.max_time
-        folder = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/adiabaticMomentum/Increasing_Time"
-        saveFolder = "%s/%ifs.png" % (folder, maxTime)
-        p.f.savefig(saveFolder)
-        gc.collect()
+    all_p = []
+    for f in folders:
+        p = do_1_fold_PL(f)
+        all_p.append(p)
         print("Done %s" % f)
 else:
     if num_proc > 21:
