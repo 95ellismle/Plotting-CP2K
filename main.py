@@ -29,7 +29,7 @@ rootFolder = ["",
 
 
 # folders = folders[:1]
-plotting_parameters = ["energy_cons", "fl"]
+plotting_parameters = ["ad_frc"]
 replicas = 'all' 
 plot = True
 num_proc = 'auto'

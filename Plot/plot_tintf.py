@@ -5,6 +5,7 @@ Created on Tue Oct 16 16:42:54 2018
 
 @author: mellis
 """
+import matplotlib as mpl
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons, RadioButtons  # ,TextBox
 import itertools as IT
@@ -196,7 +197,7 @@ class fl(object):
     
             fl.plot_all(self)
             
-            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|^2$ [bohr$^{-1}$]")
+            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|$ [bohr$^{-1}$]")
 
     @staticmethod
     def plot_all(self):
@@ -219,6 +220,7 @@ class fl(object):
                 X = paramData[:, 0, 0]
                 Y = paramData[:, 0, 1]
                 Z = paramData[:, 0, 2]
+                Mag = np.sqrt(X**2 + Y**2 + Z**2)
    
                 color = self.colors[state].strip('#')
                 color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
@@ -226,7 +228,7 @@ class fl(object):
                 color *= 1. #(1 - (0.2 * state)) * color
                 color /= 255.
 
-                fl.plot_ax.plot(timesteps, X,
+                fl.plot_ax.plot(timesteps, Mag,
                                 color=color,
                                 alpha=self.alpha, lw=0.8)
      
@@ -238,6 +240,7 @@ class fl(object):
                 X = paramData[:, 0, 0]
                 Y = paramData[:, 0, 1]
                 Z = paramData[:, 0, 2]
+                Mag = np.sqrt(X**2 + Y**2 + Z**2)
    
                 color = self.colors[state].strip('#')
                 color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
@@ -245,9 +248,18 @@ class fl(object):
                 color *= (1 - (0.2 * state))
                 color /= 255.
 
-                fl.plot_ax.plot(timesteps, X,
+                fl.plot_ax.plot(timesteps, Mag,
                                 color=color,
                                 alpha=self.alpha, lw=0.8)
+
+          lines, handles = [], []
+          for state in range(self.num_states):
+             label = "State %i" % state
+             ln = mpl.lines.Line2D([], [], color=self.colors[state],
+                                   label=label)
+             lines.append(ln)
+             handles.append(label)
+          fl.plot_ax.legend(lines, handles)
 
 
 class fl_fk_CC(object):
