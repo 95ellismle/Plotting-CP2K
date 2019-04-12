@@ -24,7 +24,6 @@ from PLOT import Plot
 #              #"/scratch/mellis/flavoured-cptk/EhrenForceCTMQCCoeff",
 #             ]
 rootFolder = ["",
-<<<<<<< HEAD
               #"/home/oem/Data/CTMQC/CTMQCAll",
               #"/home/oem/Data/CTMQC/EhrenAll",
               "/home/oem/Data/CTMQC/PlotMe",
@@ -33,20 +32,8 @@ rootFolder = ["",
              ]
 
 # folders = folders[:1]
-plotting_parameters = ["|u|^2", "|C|^2"]
-replicas = [1]
-=======
-              #"/scratch/mellis/flavoured-cptk/200Rep_2mol", 
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_CTMQCCoeff",
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_EhrenCoeff",
-              #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_EhrenCoeff",
-              "/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_CTMQCCoeff",
-             ]
-
-# folders = folders[:1]
-plotting_parameters = ["|C|^2", "fl"]
-replicas = [1] 
->>>>>>> 32f6f89ec031e85f5edf250505f57bce76f5f2a4
+plotting_parameters = ["norm", "fl"]
+replicas = 'all'
 plot = True
 num_proc = 'auto'
 #######################################################
