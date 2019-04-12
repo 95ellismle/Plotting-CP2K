@@ -17,11 +17,12 @@ import numpy as np
 
 folder = "/home/oem/Data/CTMQC/CTMQCForceEhrenCoeff/"
 sizes = {'C': 1.8, 'H': 0.7, 'Ne': 1}
+replica = 15
 
-allPosData = load_pos.load_all_pos_in_folder(folder, reps=[1])
-allQMData = load_QM.load_all_QM_0_in_folder(folder, reps=[1])
-allFrcData = load_frc.load_all_frc_in_folder(folder, reps=[1])
-allAMData = load_tintf.load_all_tintf_in_folder(folder, reps=[1])
+allPosData = load_pos.load_all_pos_in_folder(folder, reps=[replica])
+allQMData = load_QM.load_all_QM_0_in_folder(folder, reps=[replica])
+allFrcData = load_frc.load_all_frc_in_folder(folder, reps=[replica])
+allAMData = load_tintf.load_all_tintf_in_folder(folder, reps=[replica])
 
 pKeys = list(allPosData.keys())
 qmKeys = list(allQMData.keys())
@@ -76,7 +77,7 @@ hPts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['H'], color=(1, 1, 0))
 nePts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['Ne'], color=(1, 1, 1))
 # Plot vectors
 #qmPts = mlab.quiver3d(posx, posy, posz, qmx, qmy, qmz)
-#frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
+frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
 amPts = mlab.quiver3d(posx, posy, posz, amx, amy, amz)
 
 
@@ -97,10 +98,10 @@ def anim():
         amPts.mlab_source.v = stateMom.T[1]
         amPts.mlab_source.w = stateMom.T[2]
         
-        #frcPts.mlab_source.points = qmPos[i]
-        #frcPts.mlab_source.u = activeFrc[i].T[0]
-        #frcPts.mlab_source.v = activeFrc[i].T[1]
-        #frcPts.mlab_source.w = activeFrc[i].T[2]
+        frcPts.mlab_source.points = qmPos[i]
+        frcPts.mlab_source.u = activeFrc[i].T[0]
+        frcPts.mlab_source.v = activeFrc[i].T[1]
+        frcPts.mlab_source.w = activeFrc[i].T[2]
 
         #qmPts.mlab_source.points = qmPos[i]
         #qmPts.mlab_source.u = qm[i].T[0]

@@ -10,4 +10,6 @@ This will both plot and analyse the data giving some nice info such as the best 
 # TODO
 * Move all plotting parameters from PLOT to main.py
 
+* Load the adiabatic momentum data into a structure that is more sensible (steps, states, atoms, 3) rather than the current big list.
+
 * Fix the average coupling calculation (there is a unit mmix up and it would be good if only the 'settled' bits of the graph are used in the calculation)
