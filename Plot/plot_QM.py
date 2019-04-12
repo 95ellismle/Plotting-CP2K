@@ -38,7 +38,7 @@ class QM0_t(object):
         Will plot the quantum momentum for all the replicas.
         """
         for qmF in self.all_QM_0_data:
-            (data, cols), timesteps = self.all_QM_0_data[qmF]
+            data, cols, timesteps = self.all_QM_0_data[qmF]
             qmMag = np.linalg.norm(data, axis=2)
 
             for iatom in range(len(qmMag[0])):

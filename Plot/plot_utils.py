@@ -97,7 +97,6 @@ def avg_C_data_dict(all_coeff_data):
 def avg_coeff_data(all_coeff_data):
     #Find the max length of data that all arrays can give
     max_len = np.min([[len(all_coeff_data[f][i]) for f in all_coeff_data] for i in range(4)])
-    print(max_len)
     #Splice to the max length
     all_coeff =  [[all_coeff_data[f][0][:max_len] for f in all_coeff_data],
                     '',
@@ -142,16 +141,22 @@ def avg_pos_data(all_pos_data):
     Outputs:
         * avg position data (same format dictionary as input)
     """
-    min_len = np.min([[len(all_pos_data[f][0][0]), len(all_pos_data[f][0][1]), len(all_pos_data[f][1])] for f in all_pos_data])
-    all_pos = [[all_pos_data[f][0][0][:min_len] for f in all_pos_data ],
+
+    # Finds the minimum length of array within all replicas
+    min_len = np.min([[len(all_pos_data[f][0]),
+                       len(all_pos_data[f][1]),
+                       len(all_pos_data[f][2])] for f in all_pos_data])
+
+    all_pos = [[all_pos_data[f][0][:min_len] for f in all_pos_data ],
                 '',
-                [all_pos_data[f][1][:min_len] for f in all_pos_data ]]
-    avg_pos = {}
+                [all_pos_data[f][2][:min_len] for f in all_pos_data ]]
+
+    avg_pos = False
     if all_pos[0]:
         # Should return in same format as input
-        avg_pos = {'avg_pos':[(np.mean(all_pos[0], axis=0),
-                               np.zeros(len(all_pos[0][0]))), 
-                       np.mean(all_pos[2], axis=0)]}   
+        avg_pos = [np.mean(all_pos[0], axis=0),
+                   np.zeros(len(all_pos[0])), 
+                   np.mean(all_pos[2], axis=0)]
     return avg_pos
 
 
@@ -162,21 +167,21 @@ def avg_QM0_data(all_qm_data):
     Inputs:
         * all_qm_data => the QM data in the QM_0 format
     """
-    shapes = [all_qm_data[i][0][0].shape for i in all_qm_data]
-    shape = np.min(shapes, axis=0)
+    # Create an empty array to store the averaged data
+    shapes = [all_qm_data[i][0].shape for i in all_qm_data]
+    shape = np.min(shapes, axis=0)  # make all QM data same shape
+    avg_qm_data = np.zeros(shape)
 
     # Average the quantum momentum data
-    avg_qm_data = np.zeros(shape)
     for qmF in all_qm_data:
-        avg_qm_data += all_qm_data[qmF][0][0][:shape[0], :shape[1], :shape[2]]
+        avg_qm_data += all_qm_data[qmF][0][:shape[0], :shape[1], :shape[2]]
     avg_qm_data /= len(all_qm_data)
 
     # Average the timesteps
-    lens = [len(all_qm_data[i][1]) for i in all_qm_data]
-    minLen = min(lens)
+    minLen = shape[0]
     timesteps = np.zeros(minLen)
     for qmF in all_qm_data:
-        timesteps += all_qm_data[qmF][1][:minLen]
+        timesteps += all_qm_data[qmF][2][:minLen]
     timesteps /= len(all_qm_data)
 
     return avg_qm_data
@@ -211,7 +216,7 @@ def avg_Qlk_data(all_Qlk_data):
     return avg_Qlk_data
 
 
-def sum_hist_f_data(all_tintf_data):
+def avg_hist_f_data(all_tintf_data):
     """
     Will sum all the time-integrated adiabatic forces.
     
@@ -222,32 +227,18 @@ def sum_hist_f_data(all_tintf_data):
     Ouputs:
         * The averaged tintf data.
     """
-    Tcols = all_tintf_data[list(all_tintf_data.keys())[0]][0][1]
-    nstates = max(Tcols[0,:,1].astype(int))
-    all_state_combs = list(IT.combinations(range(nstates), 2))
-    all_tintf_lk = {"%i%i"%(i,j):'' for i,j in all_state_combs}
+    # Get all data and timesteps
+    allData = [all_tintf_data[key][0] for key in all_tintf_data]
+    allTimesteps = [all_tintf_data[key][2] for key in all_tintf_data]
+    allData = np.array(allData)
 
-    Tdata = all_tintf_data[list(all_tintf_data.keys())[0]][0][0]
-    nsteps = len(Tdata)
-    natom = int(len(Tdata[0])/nstates)
-    for i,j in all_state_combs:
-        all_tintf_lk["%i%i"%(i,j)] = np.zeros((nsteps, natom, 3))
+    # Average the data now
+    avgTimesteps = np.mean(allTimesteps, axis=0)
+    avgData = np.mean(allData, axis=0)
     
-    #Actually do the calc
-    for Tkey in all_tintf_data:
-        (Tdata, Tcols), _ = all_tintf_data[Tkey]
-
-        for l,k in all_state_combs:
-            fk = np.array([i[Tcols[0,:,1] == str(k+1)] for i in Tdata])
-            fl = np.array([i[Tcols[0,:,1] == str(l+1)] for i in Tdata])
-            
-            tmp = [F for i, F in enumerate(fl-fk)]            
-            all_tintf_lk['%i%i'%(l,k)] += tmp
-        
-    Tsteps = all_tintf_data[list(all_tintf_data.keys())[0]][1]
-    return [all_tintf_lk, Tsteps]
-
-
+    return avgData, avgTimesteps
+    
+   
 def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
     """
     Will calculate the Ylk/sum(Ylk) data for each replica/atom

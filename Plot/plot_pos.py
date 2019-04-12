@@ -152,7 +152,7 @@ class PlotPos(object):
         populations and plot on the norm axis.
         """
         for fileName in self.all_pos_data:
-            (data, cols), timesteps = self.all_pos_data[fileName]
+            data, cols, timesteps = self.all_pos_data[fileName]
 
             # This is a horrible hack should be improved!
             #  * Make more robust way to get active atoms
@@ -233,7 +233,7 @@ class PlotPosSig(object):
         populations and plot on the norm axis.
         """
         for pFName, sFName in zip(self.all_pos_data, self.all_sigma):
-            (posData, cols), timesteps = self.all_pos_data[pFName]
+            posData, cols, timesteps = self.all_pos_data[pFName]
             sigma, timesteps = self.all_sigma[sFName]
 
             # This is a horrible hack should be improved!
