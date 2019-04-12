@@ -204,7 +204,7 @@ class fl(object):
         Will plot data for all replicas
         """
         for key in self.all_tintf_data:
-          (data, cols), timesteps = self.all_tintf_data[key]
+          data, cols, timesteps = self.all_tintf_data[key]
           params = {'at_num': 0,
                     'state': 1}
           
@@ -216,17 +216,18 @@ class fl(object):
                 params['state'] = state
                 params['at_num'] = at_num
                 paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0]
-                Y = paramData[:, 1]
-                Z = paramData[:, 2]
+                X = paramData[:, 0, 0]
+                Y = paramData[:, 0, 1]
+                Z = paramData[:, 0, 2]
    
-                col = self.colors[state].strip('#')
-                col = np.array(tuple(bytes.fromhex(col))).astype(float)
-                col *= 1. #(1 - (0.2 * state)) * col
-                col /= 255
+                color = self.colors[state].strip('#')
+                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+                color = np.array(color).astype(float)
+                color *= 1. #(1 - (0.2 * state)) * color
+                color /= 255.
 
                 fl.plot_ax.plot(timesteps, X,
-                                color=col,
+                                color=color,
                                 alpha=self.alpha, lw=0.8)
      
           for at_num in hydrogenAtoms:
@@ -234,18 +235,18 @@ class fl(object):
                 params['state'] = state
                 params['at_num'] = at_num
                 paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0]
-                Y = paramData[:, 1]
-                Z = paramData[:, 2]
+                X = paramData[:, 0, 0]
+                Y = paramData[:, 0, 1]
+                Z = paramData[:, 0, 2]
    
-                col = self.colors[state].strip('#')
-                col = np.array(tuple(bytes.fromhex(col))).astype(float)
-                col *= (1 - (0.2 * state))
-                #col = 1. * col
-                col /= 255
+                color = self.colors[state].strip('#')
+                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+                color = np.array(color).astype(float)
+                color *= (1 - (0.2 * state))
+                color /= 255.
 
                 fl.plot_ax.plot(timesteps, X,
-                                color=col,
+                                color=color,
                                 alpha=self.alpha, lw=0.8)
 
 
