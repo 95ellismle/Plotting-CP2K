@@ -10,6 +10,7 @@ Created on Mon Oct 29 11:41:22 2018
 import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
+import gc
 
 from IO import Folders as fold
 from PLOT import Plot
@@ -17,38 +18,21 @@ from PLOT import Plot
 ###############
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
-#rootFolder = ["",
-#              "/scratch/mellis/flavoured-cptk/CTMQCAll",
-#              #"/scratch/mellis/flavoured-cptk/EhrenAll",
-#              #"/scratch/mellis/flavoured-cptk/CTMQCForceEhrenCoeff",
-#              #"/scratch/mellis/flavoured-cptk/EhrenForceCTMQCCoeff",
-#             ]
 rootFolder = ["",
-<<<<<<< HEAD
-              #"/home/oem/Data/CTMQC/CTMQCAll",
-              #"/home/oem/Data/CTMQC/EhrenAll",
-              "/home/oem/Data/CTMQC/PlotMe",
-              #"/home/oem/Data/CTMQC/EhrenForceCTMQCCoeff",
-              "",
-             ]
-
-# folders = folders[:1]
-plotting_parameters = ["|u|^2", "|C|^2"]
-replicas = [1]
-=======
-              #"/scratch/mellis/flavoured-cptk/200Rep_2mol", 
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol", 
               #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_CTMQCCoeff",
               #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_EhrenCoeff",
               #"/scratch/mellis/flavoured-cptk/PopTransfer/CTMQCForce_EhrenCoeff",
-              "/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_CTMQCCoeff",
+              #"/scratch/mellis/flavoured-cptk/PopTransfer/EhrenForce_CTMQCCoeff",
              ]
 
 # folders = folders[:1]
-plotting_parameters = ["|C|^2", "fl"]
-replicas = [1] 
->>>>>>> 32f6f89ec031e85f5edf250505f57bce76f5f2a4
+plotting_parameters = ["energ_cons", 'fl']
+replicas = 'all' 
 plot = True
 num_proc = 'auto'
+min_time = 0
+max_time = range(49, 100)
 #######################################################
 
 folders = []
@@ -70,25 +54,36 @@ def do_1_folder(folder, plotting_parameters, replicas, plot):
     p = Plot(plot_params=plotting_parameters,
              folder=folder,
              reps=replicas,
-             plot=plot)
+             plot=plot,
+             minTime=min_time,
+             maxTime=max_time,
+             )
     return p
 
 
-def do_1_fold_PL(folder):
+def do_1_fold_PL(folder, maxTime):
     p = Plot(plot_params=plotting_parameters,
              folder=folder,
              reps=replicas,
-             plot=plot)
+             plot=plot,
+             minTime=min_time,
+             maxTime=maxTime)
     return p
 
 if num_proc == 'auto':
     num_proc = len(folders)
 
 if plot:
-    all_p = []
-    for i, f in enumerate(folders):
-        all_p.append(do_1_fold_PL(f))
-        plt.close()
+    #all_p = []
+    f = folders[0]
+    for i, mT in enumerate(max_time):
+        p = do_1_fold_PL(f, mT)
+        plt.close('all')
+        maxTime = p.max_time
+        folder = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/adiabaticMomentum/Increasing_Time"
+        saveFolder = "%s/%ifs.png" % (folder, maxTime)
+        p.f.savefig(saveFolder)
+        gc.collect()
         print("Done %s" % f)
 else:
     if num_proc > 21:
@@ -100,6 +95,7 @@ else:
             all_p = pool.map(do_1_fold_PL, folders)
     else:
         all_p = [do_1_fold_PL(folders[0])]
+
 
 #for pNum, p in enumerate(all_p):
 #   folder = folders[pNum]

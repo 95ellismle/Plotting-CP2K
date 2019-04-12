@@ -197,6 +197,7 @@ class fl(object):
             fl.plot_all(self)
             
             fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|^2$ [bohr$^{-1}$]")
+            fl.plot_ax.set_ylim([-500, 500])
 
     @staticmethod
     def plot_all(self):
@@ -204,7 +205,7 @@ class fl(object):
         Will plot data for all replicas
         """
         for key in self.all_tintf_data:
-          (data, cols), timesteps = self.all_tintf_data[key]
+          data, cols, timesteps = self.all_tintf_data[key]
           params = {'at_num': 0,
                     'state': 1}
           
@@ -220,13 +221,14 @@ class fl(object):
                 Y = paramData[:, 1]
                 Z = paramData[:, 2]
    
-                col = self.colors[state].strip('#')
-                col = np.array(tuple(bytes.fromhex(col))).astype(float)
-                col *= 1. #(1 - (0.2 * state)) * col
-                col /= 255
+                color = self.colors[state].strip('#')
+                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+                color = np.array(color).astype(float)
+                color *= 1. #(1 - (0.2 * state)) * color
+                color /= 255.
 
                 fl.plot_ax.plot(timesteps, X,
-                                color=col,
+                                color=color,
                                 alpha=self.alpha, lw=0.8)
      
           for at_num in hydrogenAtoms:
@@ -238,14 +240,14 @@ class fl(object):
                 Y = paramData[:, 1]
                 Z = paramData[:, 2]
    
-                col = self.colors[state].strip('#')
-                col = np.array(tuple(bytes.fromhex(col))).astype(float)
-                col *= (1 - (0.2 * state))
-                #col = 1. * col
-                col /= 255
+                color = self.colors[state].strip('#')
+                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+                color = np.array(color).astype(float)
+                color *= (1 - (0.2 * state))
+                color /= 255.
 
                 fl.plot_ax.plot(timesteps, X,
-                                color=col,
+                                color=color,
                                 alpha=self.alpha, lw=0.8)
 
 

@@ -76,7 +76,8 @@ class Params(object):
     Will store all the parameters needed to plot the graphs. Will also
     calculate parameters such as alpha etc...
     """
-    def __init__(self, folder, reps, plot_params):
+    def __init__(self, folder, reps, plot_params, maxTime='all',
+                 minTime=0):
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
@@ -93,10 +94,10 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = True
+        self._use_control = False
 #        if self.num_reps == 1: self._use_control = False
-        self.max_time = 'all'  # (in fs)
-        self.min_time = 0  # (in fs)  NOT WORKING CAN ONLY USE 0
+        self.max_time = maxTime  # (in fs)
+        self.min_time = minTime  # (in fs)  NOT WORKING CAN ONLY USE 0
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
         self.dt = self.run_inp_params['NUCLEAR_TIMESTEP']
@@ -269,14 +270,16 @@ class LoadData(Params):
 
     NOTE: Should be in plot_utils
     """
-    def __init__(self, folder, reps, plot_params='all', avg_on=True):
+    def __init__(self, folder, reps, plot_params='all', avg_on=True,
+                 minTime=0, maxTime='all'):
         if folder[-1] != '/':
             folder += '/'
         self.folder = folder
         self.reps = reps
         self.plot_params = plot_params
         self.avg_on = avg_on
-        Params.__init__(self, folder, reps, plot_params)
+        Params.__init__(self, folder, reps, plot_params,
+                        minTime=minTime, maxTime=maxTime)
 
         self.decideDependencies()
         self.load_timings = OrderedDict()
@@ -735,7 +738,7 @@ class LoadData(Params):
             # Find metadata
             Keys = list(self.all_tintf_data.keys())
             self.num_reps = len(Keys)
-            cols = self.all_tintf_data[Keys[0]][0][1]
+            cols = self.all_tintf_data[Keys[0]][1]
             self.num_histf_steps = len(cols)
             self.num_active_atoms = sum(cols[0, :, 1] == '1')
             self.num_states = len(set(cols[0, :, 1]))
@@ -851,7 +854,7 @@ class LoadData(Params):
 
         if 'fl_fk' in self.load_params:
             self.load_timings['Averaging: ']['history forces'] = time.time()
-            self.sum_tintf_data = plot_utils.sum_hist_f_data(
+            self.avg_tintf_data = plot_utils.avg_hist_f_data(
                                                             self.all_tintf_data
                                                             )
             if 'ylk/sum(ylk)' in self.plot_params:
@@ -943,12 +946,14 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                  hold it in memory (as self.f).
     """
 
-    def __init__(self, plot_params, folder, reps, plot):
+    def __init__(self, plot_params, folder, reps, plot,
+                 minTime=0, maxTime='all'):
         print("Starting on folder ", folder)
         self.plot_params = plot_params
         self._correct_plot_params()
 #        Params.__init__(self, folder, reps, self.plot_params)
-        LoadData.__init__(self, folder, reps, self.plot_params)
+        LoadData.__init__(self, folder, reps, self.plot_params,
+                          minTime=minTime, maxTime=maxTime)
         if self.atoms_to_plot == 'all':
             self.atoms_to_plot = range(1, self.num_active_atoms+1)
 
@@ -1383,6 +1388,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 if type(self.max_time) != str and ax != 'qm_r':
                     AX.set_xlim([self.min_time*0.95*self.dt,
                                  self.max_time*1.05])
+                AX.set_xlim([0,100])
 #            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis
         try:
@@ -1409,4 +1415,5 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 #                                hspace=0.084,
 #                                wspace=1.00)
         self.f.tight_layout()
-        plt.show()
+        plt.ion()
+        plt.show(block=False)
