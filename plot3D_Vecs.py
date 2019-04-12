@@ -21,12 +21,12 @@ sizes = {'C': 1.8, 'H': 0.7, 'Ne': 1}
 allPosData = load_pos.load_all_pos_in_folder(folder, reps=[1])
 allQMData = load_QM.load_all_QM_0_in_folder(folder, reps=[1])
 allFrcData = load_frc.load_all_frc_in_folder(folder, reps=[1])
-# allHMData = load_tintf.load_all_tintf_in_folder(folder, reps=[1])
+allAMData = load_tintf.load_all_tintf_in_folder(folder, reps=[1])
 
 pKeys = list(allPosData.keys())
 qmKeys = list(allQMData.keys())
 frcKeys = list(allFrcData.keys())
-# hmKeys = list(allHMData.keys())
+amKeys = list(allAMData.keys())
 
 
 def getActiveAtoms(pos, cols, atomName=False):
@@ -44,7 +44,7 @@ def getActiveAtoms(pos, cols, atomName=False):
 pos, rcols, timesteps = allPosData[pKeys[0]]
 qm, qmcols, timesteps = allQMData[qmKeys[0]]
 frc, fcols, timesteps = allFrcData[frcKeys[0]]
-# hm, hmcols, timesteps = allHMData[hmKeys[0]]
+am, amcols, timesteps = allAMData[amKeys[0]]
 
 nsteps = len(qm)
 if (nsteps != len(pos) or nsteps != len(frc)):
@@ -52,7 +52,6 @@ if (nsteps != len(pos) or nsteps != len(frc)):
     print("Len(frc) = %i" % len(frc))
     print("Len(qm) = %i" % len(qm))
     raise SystemExit("Incorrect number of steps")
-
 
 # Get vital information about the quantum momentum
 qmPos, tmpCols = getActiveAtoms(pos, rcols)
@@ -65,12 +64,20 @@ neonPos, _ = getActiveAtoms(pos, rcols, "Ne")
 # Init forces
 activeFrc, _ = getActiveAtoms(frc, fcols)
 frcx, frcy, frcz = activeFrc[0].T
+#Init ad Momentum
+stateMom, _ = load_tintf.find_in_histF(am, amcols, {"state": 0,
+                                                    "step_num": 0})
+amx, amy, amz = stateMom.T
+
+
 # Plot atoms
 cPts = mlab.points3d(*carbonPos[0].T, scale_factor=sizes['C'], color=(0, 0, 0))
 hPts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['H'], color=(1, 1, 0))
 nePts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['Ne'], color=(1, 1, 1))
-# qmPts = mlab.quiver3d(posx, posy, posz, qmx, qmy, qmz)
-frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
+# Plot vectors
+#qmPts = mlab.quiver3d(posx, posy, posz, qmx, qmy, qmz)
+#frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
+amPts = mlab.quiver3d(posx, posy, posz, amx, amy, amz)
 
 
 @mlab.animate(delay=10)
@@ -80,15 +87,25 @@ def anim():
         hPts.mlab_source.points = hydrogPos[i]
         nePts.mlab_source.points = neonPos[i]
 
-        frcPts.mlab_source.points = qmPos[i]
-        frcPts.mlab_source.u = activeFrc[i].T[0]
-        frcPts.mlab_source.v = activeFrc[i].T[1]
-        frcPts.mlab_source.w = activeFrc[i].T[2]
+        
+        stateMom, _ = load_tintf.find_in_histF(am,
+                                               amcols,
+                                               {"state": 1,
+                                                "step_num": i})
+        amPts.mlab_source.points = qmPos[i]
+        amPts.mlab_source.u = stateMom.T[0]
+        amPts.mlab_source.v = stateMom.T[1]
+        amPts.mlab_source.w = stateMom.T[2]
+        
+        #frcPts.mlab_source.points = qmPos[i]
+        #frcPts.mlab_source.u = activeFrc[i].T[0]
+        #frcPts.mlab_source.v = activeFrc[i].T[1]
+        #frcPts.mlab_source.w = activeFrc[i].T[2]
 
-        # qmPts.mlab_source.points = qmPos[i]
-        # qmPts.mlab_source.u = qm[i].T[0]
-        # qmPts.mlab_source.v = qm[i].T[1]
-        # qmPts.mlab_source.w = qm[i].T[2]
+        #qmPts.mlab_source.points = qmPos[i]
+        #qmPts.mlab_source.u = qm[i].T[0]
+        #qmPts.mlab_source.v = qm[i].T[1]
+        #qmPts.mlab_source.w = qm[i].T[2]
         yield
 
 anim()
