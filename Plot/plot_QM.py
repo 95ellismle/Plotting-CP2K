@@ -30,7 +30,7 @@ class QM0_t(object):
 
             QM0_t.plot_all(self)
 
-        QM0_t.plot_ax.set_ylabel(r"$|\frac{Q_{\nu}^{(I)}}{M_{\nu}}|^2$ [$bohr^{-1}$]")
+        QM0_t.plot_ax.set_ylabel(r"$|\frac{Q_{\nu}^{(I)}}{M_{\nu}}|$ [$bohr^{-1}$]")
 
     @staticmethod
     def plot_all(self):

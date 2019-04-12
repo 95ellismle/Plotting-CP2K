@@ -10,6 +10,33 @@ import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 
 
+class Ad_Frc(object):
+   """
+   Will plot the adiabatic forces on each state.
+
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the 
+                 widget axis the second will be the axis to plot the data.
+   """
+   def __init__(self, axes):
+      if self.plot:
+         Ad_Frc.widg_ax = axes[0]
+         Ad_Frc.plot_ax = axes[1]
+         
+         Ad_Frc.plot_all(self)
+
+         Ad_Frc.plot_ax.set_ylabel(r"$-\nabla_{\nu} E_{l}^{ad, (I)}$ [$\frac{Ha}{bohr}$]")
+
+   @staticmethod
+   def plot_all(self):
+      """
+      Will plot a line for every replica.
+      """
+      for repKey in self.all_ad_frc_data:
+         data, cols, timesteps = self.all_ad_frc_data[repKey]
+
+
+
 class QM_Frc(object):
     """
     Will plot the Quantum Momentum forces against time.

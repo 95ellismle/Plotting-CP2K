@@ -230,7 +230,13 @@ def avg_hist_f_data(all_tintf_data):
     # Get all data and timesteps
     allData = [all_tintf_data[key][0] for key in all_tintf_data]
     allTimesteps = [all_tintf_data[key][2] for key in all_tintf_data]
-    allData = np.array(allData)
+
+    # Get the minimum length of the data so we can plot the same size arrays
+    minLen1 = min([len(data) for data in allData])
+    minLen2 = min([len(ts) for ts in allTimesteps])
+    minLen = min([minLen1, minLen2])
+    allData = [data[:minLen, :, :] for data in allData]
+    allTimesteps = [ts[:minLen] for ts in allTimesteps]
 
     # Average the data now
     avgTimesteps = np.mean(allTimesteps, axis=0)

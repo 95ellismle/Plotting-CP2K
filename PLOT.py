@@ -69,6 +69,7 @@ dependencies = {'qm_r':         ['pos', 'qm'],
                 'fl':           ['fl_fk'],
                 'fk':           ['fl_fk'],
                 "qm_force":     ['qm_frc'], 
+                "ad_force":     ['ad_frc'],
                 }
 
 class Params(object):
@@ -297,6 +298,7 @@ class LoadData(Params):
         self.load_sigmas()
         self.load_k()
         self.load_qm_frc()
+        self.load_ad_frc()
 
         self.calc_alpha()
         self._get_transparency()
@@ -799,6 +801,35 @@ class LoadData(Params):
          self.load_timings['qm_forces'] = time.time() - \
             self.load_timings['qm_forces']
 
+    def load_ad_frc(self):
+      """
+      Will load the adiabatic forces
+      """
+      if 'ad_frc' in self.load_params:
+         self.load_timings['adiab_forces'] = time.time()
+         print_step = self.nested_inp_params['MOTION']['CTMQC']
+         print_step = print_step['PRINT']['AD_FORCES']['EACH']
+         print_step = print_step['MD'][0]
+         if type(self.max_step) == str:
+            max_step = self.max_step
+         else:
+            max_step = int(self.max_step/print_step)
+
+         self.all_ad_frc_data = load_frc.load_all_ad_frc_in_folder(
+                                                     self.folder,
+                                                     reps=self.reps,
+                                                     max_step=max_step,
+                                                     min_step=self.min_time,
+                                                     stride=self.slow_stride
+                                                            )
+         Keys = list(self.all_ad_frc_data.keys())
+         self.num_reps = len(Keys)
+         #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
+
+         self.load_timings['adiab_forces'] = time.time() - \
+            self.load_timings['adiab_forces']
+
+
     def _get_coupling(self):
         """
         Will get the average coupling and print it to the console
@@ -869,22 +900,22 @@ class LoadData(Params):
             self.load_timings['Averaging: ']['history forces'] = time.time() -\
                 self.load_timings['Averaging: ']['history forces']
 
-        #if 'tot_force' in self.load_params:
-        #    self.load_timings['Averaging: ']['force'] = time.time()
-        #    self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
-        #    # Rename the average key (using average_pos function)
-        #    self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
-        #    del self.avg_frc_data['avg_pos']
-        #    self.load_timings['Averaging: ']['force'] = time.time() - \
-        #        self.load_timings['Averaging: ']['force']
+        if 'tot_force' in self.load_params:
+            self.load_timings['Averaging: ']['force'] = time.time()
+            self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
+            # Rename the average key (using average_pos function)
+            self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
+            del self.avg_frc_data['avg_pos']
+            self.load_timings['Averaging: ']['force'] = time.time() - \
+                self.load_timings['Averaging: ']['force']
 
-        #if 'qm_frc' in self.load_params:
-        #    self.load_timings['Averaging: ']['qm_force'] = time.time()
-        #    self.avg_frc_data = plot_utils.avg_pos_data(self.all_qm_frc_data)
-        #    # Rename the average key (using average_pos function)
-        #    self.avg_frc_data = self.avg_frc_data['avg_pos']
-        #    self.load_timings['Averaging: ']['qm_force'] = time.time() - \
-        #        self.load_timings['Averaging: ']['qm_force']
+        if 'qm_frc' in self.load_params:
+            self.load_timings['Averaging: ']['qm_force'] = time.time()
+            self.avg_frc_data = plot_utils.avg_pos_data(self.all_qm_frc_data)
+            # Rename the average key (using average_pos function)
+            self.avg_frc_data = self.avg_frc_data['avg_pos']
+            self.load_timings['Averaging: ']['qm_force'] = time.time() - \
+                self.load_timings['Averaging: ']['qm_force']
 
         if 'tot_ener' in self.load_params:
             self.load_timings['Averaging: ']['Tot. Energy'] = time.time()
@@ -918,7 +949,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PlotPosSig,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
-           plot_tintf.fl, plot_frc.QM_Frc):
+           plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -1065,6 +1096,11 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                          self,
                                                          self.axes['qm_force']
                                                           )
+        if 'ad_force' in self.plot_params:
+            self.mAdForcePlot = plot_frc.Ad_Frc.__init__(
+                                                         self,
+                                                         self.axes['ad_force']
+                                                        )
         # Positions
         if 'pos' in self.plot_params:
             self.mPosPlot = plot_pos.PlotPos.__init__(self,
