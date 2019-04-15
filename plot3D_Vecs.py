@@ -78,7 +78,7 @@ nePts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['Ne'], color=(1, 1, 1)
 # Plot vectors
 #qmPts = mlab.quiver3d(posx, posy, posz, qmx, qmy, qmz)
 frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
-amPts = mlab.quiver3d(posx, posy, posz, amx, amy, amz)
+#amPts = mlab.quiver3d(posx, posy, posz, amx, amy, amz)
 
 
 @mlab.animate(delay=10)
@@ -93,10 +93,10 @@ def anim():
                                                amcols,
                                                {"state": 1,
                                                 "step_num": i})
-        amPts.mlab_source.points = qmPos[i]
-        amPts.mlab_source.u = stateMom.T[0]
-        amPts.mlab_source.v = stateMom.T[1]
-        amPts.mlab_source.w = stateMom.T[2]
+        #amPts.mlab_source.points = qmPos[i]
+        #amPts.mlab_source.u = stateMom.T[0]
+        #amPts.mlab_source.v = stateMom.T[1]
+        #amPts.mlab_source.w = stateMom.T[2]
         
         frcPts.mlab_source.points = qmPos[i]
         frcPts.mlab_source.u = activeFrc[i].T[0]

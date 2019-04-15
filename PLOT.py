@@ -95,7 +95,7 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = False
+        self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         self.max_time = maxTime  # (in fs)
         self.min_time = minTime  # (in fs)  NOT WORKING CAN ONLY USE 0
@@ -716,10 +716,10 @@ class LoadData(Params):
 
     def load_hist_f(self):
         """
-        Will load all the time-integrated history forces in a folder.
+        Will load all the adiab. mom. in a folder.
         """
         if 'fl_fk' in self.load_params:
-            self.load_timings['history forces'] = time.time()
+            self.load_timings['adiab. mom.'] = time.time()
             print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['T_INT_FORCE']['EACH']['MD'][0]
 
             if type(self.max_step) == str:
@@ -734,16 +734,14 @@ class LoadData(Params):
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride
                                                                      )
-            self.load_timings['history forces'] = time.time() - \
-                self.load_timings['history forces']
+            self.load_timings['adiab. mom.'] = time.time() - \
+                self.load_timings['adiab. mom.']
 
             # Find metadata
             Keys = list(self.all_tintf_data.keys())
             self.num_reps = len(Keys)
-            cols = self.all_tintf_data[Keys[0]][1]
-            self.num_histf_steps = len(cols)
-            self.num_active_atoms = sum(cols[0, :, 1] == '1')
-            self.num_states = len(set(cols[0, :, 1]))
+            tmp = self.all_tintf_data[Keys[0]][0]
+            self.num_histf_steps, self.num_states, self.num_active_atoms, _ = tmp.shape
 
     def load_force(self):
         """
@@ -824,7 +822,8 @@ class LoadData(Params):
                                                             )
          Keys = list(self.all_ad_frc_data.keys())
          self.num_reps = len(Keys)
-         #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
+         tmp = self.all_ad_frc_data[Keys[0]][0].shape
+         self.num_steps, self.num_states, self.num_atoms, _ = tmp
 
          self.load_timings['adiab_forces'] = time.time() - \
             self.load_timings['adiab_forces']
@@ -862,11 +861,11 @@ class LoadData(Params):
                 self.load_timings['Averaging: ']['ad coeff']
 
         if 'ad_ener' in self.load_params:
-            self.load_timings['Averaging: ']['adiab_ener'] = time.time()
+            self.load_timings['Averaging: ']['adiab ener'] = time.time()
             self.all_ad_ener_data_avg = \
                 plot_utils.avg_E_data_dict(self.all_ad_ener_data)
-            self.load_timings['Averaging: ']['adiab_ener'] = \
-                time.time() - self.load_timings['Averaging: ']['adiab_ener']
+            self.load_timings['Averaging: ']['adiab ener'] = \
+                time.time() - self.load_timings['Averaging: ']['adiab ener']
 
         if 'pos' in self.load_params:
             self.load_timings['Averaging: ']['pos'] = time.time()
@@ -884,7 +883,7 @@ class LoadData(Params):
                 self.load_timings['Averaging: ']['qm']
 
         if 'fl_fk' in self.load_params:
-            self.load_timings['Averaging: ']['history forces'] = time.time()
+            self.load_timings['Averaging: ']['adiab. mom.'] = time.time()
             self.avg_tintf_data = plot_utils.avg_hist_f_data(
                                                             self.all_tintf_data
                                                             )
@@ -897,8 +896,8 @@ class LoadData(Params):
                 self.sum_ylk = plot_utils.sum_Ylk_data(self.all_tintf_data,
                                                        self.all_Acoeff_data
                                                        )
-            self.load_timings['Averaging: ']['history forces'] = time.time() -\
-                self.load_timings['Averaging: ']['history forces']
+            self.load_timings['Averaging: ']['adiab. mom.'] = time.time() -\
+                self.load_timings['Averaging: ']['adiab. mom.']
 
         if 'tot_force' in self.load_params:
             self.load_timings['Averaging: ']['force'] = time.time()

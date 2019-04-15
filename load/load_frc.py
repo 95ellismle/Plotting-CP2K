@@ -10,7 +10,7 @@ Created on Wed Sep 19 16:27:47 2018
 from load import load_xyz as XYZ
 from load import load_utils as Utils
 
-#import numpy as np
+import numpy as np
 
 
 # Reads all the Qlk files from a given folder
@@ -67,7 +67,8 @@ def load_ad_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[])
                                               max_step=max_step, 
                                               stride=stride, 
                                               ignore_steps=ignore_steps)
-    cols[:,:,1] = cols[:,:,1].astype(int)
+    data = Utils.reshape_by_state(data, cols)
+    cols = cols[:, :, 0].shape
     return data, cols, timesteps
 
 
@@ -82,3 +83,4 @@ def load_all_ad_frc_in_folder(folder, min_step=0, max_step='all', stride=1, igno
                                     filename_must_contain=['frc','xyz', 'ad'], 
                                     filename_must_not_contain=[], 
                                     reps=reps)
+

@@ -206,51 +206,40 @@ class fl(object):
         """
         for key in self.all_tintf_data:
           data, cols, timesteps = self.all_tintf_data[key]
-          params = {'at_num': 0,
-                    'state': 1}
           
           carbonAtoms = [0, 3, 6, 9]
           hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
 
-          for at_num in carbonAtoms:
-             for state in range(self.num_states):
-                params['state'] = state
-                params['at_num'] = at_num
-                paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0, 0]
-                Y = paramData[:, 0, 1]
-                Z = paramData[:, 0, 2]
-                Mag = np.sqrt(X**2 + Y**2 + Z**2)
+          for state in range(self.num_states):
+             X = data[:, state, carbonAtoms, 0]
+             Y = data[:, state, carbonAtoms, 1]
+             Z = data[:, state, carbonAtoms, 2]
+             Mag = np.sqrt(X**2 + Y**2 + Z**2)
    
-                color = self.colors[state].strip('#')
-                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-                color = np.array(color).astype(float)
-                color *= 1. #(1 - (0.2 * state)) * color
-                color /= 255.
+             color = self.colors[state].strip('#')
+             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+             color = np.array(color).astype(float)
+             color *= 1. #(1 - (0.2 * state)) * color
+             color /= 255.
 
-                fl.plot_ax.plot(timesteps, Mag,
-                                color=color,
-                                alpha=self.alpha, lw=0.8)
+             fl.plot_ax.plot(timesteps, Mag,
+                             color=color,
+                             alpha=self.alpha, lw=0.8)
      
-          for at_num in hydrogenAtoms:
-             for state in range(self.num_states):
-                params['state'] = state
-                params['at_num'] = at_num
-                paramData, paramCols = load_tintf.find_in_histF(data, cols, params)
-                X = paramData[:, 0, 0]
-                Y = paramData[:, 0, 1]
-                Z = paramData[:, 0, 2]
-                Mag = np.sqrt(X**2 + Y**2 + Z**2)
+             X = data[:, state, hydrogenAtoms, 0]
+             Y = data[:, state, hydrogenAtoms, 1]
+             Z = data[:, state, hydrogenAtoms, 2]
+             Mag = np.sqrt(X**2 + Y**2 + Z**2)
    
-                color = self.colors[state].strip('#')
-                color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-                color = np.array(color).astype(float)
-                color *= (1 - (0.2 * state))
-                color /= 255.
+             color = self.colors[state].strip('#')
+             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+             color = np.array(color).astype(float)
+             color *= (1 - (0.2 * state))
+             color /= 255.
 
-                fl.plot_ax.plot(timesteps, Mag,
-                                color=color,
-                                alpha=self.alpha, lw=0.8)
+             fl.plot_ax.plot(timesteps, Mag,
+                             color=color,
+                             alpha=self.alpha, lw=0.8)
 
           lines, handles = [], []
           for state in range(self.num_states):

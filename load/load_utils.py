@@ -10,6 +10,7 @@ import os
 import re
 import collections
 import multiprocessing as mp
+import numpy as np
 
 
 # Will find the replica number in the filename
@@ -23,7 +24,7 @@ def find_rep_num_in_name(filename):
                      'ham': r"-\d*-\d*\.xyz",
                      'n-ener_': r"_\d*-\d*\.dat",
                      'coeff-': r"f-\d*-\d*\.xyz",
-                     'coeff_': r"f_\d*-\d*\.xyz",
+                     #'coeff_': r"f_\d*-\d*\.xyz",
                      'n-vel': r"-\d*-\d*\.xyz",
                      'n-frc': r"_\d*-\d*\.xyz",
                      't_frc': r"_\d*\.xyz",
@@ -40,7 +41,7 @@ def find_rep_num_in_name(filename):
                       'ham': r"\d*-\d*\.",
                       'n-ener_': r"\d*-\d*\.",
                       'coeff-': r"\d*-\d*\.",
-                      'coeff_': r"\d*-\d*\.",
+                      #'coeff_': r"\d*-\d*\.",
                       'n-vel': r"\d*-\d*\.",
                       'n-frc': r"\d*-\d*\.",
                       't_frc': r"\d*\.",
@@ -56,7 +57,7 @@ def find_rep_num_in_name(filename):
                    'ham': r"-",
                    'n-ener_': r"-",
                    'coeff-': r"-",
-                   'coeff_': r"-",
+                   #'coeff_': r"-",
                    'n-vel': r"-",
                    'n-frc': r"-",
                    't_frc': r".",
@@ -218,3 +219,39 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[],
     if not all_data:
         return False
     return all_data
+
+
+def reshape_by_state(data, cols):
+   """
+   Will reshape the ad_frc and ad_mom arrays so that the arrays are
+   in a (Nsteps, Nstates, Natoms, 3) order.
+
+   Inputs:
+      * dataDict => the dictionary with all the data.
+
+   Outputs:
+      * the dataDictionary that contains the reshaped data.
+   """
+   # Get vital metadata
+   oldShape = data.shape
+   numStates = max(cols[0, :, 1].astype(int))
+   numAtoms = oldShape[1]/numStates
+   if int(numAtoms) != numAtoms:
+      msg = "Something went wrong calculating the new shape for the"
+      msg += " ad frc array"
+      raise SystemExit(msg)
+   numAtoms = int(numAtoms)
+   
+   # Create new array
+   newShape = (oldShape[0], numStates, numAtoms, oldShape[2])
+   #newShape = (1, numStates, numAtoms, oldShape[2])
+   newData = np.zeros(newShape)
+   
+   # Populate new array
+   for istate in range(1, numStates+1):
+      stateMask = cols[0, :, 1] == str(istate)
+      for istep in range(oldShape[0]):
+         newData[istep][istate-1] = data[istep][stateMask]
+
+   return newData
+
