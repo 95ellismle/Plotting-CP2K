@@ -19,17 +19,20 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              "/home/oem/Data/CTMQC/SMALL_NUCL_DT",
-              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/home/oem/Data/CTMQC/CTMQCAll",
+              #"/home/oem/Data/CTMQC/EhrenAll",
+              #"/home/oem/Data/CTMQC/CTMQCForceEhrenCoeff",
+              #"/home/oem/Data/CTMQC/EhrenForceCTMQCCoeff",
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
              ]
 
 
 # folders = folders[:1]
-plotting_parameters = ["|C|^2", "norm"]
-replicas = 'all'
-plot = True
-num_proc = 'auto'
+plotting_parameters = ["ad_frcs", "fl"]
+replicas = [1]
+plot = True 
 min_time = 0
 max_time = 'all'
 #######################################################
@@ -43,49 +46,35 @@ for rootfolder in rootFolder:
             folders.append(possFolder)
             continue
 
+folder = [i for i in folders if 'run-ctmqc' in i]
+
 if not folders:
    print("\t\t#####################")
    print("\nSorry I can't find any folders to plot!")
    print("Make sure the run.inp file is in the required folder")
 
 
-def do_1_folder(folder, plotting_parameters, replicas, plot):
+def do_1_folder(folder, plotting_parameters, replicas, plot,
+                minTime, maxTime):
     p = Plot(plot_params=plotting_parameters,
              folder=folder,
              reps=replicas,
              plot=plot,
-             minTime=min_time,
-             maxTime=max_time,
+             minTime=minTime,
+             maxTime=maxTime,
              )
     return p
 
+all_p = []
+for f in folders:
+    p = do_1_folder(folder=f,
+                    plotting_parameters=plotting_parameters,
+                    replicas=replicas,
+                    plot=plot,
+                    minTime=min_time,
+                    maxTime=max_time
+                    )
+    all_p.append(p)
+    print("Done %s" % f)
 
-def do_1_fold_PL(folder):
-    p = Plot(plot_params=plotting_parameters,
-             folder=folder,
-             reps=replicas,
-             plot=plot,
-             minTime=min_time,
-             maxTime=max_time)
-    return p
-
-if num_proc == 'auto':
-    num_proc = len(folders)
-
-if plot:
-    all_p = []
-    for f in folders:
-        p = do_1_fold_PL(f)
-        all_p.append(p)
-        print("Done %s" % f)
-else:
-    if num_proc > 21:
-        num_proc = 21
-    print("Num Proc = ", num_proc)
-    if num_proc > 1:
-        pool = Pool(num_proc)
-        if __name__ == '__main__':
-            all_p = pool.map(do_1_fold_PL, folders)
-    else:
-        all_p = [do_1_fold_PL(folders[0])]
 
