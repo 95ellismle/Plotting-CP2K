@@ -19,18 +19,15 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              #"/home/oem/Data/CTMQC/CTMQCAll",
-              #"/home/oem/Data/CTMQC/EhrenAll",
-              #"/home/oem/Data/CTMQC/CTMQCForceEhrenCoeff",
-              #"/home/oem/Data/CTMQC/EhrenForceCTMQCCoeff",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              "/home/oem/Data/CTMQC/SMALL_NUCL_DT",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               "",
              ]
 
 
 # folders = folders[:1]
-plotting_parameters = ["ad_frc"]
-replicas = 'all' 
+plotting_parameters = ["|C|^2", "norm"]
+replicas = 'all'
 plot = True
 num_proc = 'auto'
 min_time = 0

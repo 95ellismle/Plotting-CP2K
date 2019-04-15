@@ -9,6 +9,8 @@ Created on Wed Dec  5 12:52:33 2018
 import matplotlib.pyplot as plt
 from matplotlib.widgets import CheckButtons
 
+import numpy as np
+
 
 class Ad_Frc(object):
    """
@@ -34,7 +36,15 @@ class Ad_Frc(object):
       """
       for repKey in self.all_ad_frc_data:
          data, cols, timesteps = self.all_ad_frc_data[repKey]
-
+         numActiveAtoms = 12
+         for state in range(self.num_states):
+            X = data[:, state, :numActiveAtoms, 0]
+            Y = data[:, state, :numActiveAtoms, 1]
+            Z = data[:, state, :numActiveAtoms, 2]
+            Mag = np.sqrt(X**2 + Y**2 + Z**2)
+            Ad_Frc.plot_ax.plot(timesteps,
+                                Mag, color=self.colors[state],
+                                lw=0.7, alpha=self.alpha)
 
 
 class QM_Frc(object):

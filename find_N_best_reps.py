@@ -13,7 +13,7 @@ import numpy as np
 import PLOT
 
 numReps = 50
-folder = "/home/oem/Data/CTMQC/SMALL_NUCL_DT"
+folder = "/home/oem/Data/CTMQC/SMALL_NUCL_DT/run-ctmqc-0"
 #
 p = PLOT.Plot(plot_params=['energy_cons', 'norm', '|C|^2'],
               folder=folder,
@@ -21,7 +21,7 @@ p = PLOT.Plot(plot_params=['energy_cons', 'norm', '|C|^2'],
               plot=False)
 
 allNormDrifts = p.norm_drift_per_rep
-allEnerDrifts = p.ener_drift_per_rep['tot']
+allEnerDrifts = p.ener_drift_per_rep['Total']
 
 # Sort the drifts and find the best N ones
 allSortedNormDrifts = sorted(allNormDrifts)[:numReps]
@@ -72,4 +72,5 @@ a.set_title("Best %i/%i Replicas (ener_cons)" % (numReps, totReps))
 a.set_ylabel(r"|C|$^2$")
 a.set_xlabel(r"Timestep [fs]")
 
+plt.show()
 plt.tight_layout()
