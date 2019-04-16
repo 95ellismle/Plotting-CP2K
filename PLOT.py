@@ -617,7 +617,7 @@ class LoadData(Params):
         # Find metadata
         Keys = list(self.all_Qlk_data.keys())
         self.num_reps = len(Keys)
-        cols = self.all_Qlk_data[Keys[0]][0][1]
+        cols = self.all_Qlk_data[Keys[0]][1]
         self.num_qm_steps = len(cols)
         self.num_active_atoms = max(cols[0, :, 0])
         self.num_states = max(cols[0, :, 2])
@@ -710,7 +710,7 @@ class LoadData(Params):
             # Find metadata
             Keys = list(self.all_pos_data.keys())
             self.num_reps = len(Keys)
-            cols = self.all_pos_data[Keys[0]][0][1]
+            cols = self.all_pos_data[Keys[0]][1]
             self.num_pos_steps = len(cols)
             self.num_atoms = len(cols[0])
 
