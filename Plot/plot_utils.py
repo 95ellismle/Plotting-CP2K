@@ -139,7 +139,7 @@ def avg_pos_data(all_pos_data):
         * all_pos_data => dictionary containing all the position data (filenames as keys)
     
     Outputs:
-        * avg position data (same format dictionary as input)
+        * avg position data (list with 2 elements -averaged data, averaged timesteps)
     """
 
     # Finds the minimum length of array within all replicas
@@ -155,7 +155,6 @@ def avg_pos_data(all_pos_data):
     if all_pos[0]:
         # Should return in same format as input
         avg_pos = [np.mean(all_pos[0], axis=0),
-                   np.zeros(len(all_pos[0])), 
                    np.mean(all_pos[2], axis=0)]
     return avg_pos
 

@@ -45,6 +45,19 @@ class Ad_Frc(object):
             Ad_Frc.plot_ax.plot(timesteps,
                                 Mag, color=self.colors[state],
                                 lw=0.7, alpha=self.alpha)
+            #Ad_Frc.plot_ax.plot(timesteps,
+            #                    X, color='r',
+            #                    lw=0.7, alpha=self.alpha,
+            #                    label="X (atom 1, state 1)")
+            #Ad_Frc.plot_ax.plot(timesteps,
+            #                    Y, color='g',
+            #                    lw=0.7, alpha=self.alpha,
+            #                    label="Y (atom 1, state 1)")
+            #Ad_Frc.plot_ax.plot(timesteps,
+            #                    Z, color='b',
+            #                    lw=0.7, alpha=self.alpha,
+            #                    label="Z (atom 1, state 1)")
+      #plt.legend(fontsize=16)
 
 
 class QM_Frc(object):
