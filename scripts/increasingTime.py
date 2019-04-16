@@ -9,7 +9,7 @@ Created on Mon Oct 29 11:41:22 2018
 """
 import os
 from multiprocessing import Pool
-import matplotlib.pyplot as plt
+import matplotlib.pyplot as plt 
 import gc
 
 from IO import Folders as fold
@@ -29,11 +29,13 @@ rootFolder = ["",
 
 
 # folders = folders[:1]
-plotting_parameters = ["|C|^2", "fl", "qm_t"]
-replicas = [16]
-plot = True 
-min_time = 0
+plotting_parameters = ["ener_cons", "qm_force", "fl"]
+replicas = 'all'
+min_time = 0 
 max_time = 170
+step = 2
+savePath = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/adiabaticMomentum/0_Coupling/IncreasingTime_enerCons_qmFrc_fl"
+iter_min_time = 0  # Where to start iterating if some pics already rendered.
 #######################################################
 
 folders = []
@@ -44,6 +46,11 @@ for rootfolder in rootFolder:
          if 'run.inp' in files:
             folders.append(possFolder)
             continue
+
+
+if len(folders) != 1:
+   print("folders = ", folders)
+   raise SystemExit("This only works with 1 folder at the moment")
 
 if not folders:
    print("\t\t#####################")
@@ -62,17 +69,45 @@ def do_1_folder(folder, plotting_parameters, replicas, plot,
              )
     return p
 
-all_p = []
-for f in folders:
-    p = do_1_folder(folder=f,
+
+# Init params
+p = do_1_folder(folder=folders[0],
+                plotting_parameters=plotting_parameters,
+                replicas=replicas,
+                plot=True,
+                minTime=min_time,
+                maxTime=max_time
+                )
+ylims = []
+for ax in p.axes:
+   AX = p.axes[ax][1]
+   if AX:
+      ylims.append(AX.get_ylim())
+gc.collect()
+
+numDigits = len(str(max_time))
+
+#all_p = []
+for maxT in range(iter_min_time, max_time, step):
+    if maxT <= min_time:
+       print("Skipping step %i" % maxT)
+       continue
+    p = do_1_folder(folder=folders[0],
                     plotting_parameters=plotting_parameters,
                     replicas=replicas,
-                    plot=plot,
+                    plot=True,
                     minTime=min_time,
-                    maxTime=max_time
+                    maxTime=maxT
                     )
-    all_p.append(p)
-    print("Done %s" % f)
+    for axNum, ax in enumerate(p.axes):
+      AX = p.axes[ax][1]
+      if AX:
+         AX.set_xlim([min_time, max_time])
+         AX.set_ylim(ylims[axNum])
 
-plt.show()
+    fileName = str(maxT)
+    fileName = "/" + "0" * (numDigits - len(fileName)) +fileName + ".png"
+    p.f.savefig(savePath + fileName)
+    gc.collect()
+    print("Done %s" % fileName)
 

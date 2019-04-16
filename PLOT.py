@@ -638,7 +638,7 @@ class LoadData(Params):
         self.num_reps = len(Keys)
         cols = self.all_QM_0_data[Keys[0]][0][1]
         self.num_qm_steps = len(cols)
-        self.num_active_atoms = max(cols[0, :])
+        self.num_active_atoms = cols.shape[0]
 
     def load_qm(self):
         """
@@ -902,17 +902,12 @@ class LoadData(Params):
         if 'tot_force' in self.load_params:
             self.load_timings['Averaging: ']['force'] = time.time()
             self.avg_frc_data = plot_utils.avg_pos_data(self.all_frc_data)
-            # Rename the average key (using average_pos function)
-            self.avg_frc_data['avg_frc'] = self.avg_frc_data['avg_pos']
-            del self.avg_frc_data['avg_pos']
             self.load_timings['Averaging: ']['force'] = time.time() - \
                 self.load_timings['Averaging: ']['force']
 
         if 'qm_frc' in self.load_params:
             self.load_timings['Averaging: ']['qm_force'] = time.time()
             self.avg_frc_data = plot_utils.avg_pos_data(self.all_qm_frc_data)
-            # Rename the average key (using average_pos function)
-            self.avg_frc_data = self.avg_frc_data['avg_pos']
             self.load_timings['Averaging: ']['qm_force'] = time.time() - \
                 self.load_timings['Averaging: ']['qm_force']
 
@@ -1439,7 +1434,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.multi = MultiCursor(self.f.canvas,
                                      [i[1] for i in self.axes.values()],
                                      color='r',
-                                     lw=1)
+                                     lw=0.7)
 
 #        if self._use_control:
 #            plt.subplots_adjust(top=0.945,
@@ -1450,4 +1445,4 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 #                                wspace=1.00)
         self.f.tight_layout()
         # plt.ion()
-        plt.show()  # block=False)
+        #plt.show()  # block=False)

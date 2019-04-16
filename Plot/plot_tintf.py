@@ -13,6 +13,90 @@ import numpy as np
 
 from load import load_tintf
 
+
+class fl(object):
+    """
+    Will plot history dependent force term for each state
+    """
+    def __init__(self, axes):
+        if self.plot:
+            fl.widget_ax = axes[0]
+            fl.plot_ax = axes[1]
+            fl.plot_ax.set_autoscale_on(True)
+    
+            fl.plot_all(self)
+            
+            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|$ [bohr$^{-1}$]")
+
+    @staticmethod
+    def plot_all(self):
+        """
+        Will plot data for all replicas
+        """
+        for key in self.all_tintf_data:
+          data, cols, timesteps = self.all_tintf_data[key]
+          
+          carbonAtoms = [0, 3, 6, 9]
+          hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
+          
+          plotStates = range(self.num_states)
+
+          for state in plotStates:
+             X = data[:, state, carbonAtoms, 0]
+             Y = data[:, state, carbonAtoms, 1]
+             Z = data[:, state, carbonAtoms, 2]
+             Mag = np.sqrt(X**2 + Y**2 + Z**2)
+   
+             color = self.colors[state].strip('#')
+             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+             color = np.array(color).astype(float)
+             color *= 1. #(1 - (0.2 * state)) * color
+             color /= 255.
+
+            # fl.plot_ax.plot(timesteps, X,
+            #                 color='r',
+            #                 alpha=self.alpha, lw=0.8,
+            #                 label="X (atom 1, state 1)")
+
+            # fl.plot_ax.plot(timesteps, Y,
+            #                 color='g',
+            #                 alpha=self.alpha, lw=0.8,
+            #                 label="Y (atom 1, state 1)")
+
+            # fl.plot_ax.plot(timesteps, Z,
+            #                 color='b',
+            #                 alpha=self.alpha, lw=0.8,
+            #                 label="Z (atom 1, state 1)")
+
+             fl.plot_ax.plot(timesteps, Mag,
+                             color=color,
+                             alpha=self.alpha, lw=0.8)
+     
+             X = data[:, state, hydrogenAtoms, 0]
+             Y = data[:, state, hydrogenAtoms, 1]
+             Z = data[:, state, hydrogenAtoms, 2]
+             Mag = np.sqrt(X**2 + Y**2 + Z**2)
+   
+             color = self.colors[state].strip('#')
+             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
+             color = np.array(color).astype(float)
+             color *= (1 - (0.2 * state))
+             color /= 255.
+
+             fl.plot_ax.plot(timesteps, Mag,
+                             color=color,
+                             alpha=self.alpha, lw=0.8)
+
+          lines, handles = [], []
+          for state in plotStates:
+             label = "State %i" % state
+             ln = mpl.lines.Line2D([], [], color=self.colors[state],
+                                   label=label)
+             lines.append(ln)
+             handles.append(label)
+          fl.plot_ax.legend(lines, handles)
+
+
 class fl_fk(object):
     """
     Will plot the values of f_l - f_k for all l,k combinations.
@@ -183,72 +267,6 @@ class sumYlk(object):
                                               '.',
                                               color='b',
                                               lw=1.2)
-
-
-class fl(object):
-    """
-    Will plot history dependent force term for each state
-    """
-    def __init__(self, axes):
-        if self.plot:
-            fl.widget_ax = axes[0]
-            fl.plot_ax = axes[1]
-            fl.plot_ax.set_autoscale_on(True)
-    
-            fl.plot_all(self)
-            
-            fl.plot_ax.set_ylabel(r"$|\mathbf{f}_{l, \nu}^{(I)}|$ [bohr$^{-1}$]")
-
-    @staticmethod
-    def plot_all(self):
-        """
-        Will plot data for all replicas
-        """
-        for key in self.all_tintf_data:
-          data, cols, timesteps = self.all_tintf_data[key]
-          
-          carbonAtoms = [0, 3, 6, 9]
-          hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
-
-          for state in range(self.num_states):
-             X = data[:, state, carbonAtoms, 0]
-             Y = data[:, state, carbonAtoms, 1]
-             Z = data[:, state, carbonAtoms, 2]
-             Mag = np.sqrt(X**2 + Y**2 + Z**2)
-   
-             color = self.colors[state].strip('#')
-             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-             color = np.array(color).astype(float)
-             color *= 1. #(1 - (0.2 * state)) * color
-             color /= 255.
-
-             fl.plot_ax.plot(timesteps, Mag,
-                             color=color,
-                             alpha=self.alpha, lw=0.8)
-     
-             X = data[:, state, hydrogenAtoms, 0]
-             Y = data[:, state, hydrogenAtoms, 1]
-             Z = data[:, state, hydrogenAtoms, 2]
-             Mag = np.sqrt(X**2 + Y**2 + Z**2)
-   
-             color = self.colors[state].strip('#')
-             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-             color = np.array(color).astype(float)
-             color *= (1 - (0.2 * state))
-             color /= 255.
-
-             fl.plot_ax.plot(timesteps, Mag,
-                             color=color,
-                             alpha=self.alpha, lw=0.8)
-
-          lines, handles = [], []
-          for state in range(self.num_states):
-             label = "State %i" % state
-             ln = mpl.lines.Line2D([], [], color=self.colors[state],
-                                   label=label)
-             lines.append(ln)
-             handles.append(label)
-          fl.plot_ax.legend(lines, handles)
 
 
 class fl_fk_CC(object):

@@ -205,6 +205,8 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[],
             numProc = len(args)
         p = mp.Pool(numProc)
         res = p.map(helperLoad, args)
+        p.close()
+        p.join()
 
         for arg, result in zip(args, res):
             fName = arg[1][0][arg[1][0].rfind('/')+1:]
