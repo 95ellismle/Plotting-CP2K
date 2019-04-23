@@ -62,7 +62,7 @@ dependencies = {'qm_r':         ['pos', 'qm'],
                 'norm':         ['|u|^2'],
                 'tot_force':    ['force'],
                 'alpha':        ['qm', 'rlk'],
-                'pos_sigma':    ['sigma', 'pos'],
+                'pos_stddev':    ['pos'],
                 'sum(ylk)':     ['fl_fk', '|c|^2'],
                 'k':            ['k'],
                 'pos3d':        ['pos'],
@@ -941,7 +941,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R,
            plot_QM.Qlk_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
-           plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PlotPosSig,
+           plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PosStd,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
            plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc):
     """
@@ -1099,10 +1099,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'pos' in self.plot_params:
             self.mPosPlot = plot_pos.PlotPos.__init__(self,
                                                       self.axes['pos'])
-        if 'pos_sigma' in self.plot_params:
-            self.mPosSigPlot = plot_pos.PlotPosSig.__init__(
+        if 'pos_stddev' in self.plot_params:
+            self.mPosSigPlot = plot_pos.PosStd.__init__(
                                                         self,
-                                                        self.axes['pos_sigma'],
+                                                        self.axes['pos_stddev'],
                                                             )
         if 'pos3d' in self.plot_params:
             self.mPos3DPlot = plot_pos.Pos3D.__init__(
@@ -1436,13 +1436,13 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                      color='r',
                                      lw=0.7)
 
-#        if self._use_control:
-#            plt.subplots_adjust(top=0.945,
-#                                bottom=0.075,
-#                                left=0.14,
-#                                right=0.99,
-#                                hspace=0.084,
-#                                wspace=1.00)
+        #if self._use_control:
+        plt.subplots_adjust(top=0.945,
+                            bottom=0.09,
+                            left=0,
+                            right=0.99,
+                            hspace=0.3,
+                            wspace=0)
         self.f.tight_layout()
         # plt.ion()
         #plt.show()  # block=False)

@@ -355,13 +355,13 @@ class LoadData(Params):
         to find metadata such as how many steps and reps have been loaded. This
         can be much better though. I will improve it when I have some time!
         """
-        print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
-        if type(self.max_step) == str and self.max_step == "all":
-            max_step = self.max_step
-        else:
-            max_step = int(self.max_step/print_step)
-
         if 'ham' in self.load_params:
+            print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['HAMILTONIAN']['EACH']['MD'][0]
+            if type(self.max_step) == str and self.max_step == "all":
+                max_step = self.max_step
+            else:
+                max_step = int(self.max_step/print_step)
+    
             exitCode = self.__load_ham(self.quick_stride, max_step)
             self.all_meta_ham = {}
             for Hkey in self.all_ham_data:
@@ -370,28 +370,6 @@ class LoadData(Params):
                 self.all_meta_ham[Hkey] = {'site_ener_diff': site_ener,
                                            'coup': couplings,
                                            'tsteps': timesteps}
-        else:
-            if type(max_step) == str or \
-                                   (type(max_step) == int and max_step <= 100):
-                stride = 1
-            else:
-                ham_file = [i for i in os.listdir(self.folder)
-                            if 'hamil' in i][0]
-                with open(self.folder + ham_file, 'r') as f:
-                    ltxt = f.read().split('\n')
-                tmp = load_xyz.get_xyz_step_metadata(ltxt, ham_file)
-                _, _, lines_in_step, num_title_lines = tmp
-                num_steps = len(ltxt) // (lines_in_step)
-                stride = int(num_steps / 1000)
-                if stride < 1:
-                    stride = 1
-                max_step = num_steps
-            exitCode = self.__load_ham(stride, max_step)
-
-        self.coupling = "?"
-        if exitCode:
-            self._get_coupling()
-            self.coupling = "%.2g" % self.coupling
 
     def load_all_di_coeffs(self):
         """
