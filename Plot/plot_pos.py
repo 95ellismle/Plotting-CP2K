@@ -127,7 +127,7 @@ class PlotPos(object):
             if self._use_control:
                 PlotPos.__set_control(self)
 
-            axLab = r"$|\mathbf{R}_{\nu}^{(I)} - origin|$ [bohr]"
+            axLab = r"$|\mathbf{R}_{\nu}^{(I)} - \mathbf{R}_{0}|$ [bohr]"
             PlotPos.plot_ax.set_ylabel(axLab)
 
     @staticmethod
@@ -185,7 +185,7 @@ class PlotPos(object):
         """
 
 
-class PlotPosSig(object):
+class PosStd(object):
     """
     Will plot the normalisation graph.
 
@@ -195,21 +195,18 @@ class PlotPosSig(object):
     """
     def __init__(self, axes):
         if self.plot:
-            PlotPosSig.widget_ax = axes[0]
-            PlotPosSig.plot_ax = axes[1]
+            PosStd.widget_ax = axes[0]
+            PosStd.plot_ax = axes[1]
 
             # Setting initial default values
-            PlotPosSig.__show_avg_reps = True
-            PlotPosSig.__show_all_reps = True
+            PosStd.__show_avg_reps = True
+            PosStd.__show_all_reps = True
 
             # Will do the plotting
-            PlotPosSig.__plot_all(self)
-            # Connect checkboxes to plot control
-            if self._use_control:
-                PlotPosSig.__set_control(self)
+            PosStd.__plot_all(self)
 
-            PlotPosSig.plot_ax.set_ylabel(r"$\alpha_{\nu}^{(I)} R_{\nu}^{(I)}$")
-#            PlotPosSig.plot_ax.set_ylim([5, 1050])
+            PosStd.plot_ax.set_ylabel(r"$\sigma(\mathbf{R})$")
+#            PosStd.plot_ax.set_ylim([5, 1050])
 
     @staticmethod
     def __button_control(self, label):
@@ -232,32 +229,29 @@ class PlotPosSig(object):
         Will plot the positions of atoms for all trajectories. Will sum the
         populations and plot on the norm axis.
         """
-        for pFName, sFName in zip(self.all_pos_data, self.all_sigma):
-            posData, cols, timesteps = self.all_pos_data[pFName]
-            sigma, timesteps = self.all_sigma[sFName]
+        pKeys = list(self.all_pos_data.keys())
+        mask = self.all_pos_data[pKeys[0]][1] != 'Ne'
+        activeAtoms = [self.all_pos_data[fname][0][mask] for fname in self.all_pos_data]
+        activeAtoms = np.reshape(activeAtoms, (self.num_reps,
+                                               self.num_pos_steps,
+                                               self.num_active_atoms,
+                                               3)
+                                 )
+        
+        self.allPos = activeAtoms
 
-            # This is a horrible hack should be improved!
-            #  * Make more robust way to get active atoms
-            #  * Use numpy fancy indexing instead of list comprehension
-            mask = cols != 'Ne'
-            activeAtoms = [[pos for cond, pos in zip(mask[step], posData[step])
-                            if cond]
-                           for step in range(len(posData))]
-            activeAtoms = np.array(activeAtoms)
+        timesteps = self.all_pos_data[pKeys[0]][2]
 
-            # Plot atoms
-            for iat in self.atoms_to_plot:
-                x = activeAtoms[:, iat-1, 0]
-                y = activeAtoms[:, iat-1, 1]
-                z = activeAtoms[:, iat-1, 2]
-                mag = np.sqrt(x**2 + y**2 + z**2)
-                sigma_prefactor = 1 / (2*(sigma[:, iat]**2))
+        distFromOrigin = np.linalg.norm(activeAtoms, axis=3)
+        stdDevPerRepPerStep = np.std(distFromOrigin, axis=2)
+        avgStdDev = np.mean(stdDevPerRepPerStep, axis=0)
+        
+        for stddev in stdDevPerRepPerStep:
+            PosStd.plot_ax.plot(timesteps, stddev, lw=0.7)
 
-                PlotPosSig.plot_ax.plot(timesteps,
-                                        mag * sigma_prefactor,
-                                        color=self.colors[iat-1],
-                                        alpha=self.alpha,
-                                        lw=0.5)
+        PosStd.plot_ax.plot(timesteps, avgStdDev, 'k--', lw=2)
+            
+
 
     # Will plot normal of diabatic coeffs
     @staticmethod

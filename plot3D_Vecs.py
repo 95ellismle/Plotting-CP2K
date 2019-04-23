@@ -12,18 +12,21 @@ import numpy as np
 import os
 
 
-folder = "/home/oem/Data/CTMQC/QM_Vis"
+folder = "/home/oem/Data/CTMQC/NormCons/CTMQC"
 sizes = {'C': 1.2, 'H': 0.6, 'Ne': 0.5}
-plotting_parameters = ["qm_t"]
+plotting_parameters = ["qm_t", "pos"]
 replicas = 'all'
 plot = True
 min_time = 0
 max_time = 'all'
 
 saveOn = True
-saveStride = 20
+saveStride = 5
+sphereRes = 16
 
 
+if not saveOn:
+   sphereRes /= 2
 imgFolder = "./img"
 draw = {i: i in plotting_parameters for i in ld.dependencies}
 pts = {}
@@ -88,6 +91,7 @@ if any((i != 'pos' for i in plotting_parameters)):
 if draw['qm_t']:
    qm = np.array([CTMQCdata.all_QM_0_data[i][0] for i in CTMQCdata.all_QM_0_data])
    qm = reshapeData(qm)
+   qm /= np.max(np.linalg.norm(qm, axis=1))  # normalise
      
 
 # Plot atoms
@@ -95,11 +99,17 @@ if draw['pos']:
    pts['Cpos'] = mlab.points3d(Cpos[:, 0, 0],
                                Cpos[:, 1, 0],
                                Cpos[:, 2, 0],
-                               scale_factor=sizes['C'], color=(0, 0, 0))
+                               scale_factor=sizes['C'],
+                               color=(0, 0, 0),
+                               resolution=sphereRes,
+                               opacity=0.1)
    pts['Hpos'] = mlab.points3d(Hpos[:, 0, 0],
                                Hpos[:, 1, 0],
                                Hpos[:, 2, 0],
-                               scale_factor=sizes['H'], color=(1, 1, 0))
+                               scale_factor=sizes['H'],
+                               color=(1, 1, 0),
+                               resolution=sphereRes,
+                               opacity=0.1)
 
 if draw['qm_t']:
    pts['qm'] = mlab.quiver3d(allActPos[:, 0, 0],
@@ -107,18 +117,29 @@ if draw['qm_t']:
                          allActPos[:, 2, 0], 
                          qm[:, 0, 0],
                          qm[:, 1, 0], 
-                         qm[:, 2, 0])
+                         qm[:, 2, 0],
+                         scale_factor=3,
+                         vmax=np.max(qm),
+                         vmin=np.min(qm))
 
-
-if not os.path.isdir(imgFolder):
-   os.makedirs(imgFolder)
-numZeros = len(str(nsteps - 1))
-filePaths = [(numZeros - len(str(i)))*"0" + str(i) for i in range(nsteps)]
-filePaths = ["./img/%s.jpg" % i for i in filePaths]
-#mlab.savefig(filePaths[0], (1000, 1000), mlab.gcf())
+# Create filepaths ahead of time
+if saveOn:
+   if not os.path.isdir(imgFolder):
+      os.makedirs(imgFolder)
+   
+   filePaths = []
+   count = 0
+   for step in range(1, nsteps):
+      if step % saveStride == 0:
+         filePaths.append(str(count))
+         count += 1
+   numZeros = len(filePaths[-1])
+   filePaths = ["%s/%s%s.jpg" % (imgFolder, "0"*(numZeros-len(i)), i) for i in filePaths]
+   #mlab.savefig(filePaths[0], (1000, 1000), mlab.gcf())
 
 @mlab.animate(delay=10)
 def anim(draw, pts):
+    count = 1
     for step in range(1, nsteps):
         # Update Positions
         if draw['pos']:
@@ -137,9 +158,11 @@ def anim(draw, pts):
                                      v=qm[:, 1, step],
                                      w=qm[:, 2, step])
 
-        if saveOn and step % saveStride:
-           mlab.savefig(filePaths[step], figure=mlab.gcf())
+        if saveOn and step % saveStride == 0:
+           mlab.savefig(filePaths[count], figure=mlab.gcf())
+           count += 1
         yield
 
+mlab.view(0, 90)
 anim(draw, pts)
 mlab.show()

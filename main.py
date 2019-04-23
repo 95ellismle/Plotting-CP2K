@@ -19,21 +19,26 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
+              #"/home/oem/Data/CTMQC/NormCons/CF_EC",
+              "/home/oem/Data/CTMQC/NormCons/EF_CC",
+              #"/home/oem/Data/CTMQC/NormCons/CTMQC",
+              #"/home/oem/Data/CTMQC/LongOne/LongDetailedBal/",
+              #"/home/oem/Data/CTMQC/NormCons/Ehren",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.002ES",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
              ]
 
 
 # folders = folders[:1]
-plotting_parameters = ["|C|^2", "fl", "qm_t"]
-replicas = [16]
+plotting_parameters = ["ener_cons", "norm"]
+replicas = 'all'
 plot = True 
 min_time = 0
-max_time = 170
+max_time = 10
 #######################################################
 
 folders = []
