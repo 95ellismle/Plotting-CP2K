@@ -9,6 +9,9 @@ __pycache__/
 
 # Data Files
 img/
+*/img/*
+*/img
+img
 img/*
 *.jpg
 */*.jpg
