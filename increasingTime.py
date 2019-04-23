@@ -21,20 +21,20 @@ from PLOT import Plot
 rootFolder = ["",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
-              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.002ES",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              "/scratch/mellis/flavoured-cptk/NormCons/CTMQC",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
              ]
 
 
 # folders = folders[:1]
-plotting_parameters = ["ener_cons", "qm_force", "fl"]
+plotting_parameters = ["ener_cons", "norm"]
 replicas = 'all'
 min_time = 0 
-max_time = 170
-step = 2
-savePath = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/adiabaticMomentum/0_Coupling/IncreasingTime_enerCons_qmFrc_fl"
+max_time = 1000
+step = 10
+savePath = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/tmpImg"
 iter_min_time = 0  # Where to start iterating if some pics already rendered.
 #######################################################
 
@@ -88,6 +88,7 @@ gc.collect()
 numDigits = len(str(max_time))
 
 #all_p = []
+count = 0
 for maxT in range(iter_min_time, max_time, step):
     if maxT <= min_time:
        print("Skipping step %i" % maxT)
@@ -105,9 +106,10 @@ for maxT in range(iter_min_time, max_time, step):
          AX.set_xlim([min_time, max_time])
          AX.set_ylim(ylims[axNum])
 
-    fileName = str(maxT)
+    fileName = str(count)
     fileName = "/" + "0" * (numDigits - len(fileName)) +fileName + ".png"
     p.f.savefig(savePath + fileName)
     gc.collect()
+    count += 1
     print("Done %s" % fileName)
 
