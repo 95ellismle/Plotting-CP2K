@@ -20,7 +20,18 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
+<<<<<<< HEAD
               "/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.001ES",
+=======
+              #"/home/oem/Data/CTMQC/NormCons/CF_EC",
+              "/home/oem/Data/CTMQC/NormCons/EF_CC",
+              #"/home/oem/Data/CTMQC/NormCons/CTMQC",
+              #"/home/oem/Data/CTMQC/LongOne/LongDetailedBal/",
+              #"/home/oem/Data/CTMQC/NormCons/Ehren",
+              #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
+              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
+              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.002ES",
+>>>>>>> 25f6cf1834c7fa6cc4f6393a68cf489f62df718c
               #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
@@ -28,11 +39,19 @@ rootFolder = ["",
 
 
 # folders = folders[:1]
+<<<<<<< HEAD
 plotting_parameters = ["norm", "adiab_states"]
 replicas = [69]
 plot = True
 min_time = 0
 max_time = 100
+=======
+plotting_parameters = ["ener_cons", "norm"]
+replicas = 'all'
+plot = True 
+min_time = 0
+max_time = 10
+>>>>>>> 25f6cf1834c7fa6cc4f6393a68cf489f62df718c
 #######################################################
 
 folders = []

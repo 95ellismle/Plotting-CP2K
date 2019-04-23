@@ -5,29 +5,42 @@ Created on Tue Apr  9 14:05:06 2019
 
 @author: mellis
 """
-
-from load import load_pos
-from load import load_QM
-from load import load_tintf
-from load import load_frc
+from load import LOAD as ld
 
 import mayavi.mlab as mlab
 import numpy as np
+import os
 
 
-folder = "/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES"
-sizes = {'C': 1.8, 'H': 0.7, 'Ne': 1}
-replica = 15
+folder = "/home/oem/Data/CTMQC/NormCons/CTMQC"
+sizes = {'C': 1.2, 'H': 0.6, 'Ne': 0.5}
+plotting_parameters = ["qm_t", "pos"]
+replicas = 'all'
+plot = True
+min_time = 0
+max_time = 'all'
 
-allPosData = load_pos.load_all_pos_in_folder(folder, reps=[replica])
-allQMData = load_QM.load_all_QM_0_in_folder(folder, reps=[replica])
-allFrcData = load_frc.load_all_frc_in_folder(folder, reps=[replica])
-allAMData = load_tintf.load_all_tintf_in_folder(folder, reps=[replica])
+saveOn = True
+saveStride = 5
+sphereRes = 16
 
-pKeys = list(allPosData.keys())
-qmKeys = list(allQMData.keys())
-frcKeys = list(allFrcData.keys())
-amKeys = list(allAMData.keys())
+
+if not saveOn:
+   sphereRes /= 2
+imgFolder = "./img"
+draw = {i: i in plotting_parameters for i in ld.dependencies}
+pts = {}
+plotting_parameters.append("pos")
+
+CTMQCdata = ld.LoadData(folder=folder,
+                        reps=replicas,
+                        plot_params=plotting_parameters,
+                        avg_on=True,
+                        minTime=min_time,
+                        maxTime=max_time)
+
+mlab.figure(bgcolor=(0.2, 0.2, 0.2), size=(1000, 1000))
+nsteps = CTMQCdata.num_pos_steps
 
 
 def getActiveAtoms(pos, cols, atomName=False):
@@ -42,70 +55,114 @@ def getActiveAtoms(pos, cols, atomName=False):
         mask = cols[0] != 'Ne'
     return np.array([i[mask] for i in pos]), np.array([i[mask] for i in cols])
 
-pos, rcols, timesteps = allPosData[pKeys[0]]
-qm, qmcols, timesteps = allQMData[qmKeys[0]]
-#frc, fcols, timesteps = allFrcData[frcKeys[0]]
-#am, amcols, timesteps = allAMData[amKeys[0]]
 
-nsteps = len(qm)
-if (nsteps != len(pos)):# or nsteps != len(frc)):
-    print("Len(pos) = %i" % len(pos))
-    #print("Len(frc) = %i" % len(frc))
-    print("Len(qm) = %i" % len(qm))
-    raise SystemExit("Incorrect number of steps")
+def reshapeData(arrData):
+   """
+   Will flatten the 2 columns that are to be plotted (i.e. num atoms, num states etc...)
+   Will keep the num steps and num dim columns the same.
+   Will return an array of shape (Nstep, 3, Natom*Nrep)
+   """
+   arrData = np.swapaxes(arrData, 2, 3)
+   arrData = np.swapaxes(arrData, 1, 3)
+   shape = (arrData.shape[0]*arrData.shape[1], arrData.shape[2], arrData.shape[3])
+   arrData = np.reshape(arrData, shape)
+   return arrData
 
-# Get vital information about the quantum momentum
-qmPos, tmpCols = getActiveAtoms(pos, rcols)
-qmx, qmy, qmz = qm[0].T
-posx, posy, posz = qmPos[0].T
-# Separate positions into carbon and hydrogen
-carbonPos, _ = getActiveAtoms(qmPos, tmpCols, "C")
-hydrogPos, _ = getActiveAtoms(qmPos, tmpCols, "H")
-neonPos, _ = getActiveAtoms(pos, rcols, "Ne")
-# Init forces
-#activeFrc, _ = getActiveAtoms(frc, fcols)
-#frcx, frcy, frcz = activeFrc[0].T
-#Init ad Momentum
-#stateMom, _ = am[0, 0, :, :]
-#amx, amy, amz = stateMom.T
 
+if draw['pos']: 
+   Cpos = [getActiveAtoms(CTMQCdata.all_pos_data[i][0],
+                            CTMQCdata.all_pos_data[i][1], "C")[0]
+             for i in CTMQCdata.all_pos_data]
+   Cpos = reshapeData(Cpos)
+
+   Hpos = np.array([getActiveAtoms(CTMQCdata.all_pos_data[i][0],
+                                     CTMQCdata.all_pos_data[i][1], "H")[0]
+                      for i in CTMQCdata.all_pos_data])
+   Hpos = reshapeData(Hpos)
+
+# Get vital information for plotting any vectors
+if any((i != 'pos' for i in plotting_parameters)):
+   tmp = [getActiveAtoms(CTMQCdata.all_pos_data[i][0], 
+                         CTMQCdata.all_pos_data[i][1]) for i in CTMQCdata.all_pos_data]
+   allActPos = np.array([i[0] for i in tmp])
+   allActPos = reshapeData(allActPos)
+
+# Get the qm info
+if draw['qm_t']:
+   qm = np.array([CTMQCdata.all_QM_0_data[i][0] for i in CTMQCdata.all_QM_0_data])
+   qm = reshapeData(qm)
+   qm /= np.max(np.linalg.norm(qm, axis=1))  # normalise
+     
 
 # Plot atoms
-cPts = mlab.points3d(*carbonPos[0].T, scale_factor=sizes['C'], color=(0, 0, 0))
-hPts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['H'], color=(1, 1, 0))
-nePts = mlab.points3d(*hydrogPos[0].T, scale_factor=sizes['Ne'], color=(1, 1, 1))
-# Plot vectors
-qmPts = mlab.quiver3d(posx, posy, posz, qmx, qmy, qmz)
-#frcPts = mlab.quiver3d(posx, posy, posz, frcx, frcy, frcz)
-#amPts = mlab.quiver3d(posx, posy, posz, amx, amy, amz)
+if draw['pos']:
+   pts['Cpos'] = mlab.points3d(Cpos[:, 0, 0],
+                               Cpos[:, 1, 0],
+                               Cpos[:, 2, 0],
+                               scale_factor=sizes['C'],
+                               color=(0, 0, 0),
+                               resolution=sphereRes,
+                               opacity=0.1)
+   pts['Hpos'] = mlab.points3d(Hpos[:, 0, 0],
+                               Hpos[:, 1, 0],
+                               Hpos[:, 2, 0],
+                               scale_factor=sizes['H'],
+                               color=(1, 1, 0),
+                               resolution=sphereRes,
+                               opacity=0.1)
 
+if draw['qm_t']:
+   pts['qm'] = mlab.quiver3d(allActPos[:, 0, 0],
+                         allActPos[:, 1, 0],
+                         allActPos[:, 2, 0], 
+                         qm[:, 0, 0],
+                         qm[:, 1, 0], 
+                         qm[:, 2, 0],
+                         scale_factor=3,
+                         vmax=np.max(qm),
+                         vmin=np.min(qm))
+
+# Create filepaths ahead of time
+if saveOn:
+   if not os.path.isdir(imgFolder):
+      os.makedirs(imgFolder)
+   
+   filePaths = []
+   count = 0
+   for step in range(1, nsteps):
+      if step % saveStride == 0:
+         filePaths.append(str(count))
+         count += 1
+   numZeros = len(filePaths[-1])
+   filePaths = ["%s/%s%s.jpg" % (imgFolder, "0"*(numZeros-len(i)), i) for i in filePaths]
+   #mlab.savefig(filePaths[0], (1000, 1000), mlab.gcf())
 
 @mlab.animate(delay=10)
-def anim():
-    for i in range(nsteps):
-        print(i)
-        cPts.mlab_source.points = carbonPos[i]
-        hPts.mlab_source.points = hydrogPos[i]
-        nePts.mlab_source.points = neonPos[i]
-
+def anim(draw, pts):
+    count = 1
+    for step in range(1, nsteps):
+        # Update Positions
+        if draw['pos']:
+           pts['Cpos'].mlab_source.set(x=Cpos[:, 0, step],
+                                       y=Cpos[:, 1, step],
+                                       z=Cpos[:, 2, step])
+           pts['Hpos'].mlab_source.set(x=Hpos[:, 0, step],
+                                       y=Hpos[:, 1, step],
+                                       z=Hpos[:, 2, step])
         
-        #stateMom, _ = am[i, 1, :, :]
-        #amPts.mlab_source.points = qmPos[i]
-        #amPts.mlab_source.u = stateMom.T[0]
-        #amPts.mlab_source.v = stateMom.T[1]
-        #amPts.mlab_source.w = stateMom.T[2]
-        
-        #frcPts.mlab_source.points = qmPos[i]
-        #frcPts.mlab_source.u = activeFrc[i].T[0]
-        #frcPts.mlab_source.v = activeFrc[i].T[1]
-        #frcPts.mlab_source.w = activeFrc[i].T[2]
+        if draw['qm_t']:
+           pts['qm'].mlab_source.set(x=allActPos[:, 0, step],
+                                     y=allActPos[:, 1, step],
+                                     z=allActPos[:, 2, step],
+                                     u=qm[:, 0, step],
+                                     v=qm[:, 1, step],
+                                     w=qm[:, 2, step])
 
-        qmPts.mlab_source.points = qmPos[i]
-        qmPts.mlab_source.u = qm[i].T[0]
-        qmPts.mlab_source.v = qm[i].T[1]
-        qmPts.mlab_source.w = qm[i].T[2]
-        print("BOB")
+        if saveOn and step % saveStride == 0:
+           mlab.savefig(filePaths[count], figure=mlab.gcf())
+           count += 1
         yield
 
-anim()
+mlab.view(0, 90)
+anim(draw, pts)
 mlab.show()
