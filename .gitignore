@@ -7,6 +7,12 @@ __pycache__/
 *.pkl
 */*.pkl
 
+# Data Files
+img/
+img/*
+*.jpg
+*/*.jpg
+
 # C extensions
 *.so
 
