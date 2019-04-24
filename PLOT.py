@@ -96,7 +96,7 @@ class Params(object):
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
                        'r', 'g', 'b']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = True
+        self._use_control = False
 #        if self.num_reps == 1: self._use_control = False
         self.max_time = maxTime  # (in fs)
         self.min_time = minTime  # (in fs)  NOT WORKING CAN ONLY USE 0
@@ -947,7 +947,7 @@ class LoadData(Params):
 
 
 class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
-           plot_ener.Adiab_States, plot_ham.Coupling, plot_QM.QM_R,
+           plot_ener.Ad_State, plot_ham.Coupling, plot_QM.QM_R,
            plot_QM.Qlk_t, plot_ham.Site_Ener, plot_tintf.fl_fk,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PosStd,
@@ -1048,7 +1048,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 
         # Energies
         if 'adiab_state' in self.plot_params:
-            self.mAStatesPlot = plot_ener.Adiab_States.__init__(
+            self.mAStatesPlot = plot_ener.Ad_State.__init__(
                                                        self,
                                                        self.axes['adiab_state']
                                                                )

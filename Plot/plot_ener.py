@@ -18,7 +18,7 @@ def linear_fit(x, m, c):
     return m * x + c
 
 
-class Adiab_States(object):
+class Ad_State(object):
     """
     Will plot the adiabatic states and handle the checkbuttons turning on and
     off the 'fill between', 'all reps' and 'avg reps' options
@@ -29,7 +29,7 @@ class Adiab_States(object):
     """
     def __init__(self, axes):
         if self.plot:
-            self.AS_widg_ax, self.AS_plot_ax = axes
+            Ad_State.widg_ax, Ad_State.plot_ax = axes
             self.state_cols_AS = [i for i in self.all_ad_ener_data_avg.columns
                                   if 'State' in i]
 
@@ -48,7 +48,7 @@ class Adiab_States(object):
                 self._set_control_AS()
 
             # Finish up (make things look pretty)
-            self.AS_plot_ax.set_ylabel(r"$E^{ad}_{l}$ [Ha]")
+            Ad_State.plot_ax.set_ylabel(r"$E^{ad}_{l}$ [Ha]")
 
     def _plot_all_reps_AS(self):
         """
@@ -59,12 +59,15 @@ class Adiab_States(object):
         for Efilename in self.all_ad_ener_data:
             ad_ener_data = self.all_ad_ener_data[Efilename]
             for i, col in enumerate(self.state_cols_AS):
-                ln, = self.AS_plot_ax.plot(ad_ener_data['Time'],
+                ln, = Ad_State.plot_ax.plot(ad_ener_data['Time'],
                                            ad_ener_data[col],
                                            alpha=self.alpha,
                                            lw=0.7,
                                            color=self.colors[i])
                 self.AS_all_lines.append(ln)
+            Ad_State.plot_ax.plot(ad_ener_data['Time'],
+                                 ad_ener_data['Pot'], 'k--',
+                                 lw = 0.5, alpha=self.alpha)
 
         # Set initial visibility
         for line in self.AS_all_lines:
@@ -77,7 +80,7 @@ class Adiab_States(object):
         # Plot the lines
         self.AS_avg_lines = []
         for i, col in enumerate(self.state_cols_AS):
-            ln, = self.AS_plot_ax.plot(self.all_ad_ener_data_avg['Time'],
+            ln, = Ad_State.plot_ax.plot(self.all_ad_ener_data_avg['Time'],
                                        self.all_ad_ener_data_avg[col],
                                        color=self.colors[i])
             self.AS_avg_lines.append(ln)
@@ -112,7 +115,7 @@ class Adiab_States(object):
                 if diffy < 1:
                     color = cm.hot(diffy)
 
-                    ln = self.AS_plot_ax.fill_between(T,
+                    ln = Ad_State.plot_ax.fill_between(T,
                                                       y1,
                                                       y2,
                                                       alpha=0.4,
@@ -128,7 +131,7 @@ class Adiab_States(object):
         """
         Will connect the checkbutton control panel with the plotting axis.
         """
-        self.check_AS = CheckButtons(self.AS_widg_ax,
+        self.check_AS = CheckButtons(Ad_State.widg_ax,
                                      ('all rep', 'avg', 'fill'),
                                      (self.plot_all_AS,
                                       self.plot_avg_AS,
@@ -178,7 +181,7 @@ class Energy_Cons(object):
             if self._use_control:
                 Energy_Cons.__set_control()
 
-            Energy_Cons.plot_ax.set_ylabel("Energy Drift [Ha]")
+            Energy_Cons.plot_ax.set_ylabel("E [Ha]")
             Energy_Cons.__put_avg_ener_drift(self)
 
     @staticmethod
@@ -325,7 +328,7 @@ class Energy_Cons(object):
     @staticmethod
     def __calc_avg_ener_drift(self):
         """
-        Will fit a linear line of best fit to the average energy drift and find
+        Will fit a linear line of best fit to the average 
         the average drift per ps.
         """
         Energy_Cons.__get_all_rep_drifts(self)

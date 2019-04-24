@@ -35,9 +35,8 @@ rootFolder = ["",
              ]
 
 
-# folders = folders[:1]
-plotting_parameters = ["energy_cons", "|C|^2"]
-replicas = [189]
+plotting_parameters = ["|C|^2", "adiab_states"]
+replicas = [2]
 plot = True 
 min_time = 0
 max_time = 'all'
