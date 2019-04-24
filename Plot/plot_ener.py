@@ -319,8 +319,8 @@ class Energy_Cons(object):
         # Find largest and smallest drifts rep indices
         for lab in ('E_cons', 'Kin', 'Pot'):
             name = lab_to_name_map[lab]
-            self.worst_reps[name] = np.argmax(self.ener_drift_per_rep[name])
-            self.best_reps[name] = np.argmin(self.ener_drift_per_rep[name])
+            self.worst_reps[name] = np.argmax(self.ener_drift_per_rep[name])+1
+            self.best_reps[name] = np.argmin(self.ener_drift_per_rep[name])+1
 
     @staticmethod
     def __calc_avg_ener_drift(self):

@@ -48,6 +48,8 @@ import difflib
 #  parameters
 dependencies = {'qm_r':         ['pos', 'qm'],
                 'pos':          ['pos'],
+                'com':          ['pos'],
+                'pos_stddev':    ['pos'],
                 '|c|^2':        ['|c|^2'],
                 'qm_t':         ['qm'],
                 'rlk':          ['rlk'],
@@ -62,7 +64,6 @@ dependencies = {'qm_r':         ['pos', 'qm'],
                 'norm':         ['|u|^2'],
                 'tot_force':    ['force'],
                 'alpha':        ['qm', 'rlk'],
-                'pos_stddev':    ['pos'],
                 'sum(ylk)':     ['fl_fk', '|c|^2'],
                 'k':            ['k'],
                 'pos3d':        ['pos'],
@@ -873,6 +874,14 @@ class LoadData(Params):
             self.load_timings['Averaging: ']['pos'] = time.time() - \
                 self.load_timings['Averaging: ']['pos']
 
+        if any([j in self.plot_params for j in ('com', 'pos_stddev')]):
+            self.load_timings['Averaging: ']['com'] = time.time()
+            keys = list(self.all_pos_data.keys())
+            mask = self.all_pos_data[keys[0]][1] != 'Ne'
+            self.all_COM = plot_utils.calc_COM(self.all_pos_data, mask)
+            self.load_timings['Averaging: ']['com'] = time.time() - \
+                self.load_timings['Averaging: ']['com']
+
         if 'qm' in self.load_params:
             self.load_timings['Averaging: ']['qm'] = time.time()
             if self.QM_type == "Qlk":
@@ -943,6 +952,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PosStd,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
+           plot_pos.COM, 
            plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
@@ -1099,6 +1109,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'pos' in self.plot_params:
             self.mPosPlot = plot_pos.PlotPos.__init__(self,
                                                       self.axes['pos'])
+        if 'com' in self.plot_params:
+            self.mCOMPlot = plot_pos.COM.__init__(self,
+                                                  self.axes['com'])
+
         if 'pos_stddev' in self.plot_params:
             self.mPosSigPlot = plot_pos.PosStd.__init__(
                                                         self,

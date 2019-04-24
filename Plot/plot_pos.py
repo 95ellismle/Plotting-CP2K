@@ -15,6 +15,34 @@ from scipy.optimize import curve_fit
 def linear_fit(x, m, c):
     return m * x + c
 
+
+class COM(object):
+    """
+    Will plot the center of mass of the positions
+     
+     Inputs:
+         axes => the 3D axes to plot on
+    """
+    def __init__(self, axis):
+        if self.plot:
+            COM_widg_ax, COM.plot_ax = axis
+            
+            COM._plotAll(self)
+            COM.plot_ax.set_ylabel(r"|$\mathbf{COM}^{(I)} - \mathcal{O}$|")
+             
+    @staticmethod
+    def _plotAll(self):
+        """
+        Will plot every replicas COM 
+        """
+        for rep in self.all_COM:
+            com, timesteps = self.all_COM[rep]
+            comDistFromOrigin = np.linalg.norm(com, axis=1)
+            COM.plot_ax.plot(timesteps, comDistFromOrigin,
+                             alpha=self.alpha, lw=0.7)
+ 
+
+
 class Pos3D(object):
     """
     Will plot the positions in a plane with trajectories shown as trails.
@@ -203,9 +231,9 @@ class PosStd(object):
             PosStd.__show_all_reps = True
 
             # Will do the plotting
-            PosStd.__plot_all(self)
+            PosStd.__plot(self)
 
-            PosStd.plot_ax.set_ylabel(r"$\sigma(\mathbf{R})$")
+            PosStd.plot_ax.set_ylabel(r"$\sigma(\mathbf{COM}^{(I)})$")
 #            PosStd.plot_ax.set_ylim([5, 1050])
 
     @staticmethod
@@ -224,32 +252,19 @@ class PosStd(object):
 
     # Will pos/2(sigma**2)
     @staticmethod
-    def __plot_all(self):
+    def __plot(self):
         """
         Will plot the positions of atoms for all trajectories. Will sum the
         populations and plot on the norm axis.
         """
         pKeys = list(self.all_pos_data.keys())
-        mask = self.all_pos_data[pKeys[0]][1] != 'Ne'
-        activeAtoms = [self.all_pos_data[fname][0][mask] for fname in self.all_pos_data]
-        activeAtoms = np.reshape(activeAtoms, (self.num_reps,
-                                               self.num_pos_steps,
-                                               self.num_active_atoms,
-                                               3)
-                                 )
-        
-        self.allPos = activeAtoms
-
+        allCOM = [np.linalg.norm(self.all_COM[rep][0], axis=1)
+                  for rep in self.all_COM]
+        stdOverRep = np.std(allCOM, axis=0)
         timesteps = self.all_pos_data[pKeys[0]][2]
 
-        distFromOrigin = np.linalg.norm(activeAtoms, axis=3)
-        stdDevPerRepPerStep = np.std(distFromOrigin, axis=2)
-        avgStdDev = np.mean(stdDevPerRepPerStep, axis=0)
-        
-        for stddev in stdDevPerRepPerStep:
-            PosStd.plot_ax.plot(timesteps, stddev, lw=0.7)
+        PosStd.plot_ax.plot(timesteps, stdOverRep, lw=0.7)
 
-        PosStd.plot_ax.plot(timesteps, avgStdDev, 'k--', lw=2)
             
 
 

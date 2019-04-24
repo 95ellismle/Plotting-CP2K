@@ -9,6 +9,7 @@ import numpy as np
 import pandas as pd
 import collections
 import itertools as IT
+import json
 
 from load import load_coeff
 
@@ -465,6 +466,51 @@ def load_Acoeff_data(folder, reps, all_ham_data, max_step='all', min_step=0, str
         all_Acoeff_data = all_coeff_data
     return all_Acoeff_data
 
+
+def calc_COM(all_pos_data, mask=False):
+   """
+   Will calculate the center of mass of the positions.
+
+   Inputs:
+      * all_pos_data => the position data (dict)
+      * mask => mask of indices of positions to calculate for
+   """
+   with open("./data/periodic_table.json", 'r') as f:
+      PT = json.load(f)
+   COMS = {}
+
+   for rep in all_pos_data:
+       pos, col, timesteps = all_pos_data[rep]
+
+       # Apply the mask
+       if mask is not False:
+           maskPos = np.zeros(pos.shape, dtype=bool)
+           maskPos[:, :, 0] = mask
+           maskPos[:, :, 1] = mask
+           maskPos[:, :, 2] = mask
+           col = col[mask]
+           pos = pos[mask]
+           nStep, nAtom = mask.shape[0], col.shape[0]//mask.shape[0]
+           col = np.reshape(col, (nStep, nAtom))
+           pos = np.reshape(pos, (nStep, nAtom, 3))
+
+       # Convert atomic symbol to mass
+       elms = np.unique(col)
+       for elm in elms:
+           if elm not in PT.keys():
+               raise SystemExit("Can't find symbol %s in periodic table" % elm)
+           else:
+               col[col == elm] = PT[elm]['atomic_mass']
+       col = col.astype(float)
+       weights = np.zeros(pos.shape)
+       weights[:, :, 0] = col
+       weights[:, :, 1] = col
+       weights[:, :, 2] = col
+
+       COMS[rep] = (np.average(pos, axis=1, weights=weights),
+                    timesteps)
+
+   return COMS
 
 def print_timings(timings_dict, ntabs=0, max_len=50):
     """

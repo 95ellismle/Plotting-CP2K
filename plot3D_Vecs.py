@@ -13,6 +13,8 @@ import os
 
 
 folder = "/home/oem/Data/CTMQC/NormCons/CTMQC"
+folder = "/scratch/mellis/flavoured-cptk/LongDetailedBal"
+
 sizes = {'C': 1.2, 'H': 0.6, 'Ne': 0.5}
 plotting_parameters = ["qm_t", "pos"]
 replicas = 'all'
