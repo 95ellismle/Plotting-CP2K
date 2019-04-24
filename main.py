@@ -11,6 +11,7 @@ import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt
 import gc
+import numpy as np
 
 from IO import Folders as fold
 from PLOT import Plot
@@ -19,26 +20,26 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
+              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.001ES",
               #"/home/oem/Data/CTMQC/NormCons/CF_EC",
-              "/home/oem/Data/CTMQC/NormCons/EF_CC",
+              #"/home/oem/Data/CTMQC/NormCons/EF_CC",
               #"/home/oem/Data/CTMQC/NormCons/CTMQC",
-              #"/home/oem/Data/CTMQC/LongOne/LongDetailedBal/",
+              #"/scratch/mellis/flavoured-cptk/LongDetailedBal",
               #"/home/oem/Data/CTMQC/NormCons/Ehren",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.002ES",
-              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
              ]
 
 
-# folders = folders[:1]
-plotting_parameters = ["ener_cons", "norm"]
-replicas = 'all'
+plotting_parameters = ["|C|^2", "adiab_states"]
+replicas = [2]
 plot = True 
 min_time = 0
-max_time = 10
+max_time = 'all'
 #######################################################
 
 folders = []
@@ -67,6 +68,7 @@ def do_1_folder(folder, plotting_parameters, replicas, plot,
              )
     return p
 
+#allStats = []
 all_p = []
 for f in folders:
     p = do_1_folder(folder=f,
@@ -77,6 +79,13 @@ for f in folders:
                     maxTime=max_time
                     )
     all_p.append(p)
+    #allStats.append({
+    #  'ener_cons': np.mean(p.ener_drift_per_rep['Total']),
+    #  'norm': p.norm_drift,
+    #  'scaling': p.run_inp_params['SCALING_FACTOR'],
+    #  'NS': p.run_inp_params['NUCLEAR_TIMESTEP'],
+    #  'ES': p.run_inp_params['NUCLEAR_TIMESTEP']//p.run_inp_params['ELECTRONIC_PARTIAL_STEP']
+    #                })
     print("Done %s" % f)
 
 plt.show()
