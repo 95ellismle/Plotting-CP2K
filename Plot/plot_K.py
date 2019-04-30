@@ -27,7 +27,7 @@ class K(object):
 
             K._plotAll(self)
 
-            K.plotAx.set_ylabel("$X_{ctmqc, l}^{(I)}$")
+            K.plotAx.set_ylabel("$\mathbb{K}_{ll}^{(I)}$")
 
     @staticmethod
     def _plotAll(self):

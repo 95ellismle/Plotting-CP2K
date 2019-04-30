@@ -1,0 +1,32 @@
+#######################################
+Best/Worst Reps                       #
+---------------                       #
+                                      #
+        Best Replicas                 #
+                                      #
+      Due to        | Rep             #
+                                      #
+      Kinetic       |  104            #
+                                      #
+      Total         |  146            #
+                                      #
+      Potential     |  109            #
+                                      #
+      norm          |  77             #
+                                      #
+           ------------               #
+                                      #
+        Worst Replicas                #
+                                      #
+      Due to        | Rep             #
+                                      #
+      Kinetic       |  109            #
+                                      #
+      Total         |  64             #
+                                      #
+      Potential     |  104            #
+                                      #
+      norm          |  64             #
+                                      #
+#######################################
+

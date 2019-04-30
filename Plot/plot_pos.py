@@ -88,7 +88,7 @@ class Pos3D(object):
         shown by a thin line.
         """
         for pKey in self.all_pos_data:
-            pos, cols = self.all_pos_data[pKey][0]
+            pos, cols, _ = self.all_pos_data[pKey]
 
             molAts = [np.arange(mol*6, (mol+1)*6)
                       for mol in range(self.num_states)]

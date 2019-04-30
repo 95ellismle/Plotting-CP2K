@@ -12,17 +12,17 @@ import numpy as np
 import os
 
 
-folder = "/home/oem/Data/CTMQC/NormCons/CTMQC"
-folder = "/scratch/mellis/flavoured-cptk/LongDetailedBal"
+#folder = "/home/oem/Data/CTMQC/NormCons/CTMQC"
+folder = "/scratch/mellis/flavoured-cptk/200Rep_2mol"
 
 sizes = {'C': 1.2, 'H': 0.6, 'Ne': 0.5}
 plotting_parameters = ["qm_t", "pos"]
 replicas = 'all'
 plot = True
 min_time = 0
-max_time = 'all'
+max_time = 270
 
-saveOn = True
+saveOn = False
 saveStride = 5
 sphereRes = 16
 

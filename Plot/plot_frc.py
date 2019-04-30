@@ -42,21 +42,22 @@ class Ad_Frc(object):
             Y = data[:, state, :numActiveAtoms, 1]
             Z = data[:, state, :numActiveAtoms, 2]
             Mag = np.sqrt(X**2 + Y**2 + Z**2)
+            #Ad_Frc.plot_ax.plot(timesteps,
+            #                    Mag, color=self.colors[state],
+            #                    lw=0.7, alpha=self.alpha)
+
             Ad_Frc.plot_ax.plot(timesteps,
-                                Mag, color=self.colors[state],
-                                lw=0.7, alpha=self.alpha)
-            #Ad_Frc.plot_ax.plot(timesteps,
-            #                    X, color='r',
-            #                    lw=0.7, alpha=self.alpha,
-            #                    label="X (atom 1, state 1)")
-            #Ad_Frc.plot_ax.plot(timesteps,
-            #                    Y, color='g',
-            #                    lw=0.7, alpha=self.alpha,
-            #                    label="Y (atom 1, state 1)")
-            #Ad_Frc.plot_ax.plot(timesteps,
-            #                    Z, color='b',
-            #                    lw=0.7, alpha=self.alpha,
-            #                    label="Z (atom 1, state 1)")
+                                X, color='r',
+                                lw=0.7, alpha=self.alpha,
+                                label="X (atom 1, state 1)")
+            Ad_Frc.plot_ax.plot(timesteps,
+                                Y, color='g',
+                                lw=0.7, alpha=self.alpha,
+                                label="Y (atom 1, state 1)")
+            Ad_Frc.plot_ax.plot(timesteps,
+                                Z, color='b',
+                                lw=0.7, alpha=self.alpha,
+                                label="Z (atom 1, state 1)")
       #plt.legend(fontsize=16)
 
 

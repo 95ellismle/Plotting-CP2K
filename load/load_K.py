@@ -29,12 +29,27 @@ def load_K(filename, min_step=0, max_step='all',
 
     # Find the timesteps
     time_delim = XYZ.find_time_delimeter(ltxt[:1], filename)
-    timesteps = [XYZ.string_between(ltxt[i], 'e =', time_delim[0])
-                 for i in range(0, len(ltxt), 2)]
-    timesteps = np.array([float(i) for i in timesteps if i.strip()])
+    if max_step != 'all':
+       first_2_timesteps = [XYZ.string_between(ltxt[i], 'e =', time_delim[0])
+                            for i in range(0, 4, 2)]
+       dt = float(first_2_timesteps[1]) - float(first_2_timesteps[0])
+       numLines = int((max_step // dt)*2) + 4
+    else:
+       numLines = len(ltxt)
+    if numLines > len(ltxt):
+      numLines = len(ltxt)
 
-    widths = np.array([ltxt[i].split(' ') for i in range(1, len(ltxt), 2)])
+    timesteps = [XYZ.string_between(ltxt[i], 'e =', time_delim[0])
+                 for i in range(0, numLines, 2)]
+    timesteps = np.array([float(i) for i in timesteps if i.strip()])
+   
+    widths = np.array([ltxt[i].split(' ') for i in range(1, numLines, 2)])
     widths = np.array([[float(j.strip(',')) for j in i if j] for i in widths])
+    
+    if len(timesteps) < len(widths):
+      widths = widths[:len(timesteps)]
+    elif len(widths) <  len(timesteps):
+      timesteps = timesteps[:len(widths)]
 
     return widths, timesteps
 
