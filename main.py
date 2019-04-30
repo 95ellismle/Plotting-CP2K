@@ -20,24 +20,17 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.001ES",
-              #"/home/oem/Data/CTMQC/NormCons/CF_EC",
-              #"/home/oem/Data/CTMQC/NormCons/EF_CC",
-              #"/home/oem/Data/CTMQC/NormCons/CTMQC",
-              #"/scratch/mellis/flavoured-cptk/LongDetailedBal",
-              #"/home/oem/Data/CTMQC/NormCons/Ehren",
-              #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
-              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
-              #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.002ES",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2molRenorm",
               "/scratch/mellis/flavoured-cptk/200Rep_2mol",
-              #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
+              #"/scratch/mellis/flavoured-cptk/LongQM",
+              #"/scratch/mellis/flavoured-cptk/NormCons/Ehren",
+              #"/scratch/mellis/flavoured-cptk/NormCons/CTMQC",
               "",
              ]
-
-
-plotting_parameters = ["|C|^2", "adiab_states"]
-replicas = [2]
-plot = True 
+             
+plotting_parameters = ['norm', "qm_t"]
+replicas = 'all'
+plot = True
 min_time = 0
 max_time = 'all'
 #######################################################

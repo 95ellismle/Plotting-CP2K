@@ -94,9 +94,9 @@ class Params(object):
 
         self.colors = ['#1f77b4', '#ff7f0e', '#2ca02c', '#d62728', '#9467bd',
                        '#8c564b', '#e377c2', '#7f7f7f', '#bcbd22', '#17becf',
-                       'r', 'g', 'b']
+                       '#ff0000', '#00ff00', '#0000ff']
         self.colors = [i for j in range(50) for i in self.colors]
-        self._use_control = False
+        self._use_control = True
 #        if self.num_reps == 1: self._use_control = False
         self.max_time = maxTime  # (in fs)
         self.min_time = minTime  # (in fs)  NOT WORKING CAN ONLY USE 0
@@ -564,12 +564,12 @@ class LoadData(Params):
                 max_step = self.max_step*self.dt
 
             self.all_K = load_K.load_all_K_in_folder(
-                                                       folder=self.folder,
-                                                       reps=self.reps,
-                                                       max_step=max_step,
-                                                       min_step=self.min_time,
-                                                       stride=self.quick_stride
-                                                           )
+                                                     folder=self.folder,
+                                                     reps=self.reps,
+                                                     max_step=max_step,
+                                                     min_step=self.min_time,
+                                                     stride=self.quick_stride
+                                                    )
             self.load_timings['K'] = time.time() - \
                 self.load_timings['K']
 
@@ -989,6 +989,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
 #        Params.__init__(self, folder, reps, self.plot_params)
         LoadData.__init__(self, folder, reps, self.plot_params,
                           minTime=minTime, maxTime=maxTime)
+
         if self.atoms_to_plot == 'all':
             self.atoms_to_plot = range(1, self.num_active_atoms+1)
 
@@ -1002,13 +1003,15 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         else:
             self.plot = plot
             self._create_ax_fig_layout(close=False)
+        self.plot = plot
 
-        # REMOVE WHEN ALL CLASS PLOTS ARE CREATED #
-        self.plot_all_reps = True
-        self.avg_on = True
-        self.fill_between = True
-        #############################################
+        self._plotAllParams()
 
+    def _plotAllParams(self):
+        """
+        Will plot the necessary graphs by calling the plotting class if the
+        correct flag is present.
+        """
         self.plot_blank()
 
         # Quantum Momentum
@@ -1129,7 +1132,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.__finalise()
         self.print_final_info()
 
-        if type(plot) == str and plot == 'close':
+        if type(self.plot) == str and self.plot == 'close':
             plt.close('all')
 
     def _clean_widget_axes(self, axis):

@@ -11,6 +11,7 @@ import os
 from multiprocessing import Pool
 import matplotlib.pyplot as plt 
 import gc
+import numpy as np
 
 from IO import Folders as fold
 from PLOT import Plot
@@ -21,7 +22,7 @@ from PLOT import Plot
 rootFolder = ["",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.01NS_0.002ES",
               #"/scratch/mellis/flavoured-cptk/Timesteps/0.1NS_0.02ES",
-              "/scratch/mellis/flavoured-cptk/NormCons/CTMQC",
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS",
               "",
@@ -29,11 +30,11 @@ rootFolder = ["",
 
 
 # folders = folders[:1]
-plotting_parameters = ["ener_cons", "norm"]
-replicas = 'all'
+plotting_parameters = ["norm", "k", "fl"]
+replicas = [64]
 min_time = 0 
-max_time = 1000
-step = 10
+max_time = 30
+step = 1
 savePath = "/homes/mellis/Documents/Graphs/CTMQC/New_QM/tmpImg"
 iter_min_time = 0  # Where to start iterating if some pics already rendered.
 #######################################################
@@ -89,8 +90,8 @@ numDigits = len(str(max_time))
 
 #all_p = []
 count = 0
-for maxT in range(iter_min_time, max_time, step):
-    if maxT <= min_time:
+for maxT in np.arange(iter_min_time, max_time, step*p.dt):
+    if maxT <= min_time + 5*p.dt:
        print("Skipping step %i" % maxT)
        continue
     p = do_1_folder(folder=folders[0],
@@ -104,7 +105,7 @@ for maxT in range(iter_min_time, max_time, step):
       AX = p.axes[ax][1]
       if AX:
          AX.set_xlim([min_time, max_time])
-         AX.set_ylim(ylims[axNum])
+         #AX.set_ylim(ylims[axNum])
 
     fileName = str(count)
     fileName = "/" + "0" * (numDigits - len(fileName)) +fileName + ".png"
