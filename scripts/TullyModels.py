@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 dx = 0.005
 x = np.arange(-10, 10, dx)
-tullyModel = 2
+tullyModel = 1
 
 def create_H1(x, A=0.01, B=1.6, C=0.005, D=1.0):
     """
