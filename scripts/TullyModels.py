@@ -11,7 +11,7 @@ import matplotlib.pyplot as plt
 
 dx = 0.005
 x = np.arange(-10, 10, dx)
-tullyModel = 3
+tullyModel = 2
 
 def create_H1(x, A=0.01, B=1.6, C=0.005, D=1.0):
     """
@@ -88,21 +88,31 @@ gradStates = np.array(np.gradient(adStates, dx, axis=0))
 NACV = [np.matmul(phi, grad) for phi, grad in zip(adStates, gradStates)]
 NACV = np.array(NACV)
 
-plt.plot(x, adEner[:, 0], 'g-', label=r"E$^{ad}_{1}$")
-plt.plot(x, adEner[:, 1], 'b-', label=r"E$^{ad}_{2}$")
+f, axes = plt.subplots(2)
+
+axes[0].plot(x, adEner[:, 0], 'g-', label=r"E$^{ad}_{1}$")
+axes[0].plot(x, adEner[:, 1], 'b-', label=r"E$^{ad}_{2}$")
 
 if tullyModel == 1:
     NACVx = np.concatenate((x[x > 0+dx], x[x < 0-dx]))
     NACV = np.concatenate((NACV[x > 0+dx], NACV[x < 0-dx]))
-    plt.plot(NACVx, NACV[:, 1, 0]/50, 'r.', label=r"$\frac{\mathbf{d}_{10}}{50}$")
-    plt.title("Tully Model 1 -Single Avoided Crossing")
+    axes[0].plot(NACVx, NACV[:, 1, 0]/50, 'r.', label=r"$\frac{\mathbf{d}_{10}}{50}$")
+    axes[0].set_title("Tully Model 1 -Single Avoided Crossing")
 elif tullyModel == 2:
-    plt.plot(x, NACV[:, 1, 0]/12, 'r.', label=r"$\frac{\mathbf{d}_{10}}{12}$")
-    plt.title("Tully Model 2 -Dual Avoided Crossing")
+    axes[0].plot(x, NACV[:, 1, 0]/12, 'r.', label=r"$\frac{\mathbf{d}_{10}}{12}$")
+    axes[0].set_title("Tully Model 2 -Dual Avoided Crossing")
 elif tullyModel == 3:
-    plt.plot(x, NACV[:, 0, 1], 'r.', label=r"$\mathbf{d}_{10}$")
-    plt.title("Tully Model 3 -Extended Coupling")
+    axes[0].plot(x, NACV[:, 0, 1], 'r.', label=r"$\mathbf{d}_{10}$")
+    axes[0].set_title("Tully Model 3 -Extended Coupling")
 
-plt.xlabel(r"$\mathbf{R}$")
 #plt.xlabel(r"E")
-plt.legend()
+axes[0].legend()
+
+axes[1].plot(x, -np.gradient(adEner[:, 0]), 'g-') 
+axes[1].plot(x, -np.gradient(adEner[:, 1]), 'b-') 
+axes[0].spines['bottom'].set_visible(False)
+
+axes[1].set_ylabel(r"$\mathbf{F}^{ad}$")
+
+axes[1].set_xlabel(r"$\mathbf{R}$")
+plt.show()
