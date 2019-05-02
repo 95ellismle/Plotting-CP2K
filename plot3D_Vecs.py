@@ -20,10 +20,10 @@ plotting_parameters = ["qm_t", "pos"]
 replicas = 'all'
 plot = True
 min_time = 0
-max_time = 270
+max_time = 'all'
 
-saveOn = False
-saveStride = 5
+saveOn = True
+saveStride = 10
 sphereRes = 16
 
 

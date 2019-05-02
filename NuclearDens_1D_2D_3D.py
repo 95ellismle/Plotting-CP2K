@@ -1,9 +1,18 @@
 import matplotlib.pyplot as plt
 import numpy as np
 import mayavi.mlab as mlab
+from load import load_pos
 
 
 plotDimension = 3
+
+# 1D Params
+multiAtom = False
+
+# 2D Params
+
+# 3D Params
+loadReal = False
 
 
 def gaussian1D(x, mu, sigma):
@@ -31,43 +40,49 @@ def gaussian3D(x, y, z, mu, sigma):
 
 
 if plotDimension == 1:
+    if multiAtom is False:
+        f, a = plt.subplots(ncols=3)
 
-    f, a = plt.subplots(ncols=3)
+        x = np.arange(0, 10, 0.001)
+        for i, ax in enumerate(a):
+            width = 1  # *(i+1)
+            mu = 2 - 0.5*(i+1)
+            y1 = gaussian1D(x.copy(), 5+mu, width)
+            y2 = gaussian1D(x.copy(), 5-mu, width)
 
-    x = np.arange(0, 10, 0.001)
+            nuclDens = y1 + y2
+            QM = -np.gradient(nuclDens)/(nuclDens)
 
-    for i, ax in enumerate(a):
-        width = 1  # *(i+1)
-        mu = 2 - 0.5*(i+1)
-        y1 = gaussian1D(x.copy(), 5+mu, width)
-        y2 = gaussian1D(x.copy(), 5-mu, width)
+            ax.plot(x, y1, lw=0.7, alpha=0.5)
+            ax.plot(x, y2, lw=0.7, alpha=0.5)
+            ax.plot(x, nuclDens, 'k--', label=r"$|\chi|^2$")
 
-        nuclDens = y1 + y2
-        QM = -np.gradient(nuclDens)/(nuclDens)
+            axQM = ax.twinx()
+            axQM.plot(x, QM, 'r-', lw=2, label=r"$\mathcal{Q}$")
 
-        ax.plot(x, y1, lw=0.7, alpha=0.5)
-        ax.plot(x, y2, lw=0.7, alpha=0.5)
-        ax.plot(x, nuclDens, 'k--', label=r"$|\chi|^2$")
+            ax.grid(False)
+            ax.set_xticks([])
+            ax.set_yticks([])
+            axQM.set_yticks([])
+            if i != 0:
+                ax.spines['left'].set_visible(False)
+                axQM.spines['left'].set_visible(False)
+            ax.set_xlabel("Nuclear Positions")
 
-        axQM = ax.twinx()
-        axQM.plot(x, QM, 'r-', lw=2, label=r"$\mathcal{Q}$")
+        #    ax.set_title("Width = %.2g" % width, fontsize=18)
+        #    ax.legend(loc='upper right')
 
-        ax.grid(False)
-        ax.set_xticks([])
-        ax.set_yticks([])
-        axQM.set_yticks([])
-        if i != 0:
-            ax.spines['left'].set_visible(False)
-            axQM.spines['left'].set_visible(False)
-        ax.set_xlabel("Nuclear Positions")
+        plt.suptitle("Nuclear Density and Quantum Momentum -1D, 1 atom 2 Traj",
+                     fontsize=20)
 
-    #    ax.set_title("Width = %.2g" % width, fontsize=18)
-    #    ax.legend(loc='upper right')
+        plt.show()
 
-    plt.suptitle("Nuclear Density and Quantum Momentum -1D, 1 atom 2 Traj",
-                 fontsize=20)
+    else:
+        # pos shape = (nRep , nAtom)
+        pos = np.array([[5], [5]])
+        
+            
 
-    plt.show()
 
 elif plotDimension == 2:
 
@@ -140,78 +155,104 @@ elif plotDimension == 2:
     mlab.show()
 
 elif plotDimension == 3:
-    from load import load_pos
+    if loadReal is True:
+        folder = "/scratch/mellis/flavoured-cptk/200Rep_2mol3"
+        allPos = load_pos.load_all_pos_in_folder(folder,
+                                                 reps=[1, 51, 101, 201])
+        pKeys = list(allPos.keys())
+        nrep = len(allPos)
+        nstep = len(allPos[pKeys[0]][0])
+        allPos = [[allPos[i][0][allPos[i][1] != 'Ne']] for i in allPos]
+        natom = np.shape(allPos)[2]//nstep
+        allPos = np.reshape(allPos, (nstep, nrep, natom, 3))
+        minX, maxX = np.min(allPos[:, :, :, 0]), np.max(allPos[:, :, :, 0]),
+        minY, maxY = np.min(allPos[:, :, :, 1]), np.max(allPos[:, :, :, 1]),
+        minZ, maxZ = np.min(allPos[:, :, :, 2]), np.max(allPos[:, :, :, 2]),
+        np.max(allPos[:, :, :, 2])
 
-    folder = "/home/oem/Data/CTMQC/200Rep_2mol"
-    allPos = load_pos.load_all_pos_in_folder(folder, reps=[1,2])
-    pKeys = list(allPos.keys())
-    nrep = len(allPos)
-    nstep = len(allPos[pKeys[0]][0])
-    allPos = [[allPos[i][0][allPos[i][1] != 'Ne']] for i in allPos]
-    natom = np.shape(allPos)[2]//nstep
-    allPos = np.reshape(allPos, (nstep, nrep, natom, 3))
-    minX, minY, minZ = np.min(allPos[:, :, :, 0]), np.min(allPos[:, :, :, 1]), np.min(allPos[:, :, :, 2])
-    maxX, maxY, maxZ = np.max(allPos[:, :, :, 0]), np.max(allPos[:, :, :, 1]), np.max(allPos[:, :, :, 2])
+        x, y, z = np.mgrid[minX:maxX:20j, minY:maxY:20j, minZ:maxZ:20j]
 
-    x, y, z = np.mgrid[minX:maxX:20j, minY:maxY:20j, minZ:maxZ:20j]
-    
-    pos = allPos[0]
-    sigma = 2
+        pos = allPos[0]
+    else:
+        pos = [
+               [  # Replica 1
+                [0, 0, 0],  # atom 1
+               ],
+               [  # Replica 2
+                [10, 10, 10],  # atom 1
+               ],
+               [  # Replica 3
+                [10, 0, 10],  # atom 1
+               ],
+               [  # Replica 4
+                [0, 10, 10],  # atom 1
+               ],
+              ]
+        x, y, z = np.mgrid[0:10:20j, 0:10:20j, 0:10:20j]
+
+    sigma = 1.5
 
     pos = np.array(pos).astype(float)
-    pos0 = pos.copy()
+    pos0 = pos.copy()  # Initial positions
     allGauss = [[gaussian3D(x.copy(), y.copy(), z.copy(),
-                           pos[I, i], sigma) for i in range(len(pos[0]))]
-                for I in range(len(pos))]
+                            pos[J, v], sigma)
+                 for v in range(len(pos[0]))]
+                for J in range(len(pos))]
 
     nuclDens = np.product(allGauss, axis=1)  # Take product over atoms
     nuclDens = np.sum(nuclDens, axis=0)  # Sum over products
     QM = -np.array(np.gradient(nuclDens))/(nuclDens)
 
-    colors = [(0.5, 0.5, 0.5), (1, 1, 1), (0, 0, 0), (1, 0, 0), (0, 1, 0), 
-               (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1), (0.5, 1, 0.5),
-               (0.5, 0.5, 1), (0.5, 0.5, 0), (0.5, 0, 0.5), (0.5, 0.5, 1), (0, 0.5, 0.5),
-               ]
+    colors = [(0.5, 0.5, 0.5), (1, 1, 1), (0, 0, 0), (1, 0, 0), (0, 1, 0),
+              (0, 0, 1), (1, 1, 0), (1, 0, 1), (0, 1, 1), (0.5, 1, 0.5),
+              (0.5, 0.5, 1), (0.5, 0.5, 0), (0.5, 0, 0.5), (0.5, 0.5, 1),
+              (0, 0.5, 0.5),
+              ]
 
     nuclPts = []
     for v in range(len(pos[0])):
         nuclPts.append(mlab.points3d(pos[:, v, 0], pos[:, v, 1], pos[:, v, 2],
-                                     resolution=12, color=colors[v]))
+                                     resolution=12, color=colors[v],
+                                     scale_factor=sigma/2))
 
-    #qmPts = mlab.quiver3d(x, y, z, QM[0, :, :],
-    #                      QM[1, :, :], QM[2, :, :])
+    qmPts = mlab.quiver3d(x, y, z, QM[0, :, :],
+                          QM[1, :, :], QM[2, :, :])
 
-    #nFrames = 629
-    #@mlab.animate(delay=40)
-    #def anim():
-    #    i = 0
-    #    while True:
-    #        pos[0, :, :] = pos0[0, :, :] - np.sin(0.01 * i) * 3
-    #        pos[1, :, :] = pos0[1, :, :] + np.sin(0.01 * i) * 3
+    @mlab.animate(delay=10)
+    def anim():
+        """
+        A generator function for animating the 3D visualisation
+        """
+        global pos, allPos, loadReal, x, y, z, sigma
+        nFrames = 629
+        if loadReal is True:
+            nFrames = len(allPos)
+        i = 0
+        stepSize = 1
+        while i < nFrames:
+            if loadReal is True:
+                pos = allPos[i]
+            else:
+                pos[0, 0, :] = pos0[0, 0, :] + (-np.cos(0.01 * i) + 1) * 2.5
+                pos[1, 0, :] = pos0[1, 0, :] - (-np.cos(0.01 * i) + 1) * 2.5
 
-    #        allGauss = [[gaussian3D(x.copy(), y.copy(), z.copy(),
-    #                               pos[I, i], sigma[i]) for i in range(len(pos[0]))]
-    #                    for I in range(len(pos))]
+            allGauss = [[gaussian3D(x.copy(), y.copy(), z.copy(),
+                                    pos[I, v], sigma)
+                         for v in range(len(pos[0]))]
+                        for I in range(len(pos))]
+            nuclDens = np.product(allGauss, axis=1)  # Take product over atoms
+            nuclDens = np.sum(nuclDens, axis=0)  # Sum over products
+            QM = -np.array(np.gradient(nuclDens))/(nuclDens)
 
-    #        nuclDens = np.product(allGauss, axis=1)  # Take product over atoms
-    #        nuclDens = np.sum(nuclDens, axis=0)  # Sum over products
-    #        QM = -np.array(np.gradient(nuclDens))/(nuclDens)
-    #        
-    #        for v in range(len(pos[0])):
-    #            nuclPts[v].mlab_source.set(x=pos[:, v, 0],
-    #                                       y=pos[:, v, 1],
-    #                                       z=pos[:, v, 2])
-    #        qmPts.mlab_source.set(u=QM[0],
-    #                              v=QM[1],
-    #                              w=QM[2])
-    #        i += 1
-    #        yield
+            for v in range(len(pos[0])):
+                nuclPts[v].mlab_source.set(x=pos[:, v, 0],
+                                           y=pos[:, v, 1],
+                                           z=pos[:, v, 2])
+            qmPts.mlab_source.set(u=QM[0],
+                                  v=QM[1],
+                                  w=QM[2])
+            i += stepSize
+            yield
 
-
-
-
-    #        
-    #anim()
-    #mlab.show()
-
-
+    anim()
+    mlab.show()
