@@ -9,9 +9,9 @@ Created on Wed May  1 12:49:10 2019
 import numpy as np
 import matplotlib.pyplot as plt
 
-dx = 0.005
+dx = 0.01
 x = np.arange(-10, 10, dx)
-tullyModel = 1
+tullyModel = 3
 
 def create_H1(x, A=0.01, B=1.6, C=0.005, D=1.0):
     """

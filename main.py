@@ -21,15 +21,15 @@ from PLOT import Plot
 # the other folders in search of inputs to plot!
 rootFolder = ["",
               #"/scratch/mellis/flavoured-cptk/200Rep_2molRenorm",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              "/scratch/mellis/flavoured-cptk/200Rep_2molTully",
               #"/scratch/mellis/flavoured-cptk/LongQM",
               #"/scratch/mellis/flavoured-cptk/NormCons/Ehren",
               #"/scratch/mellis/flavoured-cptk/NormCons/CTMQC",
               "",
              ]
              
-plotting_parameters = ['norm', "qm_t"]
-replicas = 'all'
+plotting_parameters = ["|C|^2"]
+replicas = [1]
 plot = True
 min_time = 0
 max_time = 'all'

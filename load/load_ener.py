@@ -12,7 +12,7 @@ from load import load_utils as Utils
 
 
 # Will load the total energy file
-def load_ener_dat(filepath, max_time):
+def load_ener_dat(filepath, max_time='all'):
     headerReplacers = {'StepNr': 'Step','Time_[fs]':'Time',
                        'Kinetic_[a.u.]': 'Kin',
                        'Temperature_[K]': 'Temp',
@@ -36,12 +36,12 @@ def load_ener_dat(filepath, max_time):
     else:
         return data[data['Time'] < max_time]
     
-# Load all adiabatic energy files in a folder
+# Load all total energy files in a folder
 def load_all_ener_dat(folder, reps, max_time):
-    return Utils.load_all_in_folder(folder, 
-                                    load_ener_dat, 
-                                    args=[max_time], 
-                                    filename_must_contain=['dat', 'ener'], 
+    return Utils.load_all_in_folder(folder,
+                                    load_ener_dat,
+                                    args=[max_time],
+                                    filename_must_contain=['.dat', 'ener'],
                                     reps=reps)
 
 

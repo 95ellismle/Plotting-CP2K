@@ -28,6 +28,7 @@ from Plot import plot_frc
 from Plot import plot_tintf
 from Plot import plot_pos
 from Plot import plot_K
+from Plot import plot_rabi
 
 # External Modules
 import matplotlib.pyplot as plt
@@ -71,6 +72,7 @@ dependencies = {'qm_r':         ['pos', 'qm'],
                 'fk':           ['fl_fk'],
                 "qm_force":     ['qm_frc'], 
                 "ad_force":     ['ad_frc'],
+                "rabi":         ['ham']
                 }
 
 class Params(object):
@@ -87,6 +89,7 @@ class Params(object):
         self._set_coeff_params()
         self._correct_plot_params()
         self._get_inp_data()
+        self.units = 'au'
 
         self._set_title()
         self.title = r""
@@ -108,6 +111,18 @@ class Params(object):
         self.worst_reps = {}
         self.best_reps = {}
         self._fix_load_timings()
+
+        print("\n\nREMEMBER TO CHECK UNITS FOR THE THING YOU'RE PLOTTING\n\n")
+        self.units = self.units.lower()
+        self.allowed_units = ('au',)
+        if not any([self.units == j for j in self.allowed_units]):
+            msg = "Units string = `%s'" % self.units
+            msg += "\nAllowed Units = `[%s]'" % ','.join(self.allowed_units)
+            msg += "\n\nI don't know how to handle the unit string."
+            msg += "\n\nPlease change it in the PLOT.py file"
+            msg += "\n(The unit string tells me how to handle units, options are above)"
+            print(msg)
+            raise SystemExit("\nERROR: INCORRECT PARAMETER\n\n")
 
     def _get_inp_data(self):
         """
@@ -338,6 +353,11 @@ class LoadData(Params):
                                                        min_step=self.min_time,
                                                        stride=stride
                                                            )
+        if self.units == 'au':
+           for fname in self.all_ham_data:
+               self.all_ham_data[fname][0] /= 27000
+               self.all_ham_data[fname][2] /= 0.02418884254
+
         allLens = [len(self.all_ham_data[i][0]) for i in self.all_ham_data]
         if all(allLens):
             # Average data
@@ -431,6 +451,9 @@ class LoadData(Params):
                                              min_step=self.min_time,
                                              stride=self.quick_stride
                                                                       )
+            if self.units == 'au':
+               for f in self.all_Dcoeff_data:
+                  self.all_Dcoeff_data[f][2] *= 41.34137458
             if not self.all_Dcoeff_data:
                 raise SystemExit("Sorry I can't find any coeff data in " +
                                  "folder:\n\n\t$s" % self.folder)
@@ -467,6 +490,13 @@ class LoadData(Params):
                                                        min_step=self.min_time,
                                                        stride=self.quick_stride
                                                               )
+            if self.units == 'au':
+               for f in self.all_Acoeff_data:
+                  self.all_Acoeff_data[f][2] *= 41.34137458
+            if not self.all_Acoeff_data:
+                raise SystemExit("Sorry I can't find any coeff data in " +
+                                 "folder:\n\n\t$s" % self.folder)
+
             self.load_timings['ad coeff'] = time.time() - \
                 self.load_timings['ad coeff']
 
@@ -493,6 +523,10 @@ class LoadData(Params):
                                                max_time=max_step,
                                                min_time=self.min_time * self.dt
                                                               )
+            if self.units == 'au':
+               for f in self.all_ad_ener_data:
+                  self.all_ad_ener_data[f]['Time'] /= 0.0241884254
+
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
             self.load_timings['adiab ener'] = time.time() - \
@@ -521,6 +555,10 @@ class LoadData(Params):
 
             self.load_timings['tot ener'] = time.time() - \
                 self.load_timings['tot ener']
+
+            if self.units == 'au':
+               for f in self.all_tot_ener:
+                  self.all_tot_ener[f]['Time'] /= 0.0241884254
 
             # Find metadata
             Keys = list(self.all_tot_ener.keys())
@@ -952,7 +990,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PosStd,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
-           plot_pos.COM, 
+           plot_pos.COM, plot_rabi.Rabi,
            plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
@@ -994,7 +1032,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.atoms_to_plot = range(1, self.num_active_atoms+1)
 
         self.reps = reps
-        self.xlabel = "Time (fs)"
+        self.xlabel = "Time (%s)" % self.units
         self.plot_info = {}
         if type(plot) == str:
             if plot.lower() == 'close':
@@ -1043,6 +1081,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                              self,
                                                              self.axes['|u|^2']
                                                              )
+        if "rabi" in self.plot_params:
+            self.mRabiPlot = plot_rabi.Rabi.__init__(self, 
+                                                     self.axes['rabi']
+                                                    )
         if '|c|^2' in self.plot_params:
             self.mACoeffPlot = plot_coeff.Plot_Coeff.__init__(
                                                              self,
@@ -1440,7 +1482,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         try:
             lastNonQlkAxis = self.axes[self.non_qlk_params[-1]][1]
             if lastNonQlkAxis:
-                lastNonQlkAxis.set_xlabel("Time (fs)", fontsize=27)
+                lastNonQlkAxis.set_xlabel("Time (%s)" % self.units, fontsize=27)
         except IndexError:
             pass
         ax = self.axes[self.plot_params[-1]][1]

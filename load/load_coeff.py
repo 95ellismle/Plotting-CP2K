@@ -29,7 +29,7 @@ def load_coeff(filepath,
 
     pops = np.linalg.norm(data, axis=2)**2
     data = np.array([np.array([complex(*j) for j in i]) for i in data])
-    return np.array(data), np.array(cols), np.array(timesteps), np.array(pops)
+    return [np.array(data), np.array(cols), np.array(timesteps), np.array(pops)]
 
 # Reads all the Qlk files from a given folder
 def load_all_coeff_in_folder(folder,
