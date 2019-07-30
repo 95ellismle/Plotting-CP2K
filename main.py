@@ -28,8 +28,8 @@ rootFolder = ["",
               "",
              ]
              
-plotting_parameters = ["|C|^2"]
-replicas = [1]
+plotting_parameters = ["norm", "|C|^2", "E_cons"]
+replicas = 'all' 
 plot = True
 min_time = 0
 max_time = 'all'

@@ -308,15 +308,19 @@ class Energy_Cons(object):
         Will get the energy drift for each replica
         """
         lab_to_name_map = {'Kin': 'Kinetic', 'Pot': 'Potential', 'E_cons': 'Total'}
+        
+        conv = 1
+        if self.units == 'au':
+           conv = 0.02418884254
 
         # Find drifts
         self.ener_drift_per_rep = {'Kinetic': [], 'Potential': [], 'Total': []}
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
             for lab in ('E_cons', 'Kin', 'Pot'):
-                fit = np.polyfit(data['Time'], data[lab], 1)
+                fit = np.polyfit(data['Time'], data[lab], 1) 
                 name = lab_to_name_map[lab]
-                tmp = 1000 / self.num_active_atoms
+                tmp = self.dt * conv * 1000 / self.num_active_atoms
                 self.ener_drift_per_rep[name].append(np.array(fit[0]) * tmp)
 
         # Find largest and smallest drifts rep indices
