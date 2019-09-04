@@ -309,19 +309,21 @@ class Energy_Cons(object):
         """
         lab_to_name_map = {'Kin': 'Kinetic', 'Pot': 'Potential', 'E_cons': 'Total'}
         
-        conv = 1
-        if self.units == 'au':
-           conv = 0.02418884254
+        unit_conv = 1
+        if self.units == "au":
+           unit_conv = 0.02418884
 
         # Find drifts
         self.ener_drift_per_rep = {'Kinetic': [], 'Potential': [], 'Total': []}
         for irep in self.all_tot_ener:
             data = self.all_tot_ener[irep]
             for lab in ('E_cons', 'Kin', 'Pot'):
-                fit = np.polyfit(data['Time'], data[lab], 1) 
+                # Convert the time units from AU -> fs.
+                fit = np.polyfit(data['Time']*unit_conv, data[lab], 1) 
                 name = lab_to_name_map[lab]
-                tmp = self.dt * conv * 1000 / self.num_active_atoms
-                self.ener_drift_per_rep[name].append(np.array(fit[0]) * tmp)
+                # Timestep in fs and Energy in Hartree so x1000 to convert to ps
+                conv = (self.dt * 1000) / self.num_active_atoms
+                self.ener_drift_per_rep[name].append(np.array(fit[0]) * conv)
 
         # Find largest and smallest drifts rep indices
         for lab in ('E_cons', 'Kin', 'Pot'):

@@ -139,6 +139,11 @@ class Params(object):
         self.num_states = self.run_inp_params['NUMBER_DIABATIC_STATES']
         self.num_active_atoms = self.atoms_per_site * self.num_states
 
+        # If we're using the tully model we only have 1 atom
+        t_model = self.run_inp_params.get("TULLY_MODEL")
+        if t_model is not None and t_model > 0:
+           self.num_active_atoms = 1
+
     def _fix_load_timings(self):
         """
         Will convert the times to load into step numbers to pass into the
