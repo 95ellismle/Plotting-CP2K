@@ -28,7 +28,7 @@ rootFolder = ["",
               "",
              ]
              
-plotting_parameters = ["norm", "|C|^2", "E_cons"]
+plotting_parameters = ["|C|^2", "norm", "ener_cons"]
 replicas = 'all' 
 plot = True
 min_time = 0

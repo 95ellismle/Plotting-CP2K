@@ -6,7 +6,7 @@ Created on Wed Mar 27 11:32:22 2019
 @author: oem
 """
 
-
+import re
 import os
 import difflib as dfl
 from collections import OrderedDict
@@ -21,13 +21,24 @@ def string_between(Str, substr1, substr2):
 # Checks if a line of text is an atom line in a xyz file
 def is_atom_line(line):
     line = [i for i in line.split(' ') if i]
-    if len(line) < 3:
+    if not len(line):
         return False
-    fline = [is_num(i) for i in line]
-    if not sum(fline[-3:]) == 3:
+    fline = [len(re.findall("[0-9]\.[0-9]", i)) > 0 for i in line]
+    percentFloats = fline.count(True) / float(len(fline))
+    if percentFloats < 0.5:
         return False
     else:
         return True
+
+# Checks whether a number is a float or integer
+def is_float(num):
+   if type(num) == str:
+      if is_num(num): num = float(num)
+      else: return False
+
+   if int(num) == num:
+      return False
+   return True
 
 # Checks whether a string can be a number
 def is_num(Str):
@@ -117,9 +128,11 @@ def get_xyz_step_metadata(ltxt, filename):
 def get_xyz_step_metadata2(filename, ltxt=False):
     if ltxt == False:
         ltxt = open_read(filename).split('\n')
+    # Check whether to use the very stable but slow parser or quick slightly unstable one
     most_stable = False
     if any('*' in i for i in ltxt[:300]):
         most_stable = True
+
     if not most_stable:
         num_title_lines, num_atoms = num_atoms_find(ltxt)
         lines_in_step = num_title_lines + num_atoms
@@ -131,7 +144,6 @@ def get_xyz_step_metadata2(filename, ltxt=False):
         lines_in_step = find_num_title_lines(ltxt, filename)
         step_data = {i: ltxt[i*lines_in_step:(i+1)*lines_in_step] for i in range(1,2)}
         num_title_lines = find_num_title_lines(step_data[1])
-
     nsteps = int(len(ltxt)/lines_in_step)
     time_delim, time_ind = find_time_delimeter(step_data[1][:num_title_lines],
                                                filename)
@@ -182,6 +194,7 @@ def read_xyz_file(filename, num_data_cols,
         max_step = abs_max_step
 
     # The OrderedDict is actually faster than a list here.
+    #   (time speedup at the expense of space)
     step_data = OrderedDict()  # keeps order of frames -Important
     all_steps = [i for i in range(min_step, max_step, stride)
                  if i not in ignore_steps]

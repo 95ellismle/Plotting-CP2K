@@ -44,6 +44,7 @@ import pandas as pd
 import os
 import difflib
 
+
 # Decide which things to load when the params are inputted
 #  also gives a comprehensive list of all possible plotting
 #  parameters
@@ -804,7 +805,7 @@ class LoadData(Params):
                                                         reps=self.reps,
                                                         max_step=max_step,
                                                         min_step=self.min_time,
-                                                        stride=self.slow_stride
+                                                        stride=self.slow_stride,
                                                                )
             self.load_timings['forces'] = time.time() - \
                 self.load_timings['forces']

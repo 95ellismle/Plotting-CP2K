@@ -35,7 +35,7 @@ def load_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
     Load diabatic forces
     """
     data, cols, timesteps = XYZ.read_xyz_file(filename=filepath, 
-                                              num_data_cols =3,
+                                              num_data_cols=3,
                                               min_step=min_step, 
                                               max_step=max_step, 
                                               stride=stride, 
@@ -62,7 +62,7 @@ def load_ad_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[])
     Load adiabatic forces
     """
     data, cols, timesteps = XYZ.read_xyz_file(filename=filepath, 
-                                              num_data_cols =3,
+                                              num_data_cols=3,
                                               min_step=min_step, 
                                               max_step=max_step, 
                                               stride=stride, 

@@ -196,6 +196,7 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[],
       doParallel = True
     else:
       doParallel = False
+    doParallel = False
     if doParallel:  # Read files in parallel
         args = [(func, [f]+list(args)) for f in all_files2]
         numProc = mp.cpu_count()
