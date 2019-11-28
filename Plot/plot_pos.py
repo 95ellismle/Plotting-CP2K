@@ -155,8 +155,100 @@ class PlotPos(object):
             if self._use_control:
                 PlotPos.__set_control(self)
 
-            axLab = r"$|\mathbf{R}_{\nu}^{(I)} - \mathbf{R}_{0}|$ [bohr]"
+            axLab = r"$|\mathbf{R}_{\nu}^{(I)}|$ [bohr]"
             PlotPos.plot_ax.set_ylabel(axLab)
+
+    @staticmethod
+    def __button_control(self, label):
+        """
+        Will handle the button events
+        """
+
+    # Will set the control panel for positions
+    @staticmethod
+    def __set_control(self):
+        """
+        Will put the control panel on the axis and connect the off and on
+        functions to it.
+        """
+
+    # Will plot all positions
+    @staticmethod
+    def __plot_all(self):
+        """
+        Will plot the positions of atoms for all trajectories.
+        """
+        keys = list(self.all_pos_data.keys())
+        data, cols, _ = self.all_pos_data[keys[0]]
+        mask = cols != 'Ne'
+        activeAtoms = [[pos for cond, pos in zip(mask[step], data[step])
+                        if cond]
+                       for step in range(len(data))]
+        activeAtoms = np.array(activeAtoms)
+        x0 = 0  # activeAtoms[:, 0, 0]
+        y0 = 0  # activeAtoms[:, 0, 1]
+        z0 = 0  # activeAtoms[:, 0, 2]
+
+        for fileName in self.all_pos_data:
+            data, cols, timesteps = self.all_pos_data[fileName]
+
+            # This is a horrible hack should be improved!
+            #  * Make more robust way to get active atoms
+            #  * Use numpy fancy indexing instead of list comprehension
+            mask = cols != 'Ne'
+            activeAtoms = [[pos for cond, pos in zip(mask[step], data[step])
+                            if cond]
+                           for step in range(len(data))]
+            activeAtoms = np.array(activeAtoms)
+
+            # Plot atoms
+            for iat in self.atoms_to_plot:
+                x = activeAtoms[:, iat-1, 0] - x0
+                #y = activeAtoms[:, iat-1, 1] - y0
+                #z = activeAtoms[:, iat-1, 2] - z0
+                #mag = np.sqrt(x**2 + y**2 + z**2)
+                mag = x
+
+                PlotPos.plot_ax.plot(timesteps,
+                                     mag,
+                                     color=self.colors[iat-1],
+                                     alpha=self.alpha,
+                                     lw=0.5)
+
+    # Will plot normal of diabatic coeffs
+    @staticmethod
+    def __plot_avg(self):
+        """
+        Will plot the positions of atoms for all trajectories. Will sum the
+        populations and plot on the norm axis.
+        """
+
+
+class PlotVel(object):
+    """
+    Will plot the velocities vs time graph.
+
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the
+                 widget axis the second will be the axis to plot the data.
+    """
+    def __init__(self, axes):
+        if self.plot:
+            PlotVel.widget_ax = axes[0]
+            PlotVel.plot_ax = axes[1]
+
+            # Setting initial default values
+            PlotVel.__show_avg_reps = True
+            PlotVel.__show_all_reps = True
+
+            # Will do the plotting
+            PlotVel.__plot_all(self)
+            # Connect checkboxes to plot control
+            if self._use_control:
+                PlotVel.__set_control(self)
+
+            axLab = r"$|\mathbf{R}_{\nu}^{(I)}|$ [bohr]"
+            PlotVel.plot_ax.set_ylabel(axLab)
 
     @staticmethod
     def __button_control(self, label):
@@ -176,17 +268,17 @@ class PlotPos(object):
     @staticmethod
     def __plot_all(self):
         """
-        Will plot the positions of atoms for all trajectories. Will sum the
+        Will plot the velocities of atoms for all trajectories. Will sum the
         populations and plot on the norm axis.
         """
-        for fileName in self.all_pos_data:
-            data, cols, timesteps = self.all_pos_data[fileName]
+        for fileName in self.all_vel_data:
+            data, cols, timesteps = self.all_vel_data[fileName]
 
             # This is a horrible hack should be improved!
             #  * Make more robust way to get active atoms
             #  * Use numpy fancy indexing instead of list comprehension
             mask = cols != 'Ne'
-            activeAtoms = [[pos for cond, pos in zip(mask[step], data[step])
+            activeAtoms = [[vel for cond, vel in zip(mask[step], data[step])
                             if cond]
                            for step in range(len(data))]
             activeAtoms = np.array(activeAtoms)
@@ -194,11 +286,11 @@ class PlotPos(object):
             # Plot atoms
             for iat in self.atoms_to_plot:
                 x = activeAtoms[:, iat-1, 0]
-                y = activeAtoms[:, iat-1, 1]
-                z = activeAtoms[:, iat-1, 2]
-                mag = np.sqrt(x**2 + y**2 + z**2)
+                #y = activeAtoms[:, iat-1, 1]
+                #z = activeAtoms[:, iat-1, 2]
+                mag = x #np.sqrt(x**2 + y**2 + z**2)
 
-                PlotPos.plot_ax.plot(timesteps,
+                PlotVel.plot_ax.plot(timesteps,
                                      mag,
                                      color=self.colors[iat-1],
                                      alpha=self.alpha,
@@ -208,9 +300,10 @@ class PlotPos(object):
     @staticmethod
     def __plot_avg(self):
         """
-        Will plot the positions of atoms for all trajectories. Will sum the
+        Will plot the velocities of atoms for all trajectories. Will sum the
         populations and plot on the norm axis.
         """
+
 
 
 class PosStd(object):
@@ -233,7 +326,7 @@ class PosStd(object):
             # Will do the plotting
             PosStd.__plot(self)
 
-            PosStd.plot_ax.set_ylabel(r"$\sigma(\mathbf{COM}^{(I)})$")
+            PosStd.plot_ax.set_ylabel(r"$\sigma(|\mathbf{R}_{\nu}^{(I)}|)$")
 #            PosStd.plot_ax.set_ylim([5, 1050])
 
     @staticmethod
@@ -258,12 +351,13 @@ class PosStd(object):
         populations and plot on the norm axis.
         """
         pKeys = list(self.all_pos_data.keys())
-        allCOM = [np.linalg.norm(self.all_COM[rep][0], axis=1)
-                  for rep in self.all_COM]
-        stdOverRep = np.std(allCOM, axis=0)
-        timesteps = self.all_pos_data[pKeys[0]][2]
+        allPos = [self.all_pos_data[fName][0] for fName in self.all_pos_data]
+        allPos = [np.sqrt(p[:, :, 0]**2 + p[:, :, 1]**2 + p[:, :, 2]**2) for p in allPos]
+        std = np.std(allPos, axis=0)
 
-        PosStd.plot_ax.plot(timesteps, stdOverRep, lw=0.7)
+        timesteps = self.all_pos_data[pKeys[0]][2]
+        for iatom in self.atoms_to_plot:
+           PosStd.plot_ax.plot(timesteps, std[:, iatom-1], color=self.colors[iatom], lw=0.7)
 
             
 

@@ -23,83 +23,64 @@ class fl(object):
             fl.widget_ax = axes[0]
             fl.plot_ax = axes[1]
             fl.plot_ax.set_autoscale_on(True)
+            
+            fl._show_all = True
     
-            fl.plot_all(self)
+            fl._plot_all(self)
             
             fl.plot_ax.set_ylabel(r"$\mathbf{f}_{l, \nu}^{(I)}$ [bohr$^{-1}$]")
 
+    # Will plot the all replica adiab momenta
     @staticmethod
-    def plot_all(self):
+    def _plot_all(self):
         """
-        Will plot data for all replicas
+        Will plot all the f vs time lines for each replica and save all the
+        line in a 2D list called
         """
-        for irep, key in enumerate(self.all_tintf_data):
-          data, cols, timesteps = self.all_tintf_data[key]
-          
-          carbonAtoms = [0, 3, 6, 9]
-          hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
-          
-          plotStates = range(self.num_states)
+        fl.all_rep_lines = [[] for i in range(self.num_active_atoms)]
+ 
+        ax = fl.plot_ax
+        for Fname in self.all_adMom_data:
+            data = self.all_adMom_data[Fname]  # list of all data
+ 
+            for iatom in self.atoms_to_plot:
+               mask = data['v'] == iatom
+               mask = mask & (data['l'] == 1)
+               masked_data = data[mask]
+               time = masked_data["time"]
+ 
+               adMomX = masked_data['f(x)']
+               if all(j not in data.columns for j in ('f(y)','f(z)')):
+                  moreThan1Dim = False
+                  adMom_mag = adMomX
+               else:
+                  moreThan1Dim = True
+                  adMom_mag = adMomX**2
+ 
+               if 'f(y)' in data.columns:
+                  adMomY = masked_data['f(y)']
+                  adMom_mag += adMomY**2
+               if 'f(z)' in data.columns:
+                  adMomZ = masked_data['f(z)']
+                  adMom_mag += adMomZ**2
+ 
+               if moreThan1Dim:
+                  adMom_mag = np.sqrt(adMom_mag)
+ 
+               ln, = ax.plot(time,
+                             adMom_mag,
+                             '-',
+                             color=self.colors[iatom-1],
+                             alpha=self.alpha,
+                             lw=0.7)
+               fl.all_rep_lines[iatom-1].append(ln)
+            ax.set_ylabel(r"|$\mathbf{f}_{l, \nu}^{(I)}$|$^2$")
+ 
+        # Initialise the replica lines
+        for atlist in fl.all_rep_lines:
+            for line in atlist:
+                line.set_visible(fl._show_all)
 
-          for state in plotStates:
-             # First plot the C atoms
-             X = data[:, state, carbonAtoms, 0]
-             Y = data[:, state, carbonAtoms, 1]
-             Z = data[:, state, carbonAtoms, 2]
-             Mag = np.sqrt(X**2 + Y**2 + Z**2)
-   
-             color = self.colors[state].strip('#')
-             color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-             color = np.array(color).astype(float)
-             color *= 1. #(1 - (0.2 * state)) * color
-             color /= 255.
-
-             fl.plot_ax.plot(timesteps, X,
-                             color=self.colors[state],
-                             #color=(1-(state/3.), (state/5.), (state/5.)),
-                             alpha=self.alpha, lw=0.7,
-                             label="X (atom 1, state 1)")
-
-             fl.plot_ax.plot(timesteps, Y,
-                             color=self.colors[state],
-                             #color=(state/5., 1-(state/3.), (state/5.)),
-                             alpha=self.alpha, lw=0.7,
-                             label="Y (atom 1, state 1)")
-
-             fl.plot_ax.plot(timesteps, Z,
-                             color=self.colors[state],
-                             #color=(state/5., state/3., 1-(state/5.)),
-                             alpha=self.alpha, lw=0.7,
-                             label="Z (atom 1, state 1)")
-
-             #fl.plot_ax.plot(timesteps, Mag,
-             #                color=color,
-             #                alpha=self.alpha, lw=0.8)
-     
-             ## Now plot the H atoms
-             #X = data[:, state, hydrogenAtoms, 0]
-             #Y = data[:, state, hydrogenAtoms, 1]
-             #Z = data[:, state, hydrogenAtoms, 2]
-             #Mag = np.sqrt(X**2 + Y**2 + Z**2)
-   
-             #color = self.colors[state].strip('#')
-             #color = [int(color[i*2 : (i+1)*2], 16) for i in range(3)]
-             #color = np.array(color).astype(float)
-             #color *= (1 - (0.2 * state))
-             #color /= 255.
-
-             #fl.plot_ax.plot(timesteps, Mag,
-             #                color=color,
-             #                alpha=self.alpha, lw=0.8)
-
-          lines, handles = [], []
-          for state in plotStates:
-             label = "State %i" % state
-             ln = mpl.lines.Line2D([], [], color=self.colors[state],
-                                   label=label)
-             lines.append(ln)
-             handles.append(label)
-          fl.plot_ax.legend(lines, handles)
 
 
 class fl_fk(object):

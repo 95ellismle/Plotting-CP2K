@@ -10,6 +10,8 @@ from load import load_xyz as XYZ
 from load import load_utils as Utils
 
 import numpy as np
+import pandas as pd
+import os
 
 params_to_ind_conv = {'at_num': 0,
                       'l': 2,
@@ -63,14 +65,15 @@ def load_Qlk(filepath,
              stride=1,
              ignore_steps=[]):
 
-    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
-                                              num_data_cols=1,
-                                              min_step=min_step,
-                                              max_step=max_step,
-                                              stride=stride,
-                                              ignore_steps=ignore_steps)
-    cols = np.array(cols).astype(int)
-    return (data, cols), timesteps
+    if not os.path.isfile(filepath):
+       print("Can't find filepath %s" % filepath)
+       raise SystemExit("BREAK")
+
+    # Read the data
+    df = pd.read_csv(filepath)
+    df = df.dropna()
+
+    return df
 
 
 # Reads all the Qlk files from a given folder
@@ -87,7 +90,7 @@ def load_all_Qlk_in_folder(folder,
                                           max_step,
                                           stride,
                                           ignore_steps],
-                                    filename_must_contain=['QM', 'xyz'],
+                                    filename_must_contain=['QM-', 'csv'],
                                     filename_must_not_contain=[],
                                     reps=reps)
 
@@ -106,7 +109,7 @@ def load_all_Rlk_in_folder(folder,
                                               max_step,
                                               stride,
                                               ignore_steps],
-                                        filename_must_contain=['rlk', 'xyz'],
+                                        filename_must_contain=['rlk', 'csv'],
                                         filename_must_not_contain=[],
                                         reps=reps)
     keys = list(rlk_data.keys())

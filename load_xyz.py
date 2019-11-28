@@ -13,6 +13,8 @@ from collections import OrderedDict
 import numpy as np
 from scipy.stats import mode
 
+import time
+
 # Returns the substring between 2 substrings within a string
 def string_between(Str, substr1, substr2):
     Str = Str[Str.find(substr1)+len(substr1):]
@@ -104,8 +106,8 @@ def find_time_delimeter(step, filename):
 
 def get_num_data_cols(ltxt, filename, num_title_lines, lines_in_step):
    """
-   Will get the number of columns in the xyz file that contain data. This isn't a foolproof method
-   so if there are odd results maybe this is to blame.
+   Will get the number of columns in the xyz file that contain data. This isn't a guaranteed to
+   work as there isn't a standard for xyz files, if there are odd results this may be to blame.
    """
 #   numIter = len(ltxt) // lines_in_step
    dataTxt = [ltxt[num_title_lines + (i*lines_in_step) : (i+1)*lines_in_step]
@@ -216,6 +218,7 @@ def read_xyz_file(filename, num_data_cols=False,
     Outputs:
         * data, cols, timesteps = the data, metadata and timesteps respectively
     """
+    t0 = time.time()
     if type(min_step) != int or type(max_step) != int or type(stride) != int:
         if type(max_step) != str:
             print("min_step = ", min_step, " type = ", type(min_step))
@@ -237,6 +240,7 @@ def read_xyz_file(filename, num_data_cols=False,
     abs_max_step = int(len(ltxt)/lines_in_step)
     if max_step == 'all' or max_step > abs_max_step:
         max_step = abs_max_step
+    t2 = time.time()
     
     # The OrderedDict is actually faster than a list here.
     #   (time speedup at the expense of space)
@@ -249,16 +253,20 @@ def read_xyz_file(filename, num_data_cols=False,
     timesteps = [string_between(line, "time = ", time_delim)
                  for line in timelines]
     timesteps = np.array(timesteps)
-    timesteps = timesteps.astype(float)
+    timesteps = timesteps.astype(np.float32)
+    t3 = time.time()
     
     # Get the actual data
     step_data = np.array(ltxt)
     step_data = np.reshape(step_data, (len(all_steps), lines_in_step))
     step_data = step_data[:, num_title_lines:]
 
+    t4 = time.time()
     
     #This bit is the slowest atm and would benefit the most from optimisation
     step_data = np.apply_along_axis(splitter, 1, step_data)
+    
+    t5 = time.time()
     data = step_data[:, :, num_data_cols:].astype(float)
 
     # If there is only one column in the cols then don't create another list!
@@ -266,5 +274,21 @@ def read_xyz_file(filename, num_data_cols=False,
         cols = step_data[:, :, 0]
     else:
         cols = step_data[:, :, :num_data_cols]
+    tf = time.time() - t0
 
+
+    print "Setting up:    ", round(t2 - t0, 4), "  ", round(100.*(t2-t0)/tf, 0)
+    print "Get Timesteps: ", round(t3 - t2, 4), "  ", round(100.*(t3-t2)/tf, 0)
+    print "Get data1:     ", round(t4 - t3, 4), "  ", round(100.*(t4-t3)/tf, 0)
+    print "Get data2:     ", round(t5 - t4, 4), "  ", round(100.*(t5-t4)/tf, 0)
+    print "Finish:        ", round(tf-t5+t0, 4), "  ", round(100.*(tf-t5+t0)/tf, 0)
     return data, cols, timesteps
+
+
+filepath = "/scratch/mellis/regtestEhren_1ps_NOCOMM_1f150764365a5332b943dc86e550ba33d3b14cef/run-pos_1-1.xyz"
+t0 = time.time()
+d, c, t = read_xyz_file(filepath)
+ttotal = time.time() - t0
+
+print(ttotal)
+

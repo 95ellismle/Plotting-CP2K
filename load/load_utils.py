@@ -27,14 +27,16 @@ def find_rep_num_in_name(filename):
                      #'coeff_': r"f_\d*-\d*\.xyz",
                      'n-vel': r"-\d*-\d*\.xyz",
                      'n-frc': r"_\d*-\d*\.xyz",
-                     't_frc': r"_\d*\.xyz",
-                     'd_frc': r"_\d*\.xyz",
+                     'ad_mom': r"-\d*\.csv",
+                     'd_frc': r"-\d*\.csv",
                      "coeff_a": r"_\d*-\d*\.xyz",
-                     "QM-": r"-\d*\.xyz",
+                     "QM-": r"-\d*\.csv",
                      "QM_": r"-\d*\.xyz",
                      "sigma": r"-\d*\.list",
                      "d_ener": r"-\d*-\d*\.csv",
                      "n-K": r"-K-\d*.list",
+                     "n-NACV": r"V-\d+.csv",
+                     "n-alpha": r"n-alpha-\d*.list",
                      }
 
     regex_matches2 = {'n-pos': r"\d*-\d*\.",
@@ -44,14 +46,16 @@ def find_rep_num_in_name(filename):
                       #'coeff_': r"\d*-\d*\.",
                       'n-vel': r"\d*-\d*\.",
                       'n-frc': r"\d*-\d*\.",
-                      't_frc': r"\d*\.",
+                      'ad_mom': r"\d*\.",
                       'd_frc': r"\d*\.",
                       "coeff_a": r"\d*-\d*\.",
                       "QM-": r"\d*\.",
                       "QM_": r"\d*\.",
                       "sigma": r"\d*\.",
+                      "n-alpha": r"\d*\.",
                       "d_ener": r"\d*-\d*\.",
                       "n-K": r"\d*\.",
+                      "n-NACV": r"\d*\.",
                       }
     final_delim = {'n-pos': r"-",
                    'ham': r"-",
@@ -60,16 +64,18 @@ def find_rep_num_in_name(filename):
                    #'coeff_': r"-",
                    'n-vel': r"-",
                    'n-frc': r"-",
-                   't_frc': r".",
+                   'ad_mom': r".",
                    'd_frc': r".",
                    "coeff_a": r"-",
                    "QM-": r".",
                    "QM_": r".",
                    "sigma": r".",
+                   "n-alpha": r".",
                    "d_ener": r"-",
                    "n-K": r".",
+                   "n-NACV": r".",
                    }
-    if 'run-rlk-' in filename:
+    if 'run-rlk' in filename:
         return 1
 
     for lab in regex_matches:
@@ -173,6 +179,7 @@ def load_all_in_folder(folder, func, args=[], filename_must_not_contain=[],
                   all(k not in i for k in filename_must_not_contain)]
     # Error checking
     if not all_files1:
+        print(os.listdir(folder))
         mustntContMsg = ", ".join(filename_must_not_contain)
         msg = "\n\tSorry I can't find any files with the correct filenames!\n"
         msg += "\n\n\t\tmust_contain = %s" % (", ".join(filename_must_contain))

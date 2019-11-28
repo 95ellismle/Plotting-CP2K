@@ -12,6 +12,7 @@ from multiprocessing import Pool
 import matplotlib.pyplot as plt
 import gc
 import numpy as np
+import re
 
 from IO import Folders as fold
 from PLOT import Plot
@@ -20,16 +21,15 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              #"/scratch/mellis/flavoured-cptk/200Rep_2molRenorm",
               "/scratch/mellis/flavoured-cptk/200Rep_2molTully",
-              #"/scratch/mellis/flavoured-cptk/LongQM",
-              #"/scratch/mellis/flavoured-cptk/NormCons/Ehren",
-              #"/scratch/mellis/flavoured-cptk/NormCons/CTMQC",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/TestCP2KCTMQC",
+              #"/scratch/mellis/TestCP2KImplemetation/NoSmoothing/Simulation_1",
               "",
              ]
              
-plotting_parameters = ["|C|^2", "norm", "ener_cons"]
-replicas = 'all' 
+plotting_parameters = ["|C|^2"]
+replicas = 'all'
 plot = True
 min_time = 0
 max_time = 'all'
@@ -40,14 +40,14 @@ for rootfolder in rootFolder:
    for dpath, _, files in os.walk(rootfolder):
        if os.path.isdir(dpath):
          possFolder = os.path.abspath(dpath)
-         if 'run.inp' in files:
+         if ('run.inp' in files and any([bool(re.findall("run-.*[0-9]-[0-9]\..+", f)) for f in files])):
             folders.append(possFolder)
             continue
 
 if not folders:
    print("\t\t#####################")
-   print("\nSorry I can't find any folders to plot!")
-   print("Make sure the run.inp file is in the required folder")
+   print("\nSorry I can't find any folders with the required files to plot!")
+   print("Make sure the run.inp file is in the required folder and some data files!")
 
 
 def do_1_folder(folder, plotting_parameters, replicas, plot,
@@ -72,6 +72,7 @@ for f in folders:
                     maxTime=max_time
                     )
     all_p.append(p)
+    plt.show()
     #allStats.append({
     #  'ener_cons': np.mean(p.ener_drift_per_rep['Total']),
     #  'norm': p.norm_drift,

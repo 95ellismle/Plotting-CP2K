@@ -65,10 +65,10 @@ class Qlk_t(object):
 
             # Setting initial default values
             Qlk_t.X, Qlk_t.Y, Qlk_t.Z, Qlk_t.Mag = [False, False, False, True]
-            Qlk_t._show_all, Qlk_t._show_avg = True, False
+            Qlk_t._show_all, Qlk_t._show_avg = True, True
 
             # Plotting
-            Qlk_t._plot_avg_Qlk_t(self)
+            #Qlk_t._plot_avg_Qlk_t(self)
             Qlk_t._plot_all(self)
 
 #            # Connect checkboxes to plot control
@@ -180,31 +180,40 @@ class Qlk_t(object):
         Will plot the Qlk vs time for the average replica
         """
         ax = Qlk_t.plot_ax
-        Qlk_filename = "avg_Qlk"
-        Qlk_data = self.avg_Qlk_data[Qlk_filename]
-        Qlk_timesteps = Qlk_data[1]
-        Qlk_data = Qlk_data[0]
 
         Qlk_t.Xlines = []
         Qlk_t.Ylines = []
         Qlk_t.Zlines = []
         Qlk_t.Maglines = []
 
+        Qlk_timesteps = self.avg_Qlk_data['time']  # grab timesteps from qlk_data list
+
         for iatom in self.atoms_to_plot:
-            QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                        'lk': (1, 2),
-                                                        'cart_dim': 1})
-            QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                        'lk': (1, 2),
-                                                        'cart_dim': 2})
-            QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                        'lk': (1, 2),
-                                                        'cart_dim': 3})
-            QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
+            mask = self.avg_Qlk_data['v'] == iatom
+            mask = mask & (self.avg_Qlk_data['l'] == 1)
+            mask = mask & (self.avg_Qlk_data['k'] == 2)
+            
+            QMX = self.avg_Qlk_data[mask]['Qlk(x)']
+            if all(j not in self.avg_Qlk_data.columns for j in ('Qlk(y)','Qlk(z)')):
+               moreThan1Dim = False
+               QM_mag = QMX
+            else:
+               moreThan1Dim = True
+               QM_mag = QMX**2
+
+            if 'Qlk(y)' in self.avg_Qlk_data.columns:
+               QMY = self.avg_Qlk_data[mask]['Qlk(y)']
+               QM_mag += QMY**2
+            if 'Qlk(z)' in self.avg_Qlk_data.columns:
+               QMZ = self.avg_Qlk_data[mask]['Qlk(z)']
+               QM_mag += QMZ**2
+   
+            if moreThan1Dim:
+               QM_mag = np.sqrt(QM_mag)
 
             # Plot Mag
             ln, = ax.plot(Qlk_timesteps,
-                          QM_mag[:, 0],  # /np.max(QM_mag[:, 0]),
+                          QM_mag,  # /np.max(QM_mag[:, 0]),
                           '--',
                           color=self.colors[iatom-1])
             ln.set_visible(Qlk_t.Mag and Qlk_t._show_avg)
@@ -218,33 +227,52 @@ class Qlk_t(object):
         line in a 2D list called
         """
         Qlk_t.all_rep_lines = [[] for i in range(self.num_active_atoms)]
+        
+        ncol = int(len(self.atoms_to_plot) / 4)
 
-        ax = self.axes['Qlk_t'][1]
+        legend_markers = []
+        ax = Qlk_t.plot_ax
         for Qlk_filename in self.all_Qlk_data:
             Qlk_data = self.all_Qlk_data[Qlk_filename]  # list of all qlk_data
-            Qlk_timesteps = Qlk_data[1]  # grab timesteps from qlk_data list
-            Qlk_data = Qlk_data[0]  # grab actual data from qlk_data list
 
             for iatom in self.atoms_to_plot:
-                QMX = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                            'lk': (1, 2),
-                                                            'cart_dim': 1})
-                QMY = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                            'lk': (1, 2),
-                                                            'cart_dim': 2})
-                QMZ = load_QM.find_in_Qlk(Qlk_data, params={'at_num': iatom,
-                                                            'lk': (1, 2),
-                                                            'cart_dim': 3})
-                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
+               mask = Qlk_data['v'] == iatom
+               mask = mask & (Qlk_data['l'] == 1)
+               mask = mask & (Qlk_data['k'] == 2)
+               data = Qlk_data[mask]
+               Qlk_timesteps = data['time']
 
-                ln, = ax.plot(Qlk_timesteps,
-                              QM_mag[:, 0],  # /np.max(QM_mag[:, 0]),
-                              '-',
-                              color=self.colors[iatom-1],
-                              alpha=self.alpha,
-                              lw=0.7)
-                Qlk_t.all_rep_lines[iatom-1].append(ln)
-            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
+               QMX = data['Qlk(x)']
+               if all(j not in data.columns for j in ('Qlk(y)','Qlk(z)')):
+                  moreThan1Dim = False
+                  QM_mag = QMX
+               else:
+                  moreThan1Dim = True
+                  QM_mag = QMX**2
+    
+               if 'Qlk(y)' in data.columns:
+                  QMY = data[mask]['Qlk(y)']
+                  QM_mag += QMY**2
+               if 'Qlk(z)' in data.columns:
+                  QMZ = data[mask]['Qlk(z)']
+                  QM_mag += QMZ**2
+       
+               if moreThan1Dim:
+                  QM_mag = np.sqrt(QM_mag)
+
+               ln, = ax.plot(Qlk_timesteps,
+                             QM_mag,  # /np.max(QM_mag[:, 0]),
+                             '-',
+                             color=self.colors[iatom-1],
+                             alpha=self.alpha,
+                             lw=0.7)
+               legend_markers.append(plt.Line2D([0, 0], [0, 0], color=self.colors[iatom-1],
+                                     alpha=self.alpha, lw=4))
+         
+        if len(self.atoms_to_plot) < 20:
+           ax.legend(legend_markers, ['atom %i' % i for i in self.atoms_to_plot], ncol=ncol,
+                     fontsize=18)
+        ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
 
         # Initialise the replica lines
         for atlist in Qlk_t.all_rep_lines:
@@ -378,31 +406,10 @@ class Alpha(object):
         Alpha.all_rep_lines = [[] for i in range(self.num_active_atoms)]
 
         ax = Alpha.plot_ax
-        for key in self.all_alpha:
-            alpha = self.all_alpha[key]  # list of all qlk_data
-            timesteps = alpha[1]  # grab timesteps from qlk_data list
-            alpha = alpha[0]  # grab actual data from qlk_data list
+        for i, f in enumerate(self.all_alpha):
+            data, time = self.all_alpha[f]
+            ax.plot(time, data, alpha=self.alpha, color=self.colors[i])
 
-            for iatom in self.atoms_to_plot:
-                QMX = load_QM.find_in_Qlk(alpha, params={'at_num': iatom,
-                                                         'lk': (1, 2),
-                                                         'cart_dim': 1})
-                QMY = load_QM.find_in_Qlk(alpha, params={'at_num': iatom,
-                                                         'lk': (1, 2),
-                                                         'cart_dim': 2})
-                QMZ = load_QM.find_in_Qlk(alpha, params={'at_num': iatom,
-                                                         'lk': (1, 2),
-                                                         'cart_dim': 3})
-                QM_mag = np.sqrt(QMX**2 + QMY**2 + QMZ**2)
-
-                ln, = ax.plot(timesteps,
-                              QM_mag[:, 0],
-                              '-',
-                              color=self.colors[iatom-1],
-                              alpha=self.alpha,
-                              lw=0.7)
-                Alpha.all_rep_lines[iatom-1].append(ln)
-            ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
 
         # Initialise the replica lines
         for atlist in Alpha.all_rep_lines:
@@ -432,78 +439,43 @@ class Rlk(object):
             # Plotting
             Rlk._plot(self)
 
-            # Connect checkboxes to plot control
-            if self._use_control:
-                Rlk.__set_control()
-
             Rlk.plot_ax.set_ylabel(r"$|Rlk_{12,\nu}^{I}|^2$ [$\frac{Ha \ s}{l}$]")
 #            Rlk.plot_ax.set_ylim([5, 1050])
 
-    @staticmethod
-    def _check_settings_Qlk_t(label):
-        if label == 'Rlk':
-            Rlk.Mag = not Rlk.Mag
-            for ln in Rlk.Maglines:
-                ln.set_visible(Rlk.Mag)
-        plt.draw()
 
-    # Will set the control panel for Qlk_t graph
-    @staticmethod
-    def __set_control():
-        Rlk.check_Qlk_t = CheckButtons(Rlk.widget_ax,
-                                       ['Rlk'],
-                                       [Rlk.Mag])
-        Rlk.check_Qlk_t.on_clicked(Rlk._check_settings_Qlk_t)
-
-    # Will plot the Quantum Momentum term
+    # Will plot the Rlk term
     @staticmethod
     def _plot(self):
         """
         Will plot the Rlk vs time for the average replica
         """
         ax = Rlk.plot_ax
-        Rlk_data = self.Rlk_data[0]
-        Rlk_timesteps = self.Rlk_data[1]
-
-        Rlk.Xlines = []
-        Rlk.Ylines = []
-        Rlk.Zlines = []
-        Rlk.Maglines = []
-
         for iatom in self.atoms_to_plot:
-            X = load_QM.find_in_Qlk(Rlk_data, params={'at_num': iatom,
-                                                      'lk': (1, 2),
-                                                      'cart_dim': 1})
-            Y = load_QM.find_in_Qlk(Rlk_data, params={'at_num': iatom,
-                                                      'lk': (1, 2),
-                                                      'cart_dim': 2})
-            Z = load_QM.find_in_Qlk(Rlk_data, params={'at_num': iatom,
-                                                      'lk': (1, 2),
-                                                      'cart_dim': 3})
-            mag = np.sqrt(X**2 + Y**2 + Z**2)
+            mask = self.Rlk_data['v'] == iatom
+            mask = mask & (self.Rlk_data['l'] == 1)
+            mask = mask & (self.Rlk_data['k'] == 2)
+            time = self.Rlk_data[mask]['time']
+            
+            RlkX = self.Rlk_data['Rlk(x)'][mask]
+            if all(j not in self.Rlk_data.columns for j in ('Rlk(y)','Rlk(z)')):
+               moreThan1Dim = False
+               Rlk_mag = RlkX
+            else:
+               moreThan1Dim = True
+               Rlk_mag = RlkX**2
+
+            if 'Rlk(y)' in self.Rlk_data.columns:
+               RlkY = self.Rlk_data[mask]['Rlk(y)']
+               Rlk_mag += RlkY**2
+            if 'Rlk(z)' in self.Rlk_data.columns:
+               RlkZ = self.Rlk_data[mask]['Rlk(z)']
+               Rlk_mag += RlkZ**2
+   
+            if moreThan1Dim:
+               Rlk_mag = np.sqrt(Rlk_mag)
 
             # Plot Mag
-            ln, = ax.plot(Rlk_timesteps,
-                          mag[:, 0],  # /np.max(mag[:, 0]),
-                          '-',
-                          color=self.colors[iatom-1],
-                          lw=1.5)
-            ln.set_visible(Rlk.Mag)
-            Rlk.Maglines.append(ln)
-
-
-
-
-
-
-
-
-
-
-
-
-
-
+            ln, = ax.plot(time, Rlk_mag, '--', color=self.colors[iatom-1])
 
 
 class QM_R(object):

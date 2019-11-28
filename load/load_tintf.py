@@ -10,25 +10,32 @@ from load import load_xyz as XYZ
 from load import load_utils as Utils
 
 #import numpy as np
+import pandas as pd
+import os
 
-# Reads 1 QM file
-def load_tintf(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
-    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
-                                              num_data_cols =3,
-                                              min_step=min_step,
-                                              max_step=max_step,
-                                              stride=stride,
-                                              ignore_steps=ignore_steps)
-    data = Utils.reshape_by_state(data, cols)
-    cols = cols[:, :, 0]
-    return data, cols, timesteps
+# Reads 1 ad_mom file
+def load_adMom(filepath,
+               min_step=0,
+               max_step='all',
+               stride=1,
+               ignore_steps=[]):
+
+    if not os.path.isfile(filepath):
+       print("Can't find filepath %s" % filepath)
+       raise SystemExit("BREAK")
+
+    # Read the data
+    df = pd.read_csv(filepath)
+
+    return df
+
 
 # Reads all the Qlk files from a given folder
-def load_all_tintf_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
+def load_all_adMom_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
     return Utils.load_all_in_folder(folder=folder,
-                                    func=load_tintf,
+                                    func=load_adMom,
                                     args=[min_step, max_step, stride, ignore_steps],
-                                    filename_must_contain=['t_int_frc','xyz'],
+                                    filename_must_contain=['ad_mom','csv'],
                                     filename_must_not_contain=[],
                                     reps=reps)
 #

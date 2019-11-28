@@ -7,7 +7,7 @@ Created on Wed Oct  3 14:35:47 2018
 """
 from matplotlib.widgets import CheckButtons
 import matplotlib.pyplot as plt
-# import numpy as np
+import numpy as np
 
 
 class Plot_Coeff(object):
@@ -28,7 +28,7 @@ class Plot_Coeff(object):
             self.coeff_plot_axes[self.di_or_ad] = axes[1]
 
             self.all_reps_coeff = True
-            self.avg_reps_coeff = False
+            self.avg_reps_coeff = True
 
             if self._use_control:
                 self._set_coeff_control()
@@ -154,3 +154,96 @@ class Plot_Coeff(object):
             for line in self.avg_coeff_lines['|u|^2']:
                 line.set_visible(not line.get_visible())
         plt.draw()     
+
+
+class Plot_Deco(object):
+    """
+    Will plot the coherence data.
+
+    Inputs:
+        axes  => a list of the axes to plot on. The first item should be the
+                 widget axis the second will be the axis to plot the data.
+    """
+    def __init__(self, axes):
+        if self.plot:
+            Plot_Deco.widg_axes = axes[0]
+            Plot_Deco.plot_axes = axes[1]
+
+            Plot_Deco.all_reps_on = True
+            Plot_Deco.avg_reps_on = True
+
+            if self._use_control:
+                pass
+                #Plot_Deco._set_coeff_control()
+            #Plot_Deco._set_coeff_data()
+
+            Plot_Deco._plot_all_reps(self)
+            Plot_Deco._plot_avg_reps(self)
+
+            
+            # Fix the y limits on axis
+            ylims = list(Plot_Deco.plot_axes.get_ylim())
+            if (ylims[0] > 0):
+                ylims[0] = 0
+            if (ylims[1] < 0.25):
+                ylims[1] = 0.25
+            Plot_Deco.plot_axes.set_ylim(ylims)
+            
+            Plot_Deco.plot_axes.set_ylabel("Coherence")
+
+    @staticmethod
+    def _plot_all_reps(self):
+        """
+        Will plot the graph showing all the replicas' coherences
+        """
+        Plot_Deco.all_coherence_lines = []
+        for filename in self.all_Acoeff_data:
+            coeffs, cols, timesteps, pops = self.all_Acoeff_data[filename]
+            for i in range(len(pops[0])):  # loop over n state
+                Plot_Deco.all_coherence_lines.append(
+                                  Plot_Deco.plot_axes.plot(
+                                             timesteps,
+                                             pops[:, 0] * pops[:, 1],
+                                             color='k',  # self.colors[i],
+                                             alpha=self.alpha*0.8,
+                                             lw=0.7
+                                             )[0]
+                                  )
+        # Set initial visibility
+        for line in Plot_Deco.all_coherence_lines:
+            line.set_visible(self.all_reps_on)
+
+    @staticmethod
+    def _plot_avg_reps(self):
+        """
+        Will plot the graph showing the average replica's coherence
+        """
+        Plot_Deco.avg_coherence_lines = []
+        
+        # Get the average coherence
+        keys = list(self.all_Acoeff_data)
+        coherence = np.zeros(len(self.all_Acoeff_data[keys[0]][3]))
+        for count, filename in enumerate(keys):
+            _, _, timesteps, pops = self.all_Acoeff_data[filename]
+            COH = pops[:, 0] * pops[:, 1]
+
+            min_len = min([len(COH), len(coherence)])
+            coherence = coherence[:min_len]
+            COH = COH[:min_len]
+            timesteps = timesteps[:min_len]
+            coherence += COH
+        coherence /= count + 1
+
+        # Plot the coherence
+        Plot_Deco.avg_coherence_lines.append(
+                          Plot_Deco.plot_axes.plot(
+                                     timesteps,
+                                     coherence,
+                                     '.',
+                                     color='k'
+                                     )[0]
+                          )
+        # Set initial visibility
+        for line in Plot_Deco.avg_coherence_lines:
+            line.set_visible(self.all_reps_on)
+

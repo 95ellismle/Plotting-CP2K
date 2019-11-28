@@ -26,6 +26,14 @@ class Plot_Norm(object):
     def __init__(self, axes):
         self.plot_info['Norm'] = []
         if self.plot:
+            if '|c|^2' in self.load_params:
+               Plot_Norm.coeff_data = self.all_Acoeff_data
+               Plot_Norm.avg_coeff_data = self.all_Acoeff_data_avg
+               label = "C"
+            else:
+               Plot_Norm.coeff_data = self.all_Dcoeff_data
+               Plot_Norm.avg_coeff_data = self.all_Dcoeff_data_avg
+               label = "u"
             self.widget_ax = axes[0]
             self.plot_ax = axes[1]
 
@@ -42,7 +50,7 @@ class Plot_Norm(object):
             if self._use_control:
                 self._set_norm_control()
 
-            self.plot_ax.set_ylabel(r"$\sum_k |u_k^{I}|^2$")
+            self.plot_ax.set_ylabel(r"$\sum_k |%s_k^{I}|^2$" % label)
 
         Plot_Norm._get_all_rep_norms(self)
         Plot_Norm.put_drift_annotation(self)
@@ -73,8 +81,8 @@ class Plot_Norm(object):
         """
 
         self.all_rep_lines_norm = []
-        for Dfilename in self.all_Dcoeff_data:
-            coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
+        for Dfilename in Plot_Norm.coeff_data:
+            coeffs, cols, timesteps, pops = Plot_Norm.coeff_data[Dfilename]
             norms = np.sum(pops, axis=1)
             self.all_rep_lines_norm.append(self.plot_ax.plot(timesteps,
                                                              norms,
@@ -92,17 +100,23 @@ class Plot_Norm(object):
         """
         Will get all the norm drifts from each replica.
         """
+        unit_conv = 1 
+        if self.units == "au":
+             unit_conv = 0.02418884
+
         self.norm_drift_per_rep = []
-        for Dfilename in self.all_Dcoeff_data:
-            coeffs, cols, timesteps, pops = self.all_Dcoeff_data[Dfilename]
+        for Dfilename in Plot_Norm.coeff_data:
+            coeffs, cols, timesteps, pops = Plot_Norm.coeff_data[Dfilename]
             norms = np.sum(pops, axis=1)
-            fit = np.polyfit(timesteps, norms, 1)
+            # Convert the AU to fs (if required)
+            fit = np.polyfit(timesteps * unit_conv, norms, 1)
             errs = [1e-10]+[1e-6]*(len(timesteps)-1)
             fit2, pcov = curve_fit(linear_fit,
                                    timesteps,
                                    norms,
                                    p0=[fit[0], 1],
                                    sigma=errs)
+            # Convert per fs to per ps
             self.norm_drift_per_rep.append(fit2[0]*1000)
 
         self.norm_drift_per_rep = np.array(self.norm_drift_per_rep)
@@ -118,12 +132,16 @@ class Plot_Norm(object):
         """
         Will put an annotation of the drift value on the norm graph
         """
-        coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
+        unit_conv = 1 
+        if self.units == "au":
+             unit_conv = 0.02418884
+
+        coeffs, cols, timesteps, pops = Plot_Norm.avg_coeff_data
         norms = np.sum(pops, axis=1)
-        fit = np.polyfit(timesteps, norms, 1)
+        fit = np.polyfit(timesteps * unit_conv, norms, 1)
         errs = [1e-10]+[1e-6]*(len(timesteps)-1)
         fit2, pcov = curve_fit(linear_fit,
-                               timesteps,
+                               timesteps * unit_conv,
                                norms,
                                p0=[fit[0], 1],
                                sigma=errs)
@@ -132,8 +150,8 @@ class Plot_Norm(object):
         if self.plot:
             # y1 = np.polyval(fit2, timesteps)
             # self.plot_ax.plot(timesteps, y1, 'k--', lw=0.5)
-            all_norms = [np.sum(self.all_Dcoeff_data[i][3], axis=1)
-                         for i in self.all_Dcoeff_data]
+            all_norms = [np.sum(Plot_Norm.coeff_data[i][3], axis=1)
+                         for i in Plot_Norm.coeff_data]
             min_len = np.min([len(i) for i in all_norms])
             all_norms = [i[:min_len] for i in all_norms]
             timesteps = timesteps[:min_len]
@@ -155,7 +173,7 @@ class Plot_Norm(object):
         Will plot the normal of the diabatic coefficients. Will sum the
         populations and plot on the norm axis.
         """
-        coeffs, cols, timesteps, pops = self.all_Dcoeff_data_avg
+        coeffs, cols, timesteps, pops = Plot_Norm.avg_coeff_data
         norms = np.sum(pops, axis=1)
         self.avg_line_norm, = self.plot_ax.plot(timesteps,
                                                 norms,

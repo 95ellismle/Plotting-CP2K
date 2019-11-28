@@ -197,22 +197,15 @@ def avg_Qlk_data(all_Qlk_data):
     Outputs:
         The averaged Qlk_data in the same format as the inputted dictionary.
     """
-    minLen = min([len(all_Qlk_data[rep][0][0]) for rep in all_Qlk_data])
+    minLen = min([len(all_Qlk_data[rep]) for rep in all_Qlk_data])
+    keys = list(all_Qlk_data.keys())
+    all_Qlk_data = {i: all_Qlk_data[i][:minLen] for i in all_Qlk_data}
+    avg_Qlk_data = all_Qlk_data[keys[0]]
+    if len(all_Qlk_data) > 1:
+       for i in keys[1:]:
+           avg_Qlk_data += all_Qlk_data[i]
+       avg_Qlk_data /= len(all_Qlk_data)
 
-    avg_Qlk_data = np.mean([all_Qlk_data[rep][0][0][:minLen]
-                            for rep in all_Qlk_data], axis=0)
-    avg_Qlk_timesteps = np.mean([all_Qlk_data[rep][1][:minLen]
-                                 for rep in all_Qlk_data], axis=0)
-
-    avg_Qlk_data = np.array(avg_Qlk_data)
-    avg_Qlk_timesteps = np.array(avg_Qlk_timesteps)
-
-    Qkeys = list(all_Qlk_data.keys())
-    avg_Qlk_data = {'avg_Qlk': [
-                                [avg_Qlk_data,
-                                 all_Qlk_data[Qkeys[0]][0][1]],
-                                avg_Qlk_timesteps
-                               ]}
     return avg_Qlk_data
 
 
@@ -437,8 +430,10 @@ def get_coup_data(H_data, key):
     return site_ener, couplings, avg_couplings, timesteps
 
 
+
+
 # Will load the Adiab coeff data or transform it from the diabatic coefficents.
-def load_Acoeff_data(folder, reps, all_ham_data, max_step='all', min_step=0, stride=1):
+def load_Acoeff_data(folder, reps, all_ham_data=False, max_step='all', min_step=0, stride=1):
     all_coeff_data = load_coeff.load_all_coeff_in_folder(folder, 
                                                          filename_must_contain=['ad','xyz','coeff'], 
                                                          reps=reps,
@@ -447,6 +442,12 @@ def load_Acoeff_data(folder, reps, all_ham_data, max_step='all', min_step=0, str
                                                          stride=stride)
     # Transform Diabatic
     if not all_coeff_data:
+        if all_ham_data is False:
+            msg = "Sorry I can't find the adiabatic coefficients files.\n\n"
+            msg += "If you would like to use the adiabatic coefficients then you will need to load"
+            msg += " the diab coeffs and hamiltonian and transform them with python.\n\n"
+            print(msg)
+            raise SystemExit(msg)
         all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(folder, 
                                                               filename_must_contain=['coeff','xyz'], 
                                                               filename_must_not_contain=['ad'], 
@@ -456,7 +457,7 @@ def load_Acoeff_data(folder, reps, all_ham_data, max_step='all', min_step=0, str
                                                               stride=stride)
         
         all_Acoeff_data = trans_all_diab_to_adiab(all_Dcoeff_data=all_Dcoeff_data,
-                                                             all_ham_data = all_ham_data, 
+                                                             all_ham_data = all_ham_data,
                                                              reps=reps)
         if all_Acoeff_data:
             print("Sucessfully transformed the diab coefficients!")

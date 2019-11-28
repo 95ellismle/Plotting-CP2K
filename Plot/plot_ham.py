@@ -160,3 +160,75 @@ class Coupling(object):
         avg_coups = avg_Hs[:, 0, 1]
         ln, = self.coup_plot_ax.plot(timesteps, avg_coups)
         self.avg_line_coup = ln
+
+class H(object):
+    """
+    Will plot the couplings in the hamiltonian
+
+    Inputs:
+        * axes => axes to plot upon. First in list is the control panel axis.
+                  Second is the plotting axis [list of plt.axes]
+    """
+    def __init__(self, axes):
+        if self.plot:
+            H.widg_ax, H.plot_ax = axes
+
+            # Setting initial default values
+            H.avg_reps = True
+            H.all_reps = False
+
+            # Plotting
+            H.all_rep_lines = []
+            H._plot_all_rep(self)
+            #self._plot_avg_coup()
+
+            ## Connect checkboxes to plot control
+            #if self._use_control:
+            #    self._set_coup_control()
+
+            H.plot_ax.set_ylabel(r"$H$ [meV]")
+
+    def _check_settings(self, label):
+        if label == 'all replicas':  # Pressed the all replicas button
+            for line in self.all_rep_lines_H:
+                line.set_visible(not line.get_visible())
+
+        elif label == 'average':
+            self.avg_line_H.set_visible(
+                                           not self.avg_line_H.get_visible()
+                                          )
+        plt.draw()
+
+    # Will set the control panel for H graph
+    def _set_control(self):
+        self.check_H = CheckButtons(self.H_widg_ax,
+                                       ('all replicas', 'average'),
+                                       (self.all_reps_H,
+                                        self.avg_reps_H))
+
+        self.check_H.on_clicked(self._check_settings_H)
+
+    @staticmethod
+    def _plot_all_rep(self):
+        """
+        Will plot the Hling for each replica and save the lines in
+        all_rep_lines_H.
+        """
+        for f in self.all_ham_data:
+            data, _, time = self.all_ham_data[f]
+            count = 0
+            for i in range(data.shape[1]):
+               for j in range(data.shape[1]):
+                  H.plot_ax.plot(time, data[:, i, j], color=self.colors[count],
+                                 alpha=self.alpha, lw=1)
+                  count += 1
+
+
+    def _plot_avg(self):
+        """
+        Will plot the off-diagonal hamiltonian elements average over all reps.
+        """
+        avg_Hs, _, timesteps = self.avg_ham_data['avg_ham']
+        avg_Hs = avg_Hs[:, 0, 1]
+        ln, = self.H_plot_ax.plot(timesteps, avg_Hs)
+        self.avg_line_H = ln

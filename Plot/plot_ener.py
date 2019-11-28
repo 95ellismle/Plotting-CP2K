@@ -66,8 +66,8 @@ class Ad_State(object):
                                            color=self.colors[i])
                 self.AS_all_lines.append(ln)
             Ad_State.plot_ax.plot(ad_ener_data['Time'],
-                                 ad_ener_data['Pot'], 'k--',
-                                 lw = 0.5, alpha=self.alpha)
+                                  ad_ener_data['Pot'], 'k--',
+                                  lw = 0.5, alpha=self.alpha)
 
         # Set initial visibility
         for line in self.AS_all_lines:

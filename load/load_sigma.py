@@ -36,10 +36,10 @@ def load_sigma(filename, min_step=0, max_step='all', stride=1, ignore_steps=[]):
     widths = np.array([ltxt[i].split(' ') for i in range(1,len(ltxt), 2)])
     widths = np.array([[float(j.strip(',')) for j in i if j] for i in widths])
     
-    return widths, timesteps
+    return [widths, timesteps]
     
 
-def load_all_sigma_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
+def load_all_list_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], filename_must_not_contain=[], filename_must_contain=[], reps='all'):
     """
     Will load all the sigma files in a specified folder. This will output an
     Ordered Dictionary with filenames as keys and data as values.
@@ -55,7 +55,6 @@ def load_all_sigma_in_folder(folder, min_step=0, max_step='all', stride=1, ignor
         * reps         = which replicas to get data for 
         
     """
-    filename_must_contain.append("sigma")
     return Utils.load_all_in_folder(folder=folder, 
                                     func=load_sigma, 
                                     args=[min_step, max_step, stride, ignore_steps], 

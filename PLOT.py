@@ -17,11 +17,13 @@ from load import load_tintf
 from load import load_frc
 from load import load_sigma
 from load import load_K
+from load import load_dlk
 
 from Plot import plot_utils
 from Plot import plot_coeff
 from Plot import plot_norm
 from Plot import plot_QM
+from Plot import plot_dlk
 from Plot import plot_ham
 from Plot import plot_ener
 from Plot import plot_frc
@@ -29,6 +31,7 @@ from Plot import plot_tintf
 from Plot import plot_pos
 from Plot import plot_K
 from Plot import plot_rabi
+from Plot import plot_sig
 
 # External Modules
 import matplotlib.pyplot as plt
@@ -51,7 +54,7 @@ import difflib
 dependencies = {'qm_r':         ['pos', 'qm'],
                 'pos':          ['pos'],
                 'com':          ['pos'],
-                'pos_stddev':    ['pos'],
+                'pos_stddev':   ['pos'],
                 '|c|^2':        ['|c|^2'],
                 'qm_t':         ['qm'],
                 'rlk':          ['rlk'],
@@ -59,21 +62,27 @@ dependencies = {'qm_r':         ['pos', 'qm'],
                 'coup':         ['ham'],
                 '|u|^2':        ['|u|^2'],
                 'energy_cons':  ['tot_ener'],
-                'energy_drift':  ['tot_ener'],
-                'adiab_state':  ['ad_ener'],
+                'energy_drift': ['tot_ener'],
                 'ylk/sum(ylk)': ['fl_fk', '|c|^2'],
                 'fl_fk':        ['fl_fk'],
-                'norm':         ['|u|^2'],
+                'norm':         ['|u|^2$OR$|C|^2'],
                 'tot_force':    ['force'],
-                'alpha':        ['qm', 'rlk'],
+                'alpha':        ['alpha'],
                 'sum(ylk)':     ['fl_fk', '|c|^2'],
                 'k':            ['k'],
                 'pos3d':        ['pos'],
                 'fl':           ['fl_fk'],
                 'fk':           ['fl_fk'],
+                'coherence':    ['|c|^2'],
                 "qm_force":     ['qm_frc'], 
-                "ad_force":     ['ad_frc'],
-                "rabi":         ['ham']
+                "rabi":         ['ham'],
+                "dlk":          ['dlk'],
+                "vel":          ['vel'],
+                "sigma":        ['sigma'],
+                "ad_mom":       ['fl_fk'],
+                "ad_frc":       ['ad_frc'],
+                'ad_ener':      ['ad_ener'],
+                "h":            [],
                 }
 
 class Params(object):
@@ -107,7 +116,7 @@ class Params(object):
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
         self.dt = self.run_inp_params['NUCLEAR_TIMESTEP']
-        self.atoms_to_plot = 'all'
+        self.atoms_to_plot = [1]
 
         self.worst_reps = {}
         self.best_reps = {}
@@ -180,9 +189,9 @@ max_time, you can use all, or specify a maximum time in fs.""")
         params_convert = {'|u|^2': 'Diab Coeffs',
                           '|c|^2': 'Adiab Coeffs',
                           'qm_t': "Quantum Momentum",
-                          "adiab_state": "Adiabatic States",
+                          "ad_ener": "Adiabatic State Energy",
                           "norm": "Norm",
-                          'site_ener': 'site energy differences',
+                          'site_ener': 'Site Energy Differences',
                           "qm_r": "Quantum Momentum",
                           "fl_fk": "history force state difference",
                           "ylk/sum(ylk)": "Rlk denominator",
@@ -240,12 +249,16 @@ max_time, you can use all, or specify a maximum time in fs.""")
                                       for i in self.plot_params])
         self.plot_params = list(self.plot_params.unique())
 
-        for short_name in ['adiab_state', 'coup']:
+        for short_name in ['ad_ener', 'coup']:
             self.plot_params = [short_name if short_name in i else i
                                 for i in self.plot_params]
 
         allPossParams = np.array(list(dependencies.keys()))
         for iprm, param in enumerate(self.plot_params):
+            quickCheck = [i for i in allPossParams if i.lower() == param.lower()]
+            if len(quickCheck):
+               self.plot_params[iprm] = quickCheck[0]
+               continue
             possParams = [difflib.SequenceMatcher(None,
                                                  param,
                                                  paramReal).ratio()
@@ -285,7 +298,7 @@ class LoadData(Params):
                             - 'norm'
                             - '|C|^2'
                             - '|u|^2'
-                            - 'adiab_state'
+                            - 'ad_ener'
                             - 'qm'
                             - 'site_ener'
                             - 'fk_fl' or 'fl_fk'
@@ -312,9 +325,12 @@ class LoadData(Params):
         self.load_all_ad_coeffs()
         self.load_ad_ener()
         self.load_rlk()
+        self.load_alpha()
         self.load_qm()
+        self.load_dlk()
         self.load_pos()
-        self.load_hist_f()
+        self.load_vel()
+        self.load_adiab_mom()
         self.load_tot_ener()
         self.load_force()
         self.load_sigmas()
@@ -322,7 +338,6 @@ class LoadData(Params):
         self.load_qm_frc()
         self.load_ad_frc()
 
-        self.calc_alpha()
         self._get_transparency()
 
         if self.avg_on:
@@ -337,9 +352,18 @@ class LoadData(Params):
         , and norm are requested then it makes no sense to load |u|^2 twice...
         """
         self.load_params = []
+        doAtEnd = []
         for i in self.plot_params:
             for j in dependencies[i.lower()]:
+                if '$OR$' in j: doAtEnd.append(j); continue
                 self.load_params.append(j)
+
+        for i in doAtEnd:
+            newDep = i.split("$OR$")
+            inDepAlready = [j.lower() in self.load_params for j in newDep]
+            if any(inDepAlready): continue
+            else: self.load_params.append(newDep[0])
+
         self.load_params = list(set(self.load_params))
 
         # Print some feedback
@@ -351,40 +375,41 @@ class LoadData(Params):
         Will load the hamiltonian (should always use load_all_ham_data instead
         of this).
         """
-        self.load_timings['H'] = time.time()
-        self.all_ham_data = load_ham.load_all_ham_in_folder(
-                                                       self.folder,
-                                                       reps=self.reps,
-                                                       max_step=max_step,
-                                                       min_step=self.min_time,
-                                                       stride=stride
-                                                           )
-        if self.units == 'au':
-           for fname in self.all_ham_data:
-               self.all_ham_data[fname][0] /= 27000
-               self.all_ham_data[fname][2] /= 0.02418884254
-
-        allLens = [len(self.all_ham_data[i][0]) for i in self.all_ham_data]
-        if all(allLens):
-            # Average data
-            self.avg_ham_data = plot_utils.avg_H_data_dict(self.all_ham_data)
-            tmp = plot_utils.get_coup_data(self.avg_ham_data, 'avg_ham')
-            self.avg_site_ener, self.avg_couplings = tmp[0], tmp[1]
-            self.avg_avg_couplings, self.Stimesteps = tmp[2], tmp[3]
-            self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data,
-                                                           ham_key)
-                                  for ham_key in self.all_ham_data]
-            self.all_site_ener = [[i[0], i[3]] for i in self.all_site_ener]
-
-            self.load_timings['H'] = time.time() - self.load_timings['H']
-
-            # Find metadata
-            self.num_ham_steps = len(self.avg_ham_data['avg_ham'][0])
-            self.num_states = len(self.all_ham_data[
-                                  list(self.all_ham_data.keys())[0]][0][0])
-            self.num_reps = len(self.all_ham_data)
-            return True
-        return False
+        if 'ham' in self.load_params:
+           self.load_timings['H'] = time.time()
+           self.all_ham_data = load_ham.load_all_ham_in_folder(
+                                                          self.folder,
+                                                          reps=self.reps,
+                                                          max_step=max_step,
+                                                          min_step=self.min_time,
+                                                          stride=stride
+                                                              )
+           if self.units == 'au':
+              for fname in self.all_ham_data:
+                  self.all_ham_data[fname][0] /= 27000
+                  self.all_ham_data[fname][2] /= 0.02418884254
+   
+           allLens = [len(self.all_ham_data[i][0]) for i in self.all_ham_data]
+           if all(allLens):
+               # Average data
+               self.avg_ham_data = plot_utils.avg_H_data_dict(self.all_ham_data)
+               tmp = plot_utils.get_coup_data(self.avg_ham_data, 'avg_ham')
+               self.avg_site_ener, self.avg_couplings = tmp[0], tmp[1]
+               self.avg_avg_couplings, self.Stimesteps = tmp[2], tmp[3]
+               self.all_site_ener = [plot_utils.get_coup_data(self.all_ham_data,
+                                                              ham_key)
+                                     for ham_key in self.all_ham_data]
+               self.all_site_ener = [[i[0], i[3]] for i in self.all_site_ener]
+   
+               self.load_timings['H'] = time.time() - self.load_timings['H']
+   
+               # Find metadata
+               self.num_ham_steps = len(self.avg_ham_data['avg_ham'][0])
+               self.num_states = len(self.all_ham_data[
+                                     list(self.all_ham_data.keys())[0]][0][0])
+               self.num_reps = len(self.all_ham_data)
+               return True
+           return False
 
     def load_all_ham_data(self):
         """
@@ -488,10 +513,19 @@ class LoadData(Params):
             else:
                 max_step = int(self.max_step/print_step)
             self.load_timings['ad coeff'] = time.time()
-            self.all_Acoeff_data = plot_utils.load_Acoeff_data(
+            if 'all_ham_data' in self.__dict__.keys():
+               self.all_Acoeff_data = plot_utils.load_Acoeff_data(
                                                        self.folder,
                                                        self.reps,
                                                        self.all_ham_data,
+                                                       max_step=max_step,
+                                                       min_step=self.min_time,
+                                                       stride=self.quick_stride
+                                                              )
+            else:
+               self.all_Acoeff_data = plot_utils.load_Acoeff_data(
+                                                       self.folder,
+                                                       self.reps,
                                                        max_step=max_step,
                                                        min_step=self.min_time,
                                                        stride=self.quick_stride
@@ -582,18 +616,51 @@ class LoadData(Params):
             else:
                 max_step = self.max_step*self.dt
 
-            self.all_sigma = load_sigma.load_all_sigma_in_folder(
+            self.all_sigma = load_sigma.load_all_list_in_folder(
                                                        folder=self.folder,
                                                        reps=self.reps,
+                                                       filename_must_contain=['sigma'],
                                                        max_step=max_step,
                                                        min_step=self.min_time,
                                                        stride=self.quick_stride
                                                            )
+            if self.units == 'au':
+               for fname in self.all_sigma:
+                  self.all_sigma[fname][1] /= 0.02418884254
             self.load_timings['sigma'] = time.time() - \
                 self.load_timings['sigma']
 
             # Find metadata
             Keys = list(self.all_sigma.keys())
+            self.num_reps = len(Keys)
+
+    def load_alpha(self):
+        """
+        Will load the alpha data from a simulation
+        """
+        if 'alpha' in self.load_params:
+            self.load_timings['alpha'] = time.time()
+            if type(self.max_step) == str:
+                max_step = self.max_step
+            else:
+                max_step = self.max_step*self.dt
+
+            self.all_alpha = load_sigma.load_all_list_in_folder(
+                                                       folder=self.folder,
+                                                       reps=self.reps,
+                                                       filename_must_contain=['alpha'],
+                                                       max_step=max_step,
+                                                       min_step=self.min_time,
+                                                       stride=self.quick_stride
+                                                           )
+            if self.units == 'au':
+               for fname in self.all_alpha:
+                  self.all_alpha[fname][1] /= 0.02418884254
+            self.load_timings['alpha'] = time.time() - \
+                self.load_timings['alpha']
+
+            # Find metadata
+            Keys = list(self.all_alpha.keys())
             self.num_reps = len(Keys)
 
     def load_k(self):
@@ -621,37 +688,54 @@ class LoadData(Params):
             Keys = list(self.all_K.keys())
             self.num_reps = len(Keys)
 
-    def calc_alpha(self):
-        """
-        Will calculate the alpha variable (qlk = alpha - rlk)
-        """
-        if any('alpha' in param for param in self.plot_params):
-            self.load_timings['alpha'] = time.time()
-
-            self.all_alpha = {}
-            for i, qm_key in enumerate(self.all_Qlk_data):
-                qlk = self.all_Qlk_data[qm_key]
-                alpha = qlk[0][0] + self.Rlk_data[0][0]
-                alpha = ((alpha, qlk[0][1]), qlk[1])
-                self.all_alpha[i] = alpha
-
-            self.load_timings['alpha'] = time.time() - \
-                self.load_timings['alpha']
 
     def get_qm_type(self):
         """
         Will check if the quantum momentum type saved is the Qlk kind or QM_0.
         """
-        qmFiles = [i for i in os.listdir(self.folder) if 'run-QM' in i]
+        qmFiles = [i for i in os.listdir(self.folder) if 'run-QM' in i and 'frc' not in i]
         if 'QM-' in qmFiles[0]:
             self.QM_type = "Qlk"
         else:
             self.QM_type = "QM_0"
 
+    def load_dlk(self):
+        """
+        Will load the Quantum Momentum in the Qlk form
+        """
+        if 'dlk' in self.load_params:
+            self.load_timings['dlk'] = time.time()
+
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['NACV']['EACH']['MD'][0]
+            if type(self.max_step) == str:
+                max_step = self.max_step
+            else:
+                max_step = int(self.max_step/print_step)
+            self.all_dlk_data = load_dlk.load_all_dlk_in_folder(
+                                                            self.folder,
+                                                            reps=self.reps,
+                                                            max_step=max_step,
+                                                            min_step=self.min_time,
+                                                            stride=self.slow_stride
+                                                                       )
+            if self.units == 'au':
+               for fname in self.all_dlk_data:
+                  self.all_dlk_data[fname]['time'] /= 0.02418884254
+            self.load_timings['dlk'] = time.time() - self.load_timings['dlk']
+
+            # Find metadata
+            Keys = list(self.all_dlk_data.keys())
+            self.num_reps = len(Keys)
+            data = self.all_dlk_data[Keys[0]]
+            self.num_dlk_steps = max(data['time'])
+            self.num_active_atoms = max(data['v'])
+            self.num_pair_states = max(data['l'])
+        
     def load_qlk(self, max_step):
         """
         Will load the Quantum Momentum in the Qlk form
         """
+        self.load_timings['Qlk'] = time.time()
         self.all_Qlk_data = load_QM.load_all_Qlk_in_folder(
                                                         self.folder,
                                                         reps=self.reps,
@@ -659,13 +743,17 @@ class LoadData(Params):
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride
                                                                    )
+        if self.units == 'au':
+           for fname in self.all_Qlk_data:
+              self.all_Qlk_data[fname]['time'] /= 0.02418884254
         # Find metadata
         Keys = list(self.all_Qlk_data.keys())
         self.num_reps = len(Keys)
-        cols = self.all_Qlk_data[Keys[0]][1]
-        self.num_qm_steps = len(cols)
-        self.num_active_atoms = max(cols[0, :, 0])
-        self.num_states = max(cols[0, :, 2])
+        data = self.all_Qlk_data[Keys[0]]
+        self.num_qm_steps = max(data['time'])
+        self.num_active_atoms = max(data['v'])
+        self.num_pair_states = max(data['l'])
+        self.load_timings['Qlk'] = time.time() - self.load_timings['Qlk']
         
     def load_qm_0(self, max_step):
         """
@@ -722,13 +810,43 @@ class LoadData(Params):
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride
                                                                )
+            if self.units == 'au':
+                self.Rlk_data['time'] /= 0.02418884254
             self.load_timings['Rlk'] = time.time() - self.load_timings['Rlk']
 
             # Find metadata
-            cols = self.Rlk_data[0][1]
-            self.num_rlk_steps = len(cols)
-            self.num_active_atoms = max(cols[0, :, 0])
-            self.num_states = max(cols[0, :, 2])
+            self.num_rlk_steps = len(set(self.Rlk_data['time']))
+            self.num_active_atoms = len(set(self.Rlk_data['v']))
+            self.num_pair_states = len(set(self.Rlk_data['l']))
+
+    def load_vel(self, force_load=False):
+        """
+        Will load the velocities
+        """
+        if 'vel' in self.load_params or force_load:
+            self.load_timings['velocities'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['PRINT']['TRAJECTORY']['EACH']['MD'][0]
+            if type(self.max_step) == str:
+                max_step = self.max_step
+            else:
+                max_step = int(self.max_step/print_step)
+
+            self.all_vel_data = load_pos.load_all_vel_in_folder(
+                                                       self.folder,
+                                                       reps=self.reps,
+                                                       max_step=max_step,
+                                                       min_step=self.min_time,
+                                                       stride=self.slow_stride
+                                                               )
+            self.load_timings['velocities'] = time.time() - \
+                self.load_timings['velocities']
+
+            # Find metadata
+            Keys = list(self.all_vel_data.keys())
+            self.num_reps = len(Keys)
+            cols = self.all_vel_data[Keys[0]][1]
+            self.num_vel_steps = len(cols)
+            self.num_atoms = len(cols[0])
 
     def load_pos(self):
         """
@@ -749,6 +867,11 @@ class LoadData(Params):
                                                        min_step=self.min_time,
                                                        stride=self.slow_stride
                                                                )
+            if self.units == 'au':
+               for fname in self.all_pos_data:
+                  #self.all_pos_data[fname][0] /= 0.52917720859 
+                  self.all_pos_data[fname][2] /= 0.02418884254
+
             self.load_timings['positions'] = time.time() - \
                 self.load_timings['positions']
 
@@ -759,34 +882,36 @@ class LoadData(Params):
             self.num_pos_steps = len(cols)
             self.num_atoms = len(cols[0])
 
-    def load_hist_f(self):
+    def load_adiab_mom(self):
         """
         Will load all the adiab. mom. in a folder.
         """
         if 'fl_fk' in self.load_params:
             self.load_timings['adiab. mom.'] = time.time()
-            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['T_INT_FORCE']['EACH']['MD'][0]
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['AD_MOM']['EACH']['MD'][0]
 
             if type(self.max_step) == str:
                 max_step = self.max_step
             else:
                 max_step = int(self.max_step/print_step)
 
-            self.all_tintf_data = load_tintf.load_all_tintf_in_folder(
+            self.all_adMom_data = load_tintf.load_all_adMom_in_folder(
                                                         self.folder,
                                                         reps=self.reps,
                                                         max_step=max_step,
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride
                                                                      )
+            if self.units == 'au':
+               for f in self.all_adMom_data:
+                  self.all_adMom_data[f]['time'] /= 0.02418884254
             self.load_timings['adiab. mom.'] = time.time() - \
                 self.load_timings['adiab. mom.']
 
             # Find metadata
-            Keys = list(self.all_tintf_data.keys())
+            Keys = list(self.all_adMom_data.keys())
             self.num_reps = len(Keys)
-            tmp = self.all_tintf_data[Keys[0]][0]
-            self.num_histf_steps, self.num_states, self.num_active_atoms, _ = tmp.shape
+            self.num_histf_steps = len(self.all_adMom_data[Keys[0]]['time'])
 
     def load_force(self):
         """
@@ -807,6 +932,9 @@ class LoadData(Params):
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride,
                                                                )
+            if self.units == 'au':
+               for f in self.all_frc_data:
+                  self.all_frc_data[f][2] /= 0.02418884254
             self.load_timings['forces'] = time.time() - \
                 self.load_timings['forces']
 
@@ -837,6 +965,10 @@ class LoadData(Params):
                                                      min_step=self.min_time,
                                                      stride=self.slow_stride
                                                             )
+         if self.units == 'au':
+            for f in self.all_qm_frc_data:
+               self.all_qm_frc_data[f][2] /= 0.02418884254
+
          Keys = list(self.all_qm_frc_data.keys())
          self.num_reps = len(Keys)
          #self.num_active_atoms = len(self.all_qm_frc_data[Keys[0]][0][1]) 
@@ -865,10 +997,11 @@ class LoadData(Params):
                                                      min_step=self.min_time,
                                                      stride=self.slow_stride
                                                             )
+         if self.units:
+            for key in self.all_ad_frc_data:
+               self.all_ad_frc_data[key]['time'] /= 0.02418884254 
          Keys = list(self.all_ad_frc_data.keys())
          self.num_reps = len(Keys)
-         tmp = self.all_ad_frc_data[Keys[0]][0].shape
-         self.num_steps, self.num_states, self.num_atoms, _ = tmp
 
          self.load_timings['adiab_forces'] = time.time() - \
             self.load_timings['adiab_forces']
@@ -926,6 +1059,12 @@ class LoadData(Params):
             self.load_timings['Averaging: ']['com'] = time.time() - \
                 self.load_timings['Averaging: ']['com']
 
+        if 'dlk' in self.load_params:
+            self.load_timings['Averaging: ']['dlk'] = time.time()
+            self.avg_dlk_data = plot_utils.avg_Qlk_data(self.all_dlk_data)
+            self.load_timings['Averaging: ']['dlk'] = time.time() - \
+                self.load_timings['Averaging: ']['dlk']
+
         if 'qm' in self.load_params:
             self.load_timings['Averaging: ']['qm'] = time.time()
             if self.QM_type == "Qlk":
@@ -937,16 +1076,14 @@ class LoadData(Params):
 
         if 'fl_fk' in self.load_params:
             self.load_timings['Averaging: ']['adiab. mom.'] = time.time()
-            self.avg_tintf_data = plot_utils.avg_hist_f_data(
-                                                            self.all_tintf_data
-                                                            )
+            self.avg_tintf_data = plot_utils.avg_Qlk_data(self.all_adMom_data)
             if 'ylk/sum(ylk)' in self.plot_params:
                 self.sum_tintf_CC_data = plot_utils.sum_hist_f_CC_data(
-                                                           self.all_tintf_data,
+                                                           self.all_adMom_data,
                                                            self.all_Acoeff_data
                                                                       )
             if 'sum(ylk)' in self.plot_params:
-                self.sum_ylk = plot_utils.sum_Ylk_data(self.all_tintf_data,
+                self.sum_ylk = plot_utils.sum_Ylk_data(self.all_adMom_data,
                                                        self.all_Acoeff_data
                                                        )
             self.load_timings['Averaging: ']['adiab. mom.'] = time.time() -\
@@ -996,12 +1133,13 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.fl_fk_CC, plot_ener.Energy_Cons, plot_frc.Plot_Frc,
            plot_QM.Rlk, plot_QM.Alpha, plot_pos.PlotPos, plot_pos.PosStd,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
-           plot_pos.COM, plot_rabi.Rabi,
-           plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc):
+           plot_pos.COM, plot_rabi.Rabi, plot_coeff.Plot_Deco,
+           plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc, plot_dlk.dlk,
+           plot_pos.PlotVel, plot_sig.Sig, plot_ham.H):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
-    adiab_state and this class should plot them
+    ad_ener and this class should plot them
 
     Inputs:
         plot_params    =>  A list containing the parameters needing plotting.
@@ -1010,7 +1148,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                * |C|^2        = Adiabatic populations
                                * norm         = The norm of the diabatic coeffs
                                * qm           = The Quantum Momentum
-                               * adiab_state = The adiabatic energy levels
+                               * ad_ener = The adiabatic energy levels
                                * site_ener    = The site energies vs time
                                * fl_fk        = The difference in history force
                                                 states.
@@ -1025,7 +1163,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                  hold it in memory (as self.f).
     """
 
-    def __init__(self, plot_params, folder, reps, plot,
+    def __init__(self, plot_params, folder, reps='all', plot=True,
                  minTime=0, maxTime='all'):
         print("Starting on folder ", folder)
         self.plot_params = plot_params
@@ -1058,6 +1196,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         """
         self.plot_blank()
 
+        # NACV
+        if 'dlk' in self.plot_params:
+            self.mDlkPlot = plot_dlk.dlk.__init__(self, self.axes['dlk'])
+
         # Quantum Momentum
         if 'qm_r' in self.plot_params:
             self.mQMRPlot = plot_QM.QM_R.__init__(self,
@@ -1072,6 +1214,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'rlk' in self.plot_params:
             self.mRlkPlot = plot_QM.Rlk.__init__(self,
                                                  self.axes['rlk'])
+        if 'sigma' in self.plot_params:
+            self.mSigPlot = plot_sig.Sig.__init__(self,
+                                                  self.axes['sigma'])
         if 'alpha' in self.plot_params:
             self.mAlphaPlot = plot_QM.Alpha.__init__(self, self.axes['alpha'])
 
@@ -1085,77 +1230,70 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if '|u|^2' in self.plot_params:
             self.mDCoeffPlot = plot_coeff.Plot_Coeff.__init__(
                                                              self,
-                                                             self.axes['|u|^2']
-                                                             )
+                                                             self.axes['|u|^2'])
         if "rabi" in self.plot_params:
             self.mRabiPlot = plot_rabi.Rabi.__init__(self, 
-                                                     self.axes['rabi']
-                                                    )
+                                                     self.axes['rabi'])
         if '|c|^2' in self.plot_params:
             self.mACoeffPlot = plot_coeff.Plot_Coeff.__init__(
                                                              self,
-                                                             self.axes['|c|^2']
-                                                             )
+                                                             self.axes['|c|^2'])
+        if 'coherence' in self.plot_params:
+            self.mCoherencePlot = plot_coeff.Plot_Deco.__init__(
+                                                             self,
+                                                             self.axes['coherence'])
 
         # Energies
-        if 'adiab_state' in self.plot_params:
+        if 'ad_ener' in self.plot_params:
             self.mAStatesPlot = plot_ener.Ad_State.__init__(
                                                        self,
-                                                       self.axes['adiab_state']
-                                                               )
+                                                       self.axes['ad_ener'])
         if 'coup' in self.plot_params:
             self.mCoupPlot = plot_ham.Coupling.__init__(self,
                                                         self.axes['coup'])
         if 'site_ener' in self.plot_params:
             self.mSiteEnerPlot = plot_ham.Site_Ener.__init__(
                                                          self,
-                                                         self.axes['site_ener']
-                                                            )
+                                                         self.axes['site_ener'])
         if 'energy_cons' in self.plot_params:
             self.mEnerConsPlot = plot_ener.Energy_Cons.__init__(
                                                        self,
-                                                       self.axes['energy_cons']
-                                                               )
+                                                       self.axes['energy_cons'])
         if 'energy_drift' in self.plot_params:
             self.mEnerConsPlot = plot_ener.Energy_Cons.__init__(
                                                        self,
-                                                       self.axes['energy_drift']
-                                                               )
-
+                                                       self.axes['energy_drift'])
+        if 'h' in self.plot_params:
+            self.mHPlot = plot_ham.H.__init__(self, self.axes['h'])
 
         # Forces
         if 'ylk/sum(ylk)' in self.plot_params:
             self.mTintfCCPlot = plot_tintf.fl_fk_CC.__init__(
                                                       self,
-                                                      self.axes['ylk/sum(ylk)']
-                                                            )
+                                                      self.axes['ylk/sum(ylk)'])
         if 'sum(ylk)' in self.plot_params:
             self.mTintfCCPlot = plot_tintf.sumYlk.__init__(
                                                           self,
-                                                          self.axes['sum(ylk)']
-                                                            )
+                                                          self.axes['sum(ylk)'])
         if 'fl_fk' in self.plot_params:
             self.mTintfPlot = plot_tintf.fl_fk.__init__(self,
                                                         self.axes['fl_fk'])
-        if 'fl' in self.plot_params:
+        if 'ad_mom' in self.plot_params:
             self.mFlPlot = plot_tintf.fl.__init__(self,
-                                                  self.axes['fl'])
+                                                  self.axes['ad_mom'])
 
         if 'tot_force' in self.plot_params:
             self.mForcePlot = plot_frc.Plot_Frc.__init__(
                                                          self,
-                                                         self.axes['tot_force']
-                                                         )
+                                                         self.axes['tot_force'])
         if 'qm_force' in self.plot_params:
             self.mQMForcePlot = plot_frc.QM_Frc.__init__(
                                                          self,
-                                                         self.axes['qm_force']
-                                                          )
-        if 'ad_force' in self.plot_params:
+                                                         self.axes['qm_force'])
+        if 'ad_frc' in self.plot_params:
             self.mAdForcePlot = plot_frc.Ad_Frc.__init__(
                                                          self,
-                                                         self.axes['ad_force']
-                                                        )
+                                                         self.axes['ad_frc'])
         # Positions
         if 'pos' in self.plot_params:
             self.mPosPlot = plot_pos.PlotPos.__init__(self,
@@ -1167,13 +1305,13 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'pos_stddev' in self.plot_params:
             self.mPosSigPlot = plot_pos.PosStd.__init__(
                                                         self,
-                                                        self.axes['pos_stddev'],
-                                                            )
+                                                        self.axes['pos_stddev'])
         if 'pos3d' in self.plot_params:
-            self.mPos3DPlot = plot_pos.Pos3D.__init__(
-                                                        self,
-                                                        self.axes['pos3d']
-                                                           )
+            self.mPos3DPlot = plot_pos.Pos3D.__init__(self,
+                                                      self.axes['pos3d'])
+        if 'vel' in self.plot_params:
+            self.mVelPlot = plot_pos.PlotVel.__init__(self,
+                                                      self.axes['vel'])
 
         # Finish up
         if self.plot:
@@ -1456,7 +1594,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 num_states = len(self.all_Dcoeff_data_avg[3][0])
             elif '|c|^2' in self.plot_params:
                 num_states = len(self.all_Acoeff_data_avg[3][0])
-            elif 'adiab_state' in self.plot_params:
+            elif 'ad_ener' in self.plot_params:
                 num_states = len(self.state_cols_AS)
             elif "site_ener" in self.plot_params:
                 num_states = len(self.avg_ham_data['avg_ham'][0][0])

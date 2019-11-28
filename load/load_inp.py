@@ -7,6 +7,7 @@ Created on Tue Oct  9 11:00:42 2018
 """
 
 import re
+import os
 
 def rm_comment_from_line(line):
     """
@@ -63,7 +64,7 @@ def parse_setting_line(line):
     Outputs:
         The setting, the value and any units attached to it.
     """
-    words = [i for i in line.split(' ') if i]
+    words = [i for i in line.split()]
     if len(words) == 1:
         return words[0], '', ''
     
@@ -100,6 +101,10 @@ def parse_inp_file(Dict, non_nested_settings, inp_file, line_ind=0, found_sects=
         Each section is stored as a seperate dictionary with the nesting 
         preserved.
     """
+    if type(inp_file) == str and os.path.isfile(inp_file):
+         with open(inp_file, 'r') as f:
+            inp_file = f.read().split("\n")
+      
     # Get the line and format it to remove comments etc...
     line = inp_file[line_ind]
     edit_line = line.strip()
