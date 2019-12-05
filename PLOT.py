@@ -50,39 +50,40 @@ import difflib
 
 # Decide which things to load when the params are inputted
 #  also gives a comprehensive list of all possible plotting
-#  parameters
-dependencies = {'qm_r':         ['pos', 'qm'],
-                'pos':          ['pos'],
-                'com':          ['pos'],
-                'pos_stddev':   ['pos'],
-                '|c|^2':        ['|c|^2'],
-                'qm_t':         ['qm'],
-                'rlk':          ['rlk'],
-                'site_ener':    ['ham'],
-                'coup':         ['ham'],
-                '|u|^2':        ['|u|^2'],
-                'energy_cons':  ['tot_ener'],
-                'energy_drift': ['tot_ener'],
-                'ylk/sum(ylk)': ['fl_fk', '|c|^2'],
-                'fl_fk':        ['fl_fk'],
-                'norm':         ['|u|^2$OR$|C|^2'],
-                'tot_force':    ['force'],
-                'alpha':        ['alpha'],
-                'sum(ylk)':     ['fl_fk', '|c|^2'],
-                'k':            ['k'],
-                'pos3d':        ['pos'],
-                'fl':           ['fl_fk'],
-                'fk':           ['fl_fk'],
-                'coherence':    ['|c|^2'],
-                "qm_force":     ['qm_frc'], 
-                "rabi":         ['ham'],
-                "dlk":          ['dlk'],
-                "vel":          ['vel'],
-                "sigma":        ['sigma'],
-                "ad_mom":       ['fl_fk'],
-                "ad_frc":       ['ad_frc'],
-                'ad_ener':      ['ad_ener'],
-                "h":            [],
+#  parameters (must all be lowercase)
+dependencies = {'qm_r':           ['pos', 'qm'],
+                'pos':            ['pos'],
+                'com':            ['pos'],
+                'pos_stddev':     ['pos'],
+                '|c|^2':          ['|c|^2'],
+                'qm_t':           ['qm'],
+                'rlk':            ['rlk'],
+                'site_ener':      ['ham'],
+                'coup':           ['ham'],
+                '|u|^2':          ['|u|^2'],
+                'energy_cons':    ['tot_ener'],
+                'energy_drift':   ['tot_ener'],
+                'ylk/sum(ylk)':   ['fl_fk', '|c|^2'],
+                'fl_fk':          ['fl_fk'],
+                'norm':           ['|u|^2$OR$|C|^2'],
+                'tot_force':      ['force'],
+                'alpha':          ['alpha'],
+                'sum(ylk)':       ['fl_fk', '|c|^2'],
+                'k':              ['k'],
+                'pos3d':          ['pos'],
+                'fl':             ['fl_fk'],
+                'fk':             ['fl_fk'],
+                'coherence':      ['|c|^2'],
+                "qm_force":       ['qm_frc'], 
+                "rabi":           ['ham'],
+                "dlk":            ['dlk'],
+                "vel":            ['vel'],
+                "sigma":          ['sigma'],
+                "ad_mom":         ['fl_fk'],
+                "ad_frc":         ['ad_frc'],
+                'ad_ener':        ['ad_ener'],
+                "h":              ['ham'],
+                #"dynamic_pot_e":  ['ad_ener', 'pos'],
                 }
 
 class Params(object):
@@ -99,7 +100,7 @@ class Params(object):
         self._set_coeff_params()
         self._correct_plot_params()
         self._get_inp_data()
-        self.units = 'au'
+        self.units = 'cp2k'
 
         self._set_title()
         self.title = r""
@@ -124,7 +125,7 @@ class Params(object):
 
         print("\n\nREMEMBER TO CHECK UNITS FOR THE THING YOU'RE PLOTTING\n\n")
         self.units = self.units.lower()
-        self.allowed_units = ('au',)
+        self.allowed_units = ('au', 'cp2k')
         if not any([self.units == j for j in self.allowed_units]):
             msg = "Units string = `%s'" % self.units
             msg += "\nAllowed Units = `[%s]'" % ','.join(self.allowed_units)
@@ -426,6 +427,7 @@ class LoadData(Params):
         else:
             max_step = int(self.max_step/print_step)
 
+        exitCode = False
         if 'ham' in self.load_params:
             exitCode = self.__load_ham(self.quick_stride, max_step)
             self.all_meta_ham = {}
@@ -435,23 +437,23 @@ class LoadData(Params):
                 self.all_meta_ham[Hkey] = {'site_ener_diff': site_ener,
                                            'coup': couplings,
                                            'tsteps': timesteps}
-        else:
-            if type(max_step) == str or \
-                                   (type(max_step) == int and max_step <= 100):
-                stride = 1
-            else:
-                ham_file = [i for i in os.listdir(self.folder)
-                            if 'hamil' in i][0]
-                with open(self.folder + ham_file, 'r') as f:
-                    ltxt = f.read().split('\n')
-                tmp = load_xyz.get_xyz_step_metadata(ltxt, ham_file)
-                _, _, lines_in_step, num_title_lines = tmp
-                num_steps = len(ltxt) // (lines_in_step)
-                stride = int(num_steps / 1000)
-                if stride < 1:
-                    stride = 1
-                max_step = num_steps
-            exitCode = self.__load_ham(stride, max_step)
+        #else:
+        #    if type(max_step) == str or \
+        #                           (type(max_step) == int and max_step <= 100):
+        #        stride = 1
+        #    else:
+        #        ham_file = [i for i in os.listdir(self.folder)
+        #                    if 'hamil' in i][0]
+        #        with open(self.folder + ham_file, 'r') as f:
+        #            ltxt = f.read().split('\n')
+        #        tmp = load_xyz.get_xyz_step_metadata(ltxt, ham_file)
+        #        _, _, lines_in_step, num_title_lines = tmp
+        #        num_steps = len(ltxt) // (lines_in_step)
+        #        stride = int(num_steps / 1000)
+        #        if stride < 1:
+        #            stride = 1
+        #        max_step = num_steps
+        #    exitCode = self.__load_ham(stride, max_step)
 
         self.coupling = "?"
         if exitCode:
@@ -805,7 +807,7 @@ class LoadData(Params):
                 max_step = int(self.max_step/print_step)
             self.Rlk_data = load_QM.load_all_Rlk_in_folder(
                                                         self.folder,
-                                                        reps=self.reps,
+                                                        reps=[1],
                                                         max_step=max_step,
                                                         min_step=self.min_time,
                                                         stride=self.slow_stride
@@ -815,6 +817,7 @@ class LoadData(Params):
             self.load_timings['Rlk'] = time.time() - self.load_timings['Rlk']
 
             # Find metadata
+            if 'num_reps' not in self.__dict__: self.num_reps = 1
             self.num_rlk_steps = len(set(self.Rlk_data['time']))
             self.num_active_atoms = len(set(self.Rlk_data['v']))
             self.num_pair_states = len(set(self.Rlk_data['l']))
@@ -905,6 +908,7 @@ class LoadData(Params):
             if self.units == 'au':
                for f in self.all_adMom_data:
                   self.all_adMom_data[f]['time'] /= 0.02418884254
+
             self.load_timings['adiab. mom.'] = time.time() - \
                 self.load_timings['adiab. mom.']
 
@@ -1135,7 +1139,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
            plot_pos.COM, plot_rabi.Rabi, plot_coeff.Plot_Deco,
            plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc, plot_dlk.dlk,
-           plot_pos.PlotVel, plot_sig.Sig, plot_ham.H):
+           plot_pos.PlotVel, plot_sig.Sig, plot_ham.H): # , plot_ener.Epot):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -1176,7 +1180,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.atoms_to_plot = range(1, self.num_active_atoms+1)
 
         self.reps = reps
-        self.xlabel = "Time (%s)" % self.units
+        self.unitsTime = {'cp2k': 'fs', 'au': 'AU'}
+        self.xlabel = "Time (%s)" % self.unitsTime[self.units]
         self.plot_info = {}
         if type(plot) == str:
             if plot.lower() == 'close':
@@ -1242,7 +1247,6 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
             self.mCoherencePlot = plot_coeff.Plot_Deco.__init__(
                                                              self,
                                                              self.axes['coherence'])
-
         # Energies
         if 'ad_ener' in self.plot_params:
             self.mAStatesPlot = plot_ener.Ad_State.__init__(
@@ -1265,6 +1269,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                                        self.axes['energy_drift'])
         if 'h' in self.plot_params:
             self.mHPlot = plot_ham.H.__init__(self, self.axes['h'])
+
+        #if 'dynamic_pot_e' in self.plot_params:
+        #    plot_ener.Epot.__init__(self)
 
         # Forces
         if 'ylk/sum(ylk)' in self.plot_params:
@@ -1626,7 +1633,8 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         try:
             lastNonQlkAxis = self.axes[self.non_qlk_params[-1]][1]
             if lastNonQlkAxis:
-                lastNonQlkAxis.set_xlabel("Time (%s)" % self.units, fontsize=27)
+                lastNonQlkAxis.set_xlabel("Time (%s)" % self.unitsTime[self.units],
+                                          fontsize=27)
         except IndexError:
             pass
         ax = self.axes[self.plot_params[-1]][1]

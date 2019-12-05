@@ -51,7 +51,7 @@ class Sig(object):
         Sig.all_rep_lines = [[] for i in range(self.num_active_atoms)]
 
         ax = Sig.plot_ax
-        for f in self.all_sigma:
+        for I, f in enumerate(self.all_sigma):
             data, time = self.all_sigma[f]
-            ax.plot(time, data, 'r.')
+            ax.plot(time, data, color=self.colors[I], alpha=self.alpha)
 

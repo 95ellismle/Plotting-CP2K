@@ -305,7 +305,7 @@ def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
     return [all_tintf_lk, Tsteps]
 
 
-def sum_Ylk_data(all_tintf_data, all_A_coeff_data):
+def sum_Ylk_data(all_adMom_data, all_A_coeff_data):
     """
     Will calculate the sum over all replicas of the Ylk data
 
@@ -316,40 +316,8 @@ def sum_Ylk_data(all_tintf_data, all_A_coeff_data):
     Ouputs:
         * The summed tintf data and timesteps
     """
-    Tcols = all_tintf_data[list(all_tintf_data.keys())[0]][0][1]
-    nstates = max(Tcols[0, :, 1].astype(int))
-    all_state_combs = list(IT.combinations(range(nstates), 2))
-    bottomSumData = {"%i%i" % (i, j): '' for i, j in all_state_combs}
-
-    # Match the timesteps for the 2 sets of data
-    for Akey, Tkey in zip(all_A_coeff_data, all_tintf_data):
-        all_A_coeff_data[Akey], all_tintf_data[Tkey] = \
-                                                match_timesteps_4col_2col(
-                                                        all_A_coeff_data[Akey],
-                                                        all_tintf_data[Tkey]
-                                                                         )
-    # Allocate arrays
-    Tdata = all_tintf_data[list(all_tintf_data.keys())[0]][0][0]
-    nsteps = len(Tdata)
-    natom = int(len(Tdata[0])/nstates)
-    for i, j in all_state_combs:
-        bottomSumData["%i%i" % (i, j)] = np.zeros((nsteps, natom, 3))
-
-    # Calculate the denominator
-    for Akey, Tkey in zip(all_A_coeff_data, all_tintf_data):
-        (Tdata, Tcols), _ = all_tintf_data[Tkey]
-        _, _, _, pops = all_A_coeff_data[Akey]
-
-        for l, k in all_state_combs:
-            fk = np.array([i[Tcols[0, :, 1] == str(k+1)] for i in Tdata])
-            fl = np.array([i[Tcols[0, :, 1] == str(l+1)] for i in Tdata])
-            Clk = pops[:, l] * pops[:, k]
-
-            tmp = [Clk[step] * F for step, F in enumerate(fl-fk)]
-            bottomSumData['%i%i' % (l, k)] += tmp
-
-    Tsteps = all_tintf_data[list(all_tintf_data.keys())[0]][1]
-    return bottomSumData, Tsteps
+    print("NOT CALCULATING THIS... GREP TO ME TO FIND.")
+    raise SystemExit("BREAK")
 
 
 def match_timesteps(DCT1, DCT2):

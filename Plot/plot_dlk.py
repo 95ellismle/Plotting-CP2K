@@ -190,7 +190,6 @@ class dlk(object):
         ax = dlk.plot_ax
         for dlk_filename in self.all_dlk_data:
             dlk_data = self.all_dlk_data[dlk_filename]  # list of all dlk_data
-            dlk_timesteps = dlk_data['time']  # grab timesteps from dlk_data list
 
             for iatom in self.atoms_to_plot:
                mask = dlk_data['v'] == iatom
@@ -198,7 +197,15 @@ class dlk(object):
                mask = mask & (dlk_data['k'] == 2)
                
                dlkX = dlk_data[mask]['dlk(x)']
-               dlk_mag = dlkX**2
+               dlk_timesteps = dlk_data[mask]['time']  # grab timesteps from dlk_data list
+
+               sqrtOn = False
+               cols = dlk_data.columns 
+               if "dlk(y)" in cols or 'dlk(z)' in cols:
+                  dlk_mag = dlkX**2
+                  sqrtOn = True
+
+               else: dlk_mag = dlkX
 
                if 'dlk(y)' in dlk_data.columns:
                   dlkY = dlk_data[mask]['dlk(y)']
@@ -207,7 +214,7 @@ class dlk(object):
                   dlkZ = dlk_data[mask]['dlk(z)']
                   dlk_mag += dlkZ**2
 
-               dlk_mag = np.sqrt(dlk_mag)
+               if sqrtOn: dlk_mag = np.sqrt(dlk_mag)
                
                ln, = ax.plot(dlk_timesteps,
                              dlk_mag,  # /np.max(dlk_mag[:, 0]),

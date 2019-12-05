@@ -9,6 +9,7 @@ import numpy as np
 import matplotlib.cm as cm
 from matplotlib.widgets import CheckButtons
 import matplotlib.pyplot as plt
+#import mayavi.mlab as mlab
 
 
 def linear_fit(x, m, c):
@@ -322,7 +323,8 @@ class Energy_Cons(object):
                 fit = np.polyfit(data['Time']*unit_conv, data[lab], 1) 
                 name = lab_to_name_map[lab]
                 # Timestep in fs and Energy in Hartree so x1000 to convert to ps
-                conv = (self.dt * 1000) / self.num_active_atoms
+                print(self.dt)
+                conv = 1000 / (self.num_active_atoms * self.dt)
                 self.ener_drift_per_rep[name].append(np.array(fit[0]) * conv)
 
         # Find largest and smallest drifts rep indices
@@ -359,3 +361,41 @@ class Energy_Cons(object):
             r"%.2g $\frac{Ha}{ps \ atom}$" % e
         Energy_Cons.plot_ax.annotate(ann_txt,
                                      (x, y), fontsize=18)
+
+
+#class Epot(object):
+#   def __init__(self):
+#      Epot.f = mlab.figure(bgcolor=(0.2, 0.2, 0.2), size=(1000, 1000))
+#      
+#
+#
+#      Epot.pts = Epot.plotSingleFrame(self, 0.01)
+#      
+#
+#   @staticmethod
+#   def plotSingleFrame(self, time):
+#      
+#      allEner, allPos = [], []
+#      for fE, fP in zip(self.all_ad_ener_data, self.all_pos_data):
+#         potE = self.all_ad_ener_data[fE]
+#         pos, _, t = self.all_pos_data[fP]
+#
+#         E = potE[potE['Time'] == time]['Pot']
+#         pos = pos[t == time]
+#         pos = pos[0, :12, :]
+#         pos = np.mean(pos, axis=0)
+#         
+#         allEner.append(float(E))
+#         allPos.append(pos)
+#
+#      allPos  = np.array(allPos) 
+#      allEner = np.array(allEner) 
+#      
+#
+#      mlab.points3d(allPos[:, 0], allPos[:, 1], allPos[:, 2])
+
+
+
+
+
+

@@ -251,13 +251,15 @@ def read_xyz_file(filename, num_data_cols=False,
     timesteps = np.array(timesteps)
     timesteps = timesteps.astype(float)
     
-    # Get the actual data
-    step_data = np.array(ltxt)
-    step_data = np.reshape(step_data, (len(all_steps), lines_in_step))
+    # Get the actual data (but only up to the max step)
+    all_data = np.array(ltxt)[:lines_in_step * max_step]
+
+    # get the data from each step in a more usable format
+    step_data = np.reshape(all_data, (len(all_steps), lines_in_step))
     step_data = step_data[:, num_title_lines:]
 
     
-    #This bit is the slowest atm and would benefit the most from optimisation
+    # This bit is the slowest atm and would benefit the most from optimisation
     step_data = np.apply_along_axis(splitter, 1, step_data)
     data = step_data[:, :, num_data_cols:].astype(float)
 

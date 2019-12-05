@@ -21,18 +21,18 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              "/scratch/mellis/flavoured-cptk/200Rep_2molTully",
-              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2molTully",
+              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/TestCP2KCTMQC",
               #"/scratch/mellis/TestCP2KImplemetation/NoSmoothing/Simulation_1",
               "",
              ]
              
-plotting_parameters = ["|C|^2"]
+plotting_parameters = ["norm"]
 replicas = 'all'
 plot = True
 min_time = 0
-max_time = 'all'
+max_time = 1000
 #######################################################
 
 folders = []
@@ -72,7 +72,6 @@ for f in folders:
                     maxTime=max_time
                     )
     all_p.append(p)
-    plt.show()
     #allStats.append({
     #  'ener_cons': np.mean(p.ener_drift_per_rep['Total']),
     #  'norm': p.norm_drift,
