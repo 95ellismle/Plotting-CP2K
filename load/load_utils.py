@@ -35,7 +35,8 @@ def find_rep_num_in_name(filename):
                      "sigma": r"-\d*\.list",
                      "d_ener": r"-\d*-\d*\.csv",
                      "n-K": r"-K-\d*.list",
-                     "n-NACV": r"V-\d+.csv",
+                     "n-NACV": r"V-\d+\.csv",
+                     "-RI0-": r"I0-\d+\.xyz",
                      "n-alpha": r"n-alpha-\d*.list",
                      }
 
@@ -56,6 +57,7 @@ def find_rep_num_in_name(filename):
                       "d_ener": r"\d*-\d*\.",
                       "n-K": r"\d*\.",
                       "n-NACV": r"\d*\.",
+                      "-RI0-": r"\d+\.",
                       }
     final_delim = {'n-pos': r"-",
                    'ham': r"-",
@@ -74,6 +76,7 @@ def find_rep_num_in_name(filename):
                    "d_ener": r"-",
                    "n-K": r".",
                    "n-NACV": r".",
+                   "-RI0-": r".",
                    }
     if 'run-rlk' in filename:
         return 1

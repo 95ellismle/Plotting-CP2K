@@ -237,6 +237,8 @@ def read_xyz_file(filename, num_data_cols=False,
     abs_max_step = int(len(ltxt)/lines_in_step)
     if max_step == 'all' or max_step > abs_max_step:
         max_step = abs_max_step
+    else:
+        max_step += 1  # Actually get right up to the time requested
     
     # The OrderedDict is actually faster than a list here.
     #   (time speedup at the expense of space)
@@ -252,7 +254,8 @@ def read_xyz_file(filename, num_data_cols=False,
     timesteps = timesteps.astype(float)
     
     # Get the actual data (but only up to the max step)
-    all_data = np.array(ltxt)[:lines_in_step * max_step]
+    min_, max_ = lines_in_step * min_step, lines_in_step * (max_step)
+    all_data = np.array(ltxt)[min_ : max_]
 
     # get the data from each step in a more usable format
     step_data = np.reshape(all_data, (len(all_steps), lines_in_step))

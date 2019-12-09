@@ -58,6 +58,7 @@ dependencies = {'qm_r':           ['pos', 'qm'],
                 '|c|^2':          ['|c|^2'],
                 'qm_t':           ['qm'],
                 'rlk':            ['rlk'],
+                'ri0':            ['ri0'],
                 'site_ener':      ['ham'],
                 'coup':           ['ham'],
                 '|u|^2':          ['|u|^2'],
@@ -83,7 +84,6 @@ dependencies = {'qm_r':           ['pos', 'qm'],
                 "ad_frc":         ['ad_frc'],
                 'ad_ener':        ['ad_ener'],
                 "h":              ['ham'],
-                #"dynamic_pot_e":  ['ad_ener', 'pos'],
                 }
 
 class Params(object):
@@ -117,7 +117,7 @@ class Params(object):
         self.quick_stride = 0  # (in fs)
         self.slow_stride = 0  # (in fs)
         self.dt = self.run_inp_params['NUCLEAR_TIMESTEP']
-        self.atoms_to_plot = [1]
+        self.atoms_to_plot = 'all'
 
         self.worst_reps = {}
         self.best_reps = {}
@@ -170,16 +170,19 @@ class Params(object):
 max_time, you can use all, or specify a maximum time in fs.""")
         else:
             self.max_step = int(self.max_time/dt)
-        self.min_time = int(self.min_time/dt)
         self.quick_stride = int(self.quick_stride/dt)
         self.slow_stride = int(self.slow_stride/dt)
 
         if type(self.max_step) != str and self.max_step < 1:
             self.max_step = 1
+
         if self.min_time < 0:
             self.min_time = 0
+        self.min_step= int(self.min_time/dt)
+
         if self.quick_stride < 1:
             self.quick_stride = 1
+        
         if self.slow_stride < 1:
             self.slow_stride = 1
 
@@ -326,6 +329,7 @@ class LoadData(Params):
         self.load_all_ad_coeffs()
         self.load_ad_ener()
         self.load_rlk()
+        self.load_RI0()
         self.load_alpha()
         self.load_qm()
         self.load_dlk()
@@ -382,7 +386,7 @@ class LoadData(Params):
                                                           self.folder,
                                                           reps=self.reps,
                                                           max_step=max_step,
-                                                          min_step=self.min_time,
+                                                          min_step=self.min_step,
                                                           stride=stride
                                                               )
            if self.units == 'au':
@@ -481,7 +485,7 @@ class LoadData(Params):
                                              filename_must_not_contain=['ad'],
                                              reps=self.reps,
                                              max_step=max_step,
-                                             min_step=self.min_time,
+                                             min_step=self.min_step,
                                              stride=self.quick_stride
                                                                       )
             if self.units == 'au':
@@ -521,7 +525,7 @@ class LoadData(Params):
                                                        self.reps,
                                                        self.all_ham_data,
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.quick_stride
                                                               )
             else:
@@ -529,7 +533,7 @@ class LoadData(Params):
                                                        self.folder,
                                                        self.reps,
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.quick_stride
                                                               )
             if self.units == 'au':
@@ -623,7 +627,7 @@ class LoadData(Params):
                                                        reps=self.reps,
                                                        filename_must_contain=['sigma'],
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.quick_stride
                                                            )
             if self.units == 'au':
@@ -652,7 +656,7 @@ class LoadData(Params):
                                                        reps=self.reps,
                                                        filename_must_contain=['alpha'],
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.quick_stride
                                                            )
             if self.units == 'au':
@@ -680,7 +684,7 @@ class LoadData(Params):
                                                      folder=self.folder,
                                                      reps=self.reps,
                                                      max_step=max_step,
-                                                     min_step=self.min_time,
+                                                     min_step=self.min_step,
                                                      stride=self.quick_stride
                                                     )
             self.load_timings['K'] = time.time() - \
@@ -717,7 +721,7 @@ class LoadData(Params):
                                                             self.folder,
                                                             reps=self.reps,
                                                             max_step=max_step,
-                                                            min_step=self.min_time,
+                                                            min_step=self.min_step,
                                                             stride=self.slow_stride
                                                                        )
             if self.units == 'au':
@@ -733,7 +737,7 @@ class LoadData(Params):
             self.num_active_atoms = max(data['v'])
             self.num_pair_states = max(data['l'])
         
-    def load_qlk(self, max_step):
+    def load_qlk(self):
         """
         Will load the Quantum Momentum in the Qlk form
         """
@@ -741,8 +745,8 @@ class LoadData(Params):
         self.all_Qlk_data = load_QM.load_all_Qlk_in_folder(
                                                         self.folder,
                                                         reps=self.reps,
-                                                        max_step=max_step,
-                                                        min_step=self.min_time,
+                                                        max_time=self.max_time,
+                                                        min_time=self.min_time,
                                                         stride=self.slow_stride
                                                                    )
         if self.units == 'au':
@@ -765,7 +769,7 @@ class LoadData(Params):
                                                         self.folder,
                                                         reps=self.reps,
                                                         max_step=max_step,
-                                                        min_step=self.min_time,
+                                                        min_step=self.min_step,
                                                         stride=self.slow_stride
                                                             )
         # Find metadata
@@ -788,7 +792,7 @@ class LoadData(Params):
                 max_step = int(self.max_step/print_step)
             self.get_qm_type()
             if self.QM_type == "Qlk":
-                self.load_qlk(max_step)
+                self.load_qlk()
             elif self.QM_type == "QM_0":
                 self.load_qm_0(max_step)
 
@@ -808,8 +812,8 @@ class LoadData(Params):
             self.Rlk_data = load_QM.load_all_Rlk_in_folder(
                                                         self.folder,
                                                         reps=[1],
-                                                        max_step=max_step,
-                                                        min_step=self.min_time,
+                                                        max_time=self.max_time,
+                                                        min_time=self.min_time,
                                                         stride=self.slow_stride
                                                                )
             if self.units == 'au':
@@ -821,6 +825,32 @@ class LoadData(Params):
             self.num_rlk_steps = len(set(self.Rlk_data['time']))
             self.num_active_atoms = len(set(self.Rlk_data['v']))
             self.num_pair_states = len(set(self.Rlk_data['l']))
+
+    def load_RI0(self):
+        """
+        Will load the Rlk file into the format in load_QM.
+        """
+        if 'ri0' in self.load_params:
+            self.load_timings['RI0'] = time.time()
+            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['RI0']['EACH']['MD'][0]
+            if type(self.max_step) == str:
+                max_step = self.max_step
+            else:
+                max_step = int(self.max_step/print_step)
+            self.RI0_data = load_QM.load_all_RI0_in_folder(
+                                                        self.folder,
+                                                        reps=self.reps,
+                                                        max_step=max_step,
+                                                        min_step=self.min_step,
+                                                        stride=self.slow_stride
+                                                               )
+            for f in self.RI0_data:
+               if self.units == 'au':
+                   self.RI0_data[f][2] /= 0.02418884254
+            self.load_timings['RI0'] = time.time() - self.load_timings['RI0']
+
+            # Find metadata
+            self.num_reps = len(self.RI0_data)
 
     def load_vel(self, force_load=False):
         """
@@ -838,7 +868,7 @@ class LoadData(Params):
                                                        self.folder,
                                                        reps=self.reps,
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.slow_stride
                                                                )
             self.load_timings['velocities'] = time.time() - \
@@ -867,7 +897,7 @@ class LoadData(Params):
                                                        self.folder,
                                                        reps=self.reps,
                                                        max_step=max_step,
-                                                       min_step=self.min_time,
+                                                       min_step=self.min_step,
                                                        stride=self.slow_stride
                                                                )
             if self.units == 'au':
@@ -902,7 +932,7 @@ class LoadData(Params):
                                                         self.folder,
                                                         reps=self.reps,
                                                         max_step=max_step,
-                                                        min_step=self.min_time,
+                                                        min_step=self.min_step,
                                                         stride=self.slow_stride
                                                                      )
             if self.units == 'au':
@@ -933,7 +963,7 @@ class LoadData(Params):
                                                         self.folder,
                                                         reps=self.reps,
                                                         max_step=max_step,
-                                                        min_step=self.min_time,
+                                                        min_step=self.min_step,
                                                         stride=self.slow_stride,
                                                                )
             if self.units == 'au':
@@ -966,7 +996,7 @@ class LoadData(Params):
                                                      self.folder,
                                                      reps=self.reps,
                                                      max_step=max_step,
-                                                     min_step=self.min_time,
+                                                     min_step=self.min_step,
                                                      stride=self.slow_stride
                                                             )
          if self.units == 'au':
@@ -998,7 +1028,7 @@ class LoadData(Params):
                                                      self.folder,
                                                      reps=self.reps,
                                                      max_step=max_step,
-                                                     min_step=self.min_time,
+                                                     min_step=self.min_step,
                                                      stride=self.slow_stride
                                                             )
          if self.units:
@@ -1139,7 +1169,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
            plot_tintf.sumYlk, plot_K.K, plot_QM.QM0_t, plot_pos.Pos3D,
            plot_pos.COM, plot_rabi.Rabi, plot_coeff.Plot_Deco,
            plot_tintf.fl, plot_frc.QM_Frc, plot_frc.Ad_Frc, plot_dlk.dlk,
-           plot_pos.PlotVel, plot_sig.Sig, plot_ham.H): # , plot_ener.Epot):
+           plot_pos.PlotVel, plot_sig.Sig, plot_ham.H, plot_QM.RI0): # , plot_ener.Epot):
     """
     Will handle plotting of (hopefully) any parameters. Pass a list of string
     with the parameters that are to be plotted. E.g. Plot(['|u|^2', '|C|^2'])
@@ -1156,9 +1186,10 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                                * site_ener    = The site energies vs time
                                * fl_fk        = The difference in history force
                                                 states.
+                           more can be found in the dependencies dict at the top of this file.
 
-        folder         =>  The folder containing the data
-        reps           =>  Which replica numbers to plot (can be 'all')
+        folder         =>  The folder containing the data (string)
+        reps           =>  Which replica numbers to plot (can be 'all' or a list of int)
         plot           =>  Can be True or False or 'close' to create the graphs
                                but not display.
                              If True will plot to screen,
@@ -1219,6 +1250,9 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
         if 'rlk' in self.plot_params:
             self.mRlkPlot = plot_QM.Rlk.__init__(self,
                                                  self.axes['rlk'])
+        if 'ri0' in self.plot_params:
+            plot_QM.RI0.__init__(self, self.axes['ri0'])
+
         if 'sigma' in self.plot_params:
             self.mSigPlot = plot_sig.Sig.__init__(self,
                                                   self.axes['sigma'])
@@ -1626,7 +1660,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                 AX.spines['left'].set_visible(True)
                 AX.grid('on', alpha=0.5)
                 if type(self.max_time) != str and ax != 'qm_r':
-                    AX.set_xlim([self.min_time*0.95*self.dt,
+                    AX.set_xlim([self.min_time*0.95,
                                  self.max_time*1.05])
 #            AX.set_ylabel(AX.get_ylabel, fontsize=27)
         # For last axis

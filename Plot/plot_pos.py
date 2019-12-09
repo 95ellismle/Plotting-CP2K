@@ -203,17 +203,30 @@ class PlotPos(object):
 
             # Plot atoms
             for iat in self.atoms_to_plot:
+                color = 'r' if iat < 6 else 'b'
                 x = activeAtoms[:, iat-1, 0] - x0
-                #y = activeAtoms[:, iat-1, 1] - y0
-                #z = activeAtoms[:, iat-1, 2] - z0
-                #mag = np.sqrt(x**2 + y**2 + z**2)
-                mag = x
+                y = activeAtoms[:, iat-1, 1] - y0
+                z = activeAtoms[:, iat-1, 2] - z0
+                mag = np.sqrt(x**2 + y**2 + z**2)
+                #mag = x
 
                 PlotPos.plot_ax.plot(timesteps,
                                      mag,
-                                     color=self.colors[iat-1],
+                                     color=color,
+                                     #color=self.colors[iat],
                                      alpha=self.alpha,
                                      lw=0.5)
+                #PlotPos.plot_ax.plot(timesteps,
+                #                     y,
+                #                     color='g',  # self.colors[iat-1],
+                #                     alpha=self.alpha,
+                #                     lw=0.5)
+
+                #PlotPos.plot_ax.plot(timesteps,
+                #                     z,
+                #                     color='b',  # self.colors[iat-1],
+                #                     alpha=self.alpha,
+                #                     lw=0.5)
 
     # Will plot normal of diabatic coeffs
     @staticmethod

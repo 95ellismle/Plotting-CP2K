@@ -23,16 +23,17 @@ from PLOT import Plot
 rootFolder = ["",
               #"/scratch/mellis/flavoured-cptk/200Rep_2molTully",
               "/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-16",
               #"/scratch/mellis/TestCP2KCTMQC",
               #"/scratch/mellis/TestCP2KImplemetation/NoSmoothing/Simulation_1",
               "",
              ]
              
-plotting_parameters = ["norm"]
-replicas = 'all'
+plotting_parameters = ["RI0", "rlk", "qm_t"]
+replicas = [1]
 plot = True
 min_time = 0
-max_time = 1000
+max_time = 'all'
 #######################################################
 
 folders = []

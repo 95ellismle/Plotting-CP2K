@@ -99,24 +99,26 @@ class QM_Frc(object):
                for i in range(1, data.shape[2]):
                   mag += data[:, v, i]**2
                mag = np.sqrt(X)
-            #Y = data[:, v, 1]  # Y force
-            #Z = data[:, v, 2]  # Z force
-            #mag = X**2 + Y**2 + Z**2
-            mag = X
+            else:
+               mag = X
 
             QM_Frc.plot_ax.plot(timesteps,
                                 mag, color='k',
                                 lw=0.7, alpha=self.alpha)
          
-         #for v in hydrogenAtoms:  # self.num_active_atoms:
-         #   X = data[:, v, 0]  # X force
-         #   Y = data[:, v, 1]  # Y force
-         #   Z = data[:, v, 2]  # Z force
-         #   mag = X**2 + Y**2 + Z**2
+         for v in hydrogenAtoms:  # self.num_active_atoms:
+            X = data[:, v, 0]  # X force
+            if data.shape[2] > 1:
+               mag = X**2
+               for i in range(1, data.shape[2]):
+                  mag += data[:, v, i]**2
+               mag = np.sqrt(X)
+            else:
+               mag = X
 
-         #   QM_Frc.plot_ax.plot(timesteps,
-         #                       mag, color='y',
-         #                       lw=0.7, alpha=self.alpha)
+            QM_Frc.plot_ax.plot(timesteps,
+                                mag, color='y',
+                                lw=0.7, alpha=self.alpha)
 
 
 
@@ -172,13 +174,14 @@ class Plot_Frc(object):
         """
         for fname in self.all_frc_data:
             data, _, timesteps = self.all_frc_data[fname]
-            carbonAtoms = range(data.shape[1]) #, 3, 6, 9]
-            #hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
+            carbonAtoms = [0, 3, 6, 9]
+            hydrogenAtoms = [1, 2, 4, 5, 7, 8, 10, 11]
+            print(data.shape)
             for v in carbonAtoms:
                if data.shape[2] > 1: # if more than 1 dimension
                   X = data[:, v, 0]  # X force
                   mag = X**2
-                  for i in range(1, X.shape[2]):
+                  for i in range(1, data.shape[2]):
                       mag += data[:, v, i]**2  # Y force and Z force
                else:
                   mag = data[:, v, 0]

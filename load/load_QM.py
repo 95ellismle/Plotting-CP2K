@@ -37,6 +37,21 @@ def load_QM_0(filepath,
     return data, cols, timesteps
 
 
+def load_RI0(filepath, min_step=0, max_step="all",
+             stride=1, ignore_steps=[]):
+    """
+    Will load a single traj RI0 file (the quantum momentum intercept without
+    the lk indices)
+    """
+    data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
+                                              num_data_cols=False,
+                                              min_step=min_step,
+                                              max_step=max_step,
+                                              stride=stride,
+                                              ignore_steps=ignore_steps)
+    return data, cols, timesteps
+
+
 # Reads all the Qlk files from a given folder
 def load_all_QM_0_in_folder(folder,
                             min_step=0,
@@ -60,8 +75,8 @@ def load_all_QM_0_in_folder(folder,
 
 # Reads 1 QM file
 def load_Qlk(filepath,
-             min_step=0,
-             max_step='all',
+             min_time=0,
+             max_time='all',
              stride=1,
              ignore_steps=[]):
 
@@ -72,22 +87,42 @@ def load_Qlk(filepath,
     # Read the data
     df = pd.read_csv(filepath)
     df = df.dropna()
+    df = df[df['time'] >= min_time]
+    if max_time == "all":
+      return df
+    else:
+      return df[(df['time'] <= max_time)]
 
-    return df
+
+def load_all_RI0_in_folder(folder, min_step=0, max_step="all",
+                           stride=1, ignore_steps=[], reps="all"):
+    """
+    Will load all the RI0 files in a folder.
+    """
+    return Utils.load_all_in_folder(folder=folder,
+                                    func=load_RI0,
+                                    args=[min_step,
+                                          max_step,
+                                          stride,
+                                          ignore_steps],
+                                    filename_must_contain=['RI0-', 'xyz'],
+                                    filename_must_not_contain=[],
+                                    reps=reps)
+
 
 
 # Reads all the Qlk files from a given folder
 def load_all_Qlk_in_folder(folder,
-                           min_step=0,
-                           max_step='all',
+                           min_time=0,
+                           max_time='all',
                            stride=1,
                            ignore_steps=[],
                            reps='all'):
 
     return Utils.load_all_in_folder(folder=folder,
                                     func=load_Qlk,
-                                    args=[min_step,
-                                          max_step,
+                                    args=[min_time,
+                                          max_time,
                                           stride,
                                           ignore_steps],
                                     filename_must_contain=['QM-', 'csv'],
@@ -97,16 +132,16 @@ def load_all_Qlk_in_folder(folder,
 
 # Reads all the Qlk files from a given folder
 def load_all_Rlk_in_folder(folder,
-                           min_step=0,
-                           max_step='all',
+                           min_time=0,
+                           max_time='all',
                            stride=1,
                            ignore_steps=[],
                            reps='all'):
 
     rlk_data = Utils.load_all_in_folder(folder=folder,
                                         func=load_Qlk,
-                                        args=[min_step,
-                                              max_step,
+                                        args=[min_time,
+                                              max_time,
                                               stride,
                                               ignore_steps],
                                         filename_must_contain=['rlk', 'csv'],
