@@ -901,7 +901,7 @@ class LoadData(Params):
             self.all_pos_data = load_pos.load_all_pos_in_folder(
                                                        self.folder,
                                                        reps=self.reps,
-                                                       max_time=max_time,
+                                                       max_time=self.max_time,
                                                        min_time=self.min_time,
                                                        stride=self.slow_stride
                                                                )
