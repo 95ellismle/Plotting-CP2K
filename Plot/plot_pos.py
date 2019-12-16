@@ -28,7 +28,7 @@ class COM(object):
             COM_widg_ax, COM.plot_ax = axis
             
             COM._plotAll(self)
-            COM.plot_ax.set_ylabel(r"|$\mathbf{COM}^{(I)} - \mathcal{O}$|")
+            COM.plot_ax.set_ylabel(r"|$\mathbf{COM}^{(I)} - \mathcal{O}$| [%s]" % self.unitsLength[self.units])
              
     @staticmethod
     def _plotAll(self):
@@ -77,9 +77,9 @@ class Pos3D(object):
             Pos3D.ax.set_yticks(yticks)
             Pos3D.ax.set_zticks(zticks)
 
-            Pos3D.ax.set_xlabel(r"$Pos_{x}$ [bohr]")
-            Pos3D.ax.set_ylabel(r"$Pos_{y}$ [bohr]")
-            Pos3D.ax.set_zlabel(r"$Pos_{z}$ [bohr]")
+            Pos3D.ax.set_xlabel(r"$Pos_{x}$ [%s]" % self.unitsLength[self.units])
+            Pos3D.ax.set_ylabel(r"$Pos_{y}$ [%s]" % self.unitsLength[self.units])
+            Pos3D.ax.set_zlabel(r"$Pos_{z}$ [%s]" % self.unitsLength[self.units])
 
     @staticmethod
     def _plotAll(self):
@@ -155,7 +155,7 @@ class PlotPos(object):
             if self._use_control:
                 PlotPos.__set_control(self)
 
-            axLab = r"$|\mathbf{R}_{\nu}^{(I)}|$ [bohr]"
+            axLab = r"$\mathbf{R}_{\nu}^{(I)}$ [%s]" % self.unitsLength[self.units]
             PlotPos.plot_ax.set_ylabel(axLab)
 
     @staticmethod
@@ -178,44 +178,30 @@ class PlotPos(object):
         """
         Will plot the positions of atoms for all trajectories.
         """
-        keys = list(self.all_pos_data.keys())
-        data, cols, _ = self.all_pos_data[keys[0]]
-        mask = cols != 'Ne'
-        activeAtoms = [[pos for cond, pos in zip(mask[step], data[step])
-                        if cond]
-                       for step in range(len(data))]
-        activeAtoms = np.array(activeAtoms)
-        x0 = 0  # activeAtoms[:, 0, 0]
-        y0 = 0  # activeAtoms[:, 0, 1]
-        z0 = 0  # activeAtoms[:, 0, 2]
-
         for fileName in self.all_pos_data:
             data, cols, timesteps = self.all_pos_data[fileName]
 
-            # This is a horrible hack should be improved!
-            #  * Make more robust way to get active atoms
-            #  * Use numpy fancy indexing instead of list comprehension
-            mask = cols != 'Ne'
-            activeAtoms = [[pos for cond, pos in zip(mask[step], data[step])
-                            if cond]
-                           for step in range(len(data))]
-            activeAtoms = np.array(activeAtoms)
-
             # Plot atoms
             for iat in self.atoms_to_plot:
-                color = 'r' if iat < 6 else 'b'
-                x = activeAtoms[:, iat-1, 0] - x0
-                y = activeAtoms[:, iat-1, 1] - y0
-                z = activeAtoms[:, iat-1, 2] - z0
-                mag = np.sqrt(x**2 + y**2 + z**2)
+                v = self.active_atoms[iat-1]
+                x = data[:, v, 0]
+                #y = data[:, v, 1]
+                #z = data[:, v, 2]
+                #mag = np.sqrt(x**2 + y**2 + z**2)
                 #mag = x
 
+                #PlotPos.plot_ax.plot(timesteps,
+                #                     mag,
+                #                     color=self.colors[iat],
+                #                     #color=self.colors[iat],
+                #                     alpha=self.alpha,
+                #                     lw=0.5)
                 PlotPos.plot_ax.plot(timesteps,
-                                     mag,
-                                     color=color,
-                                     #color=self.colors[iat],
+                                     x,
+                                     color='r',  # self.colors[iat-1],
                                      alpha=self.alpha,
                                      lw=0.5)
+
                 #PlotPos.plot_ax.plot(timesteps,
                 #                     y,
                 #                     color='g',  # self.colors[iat-1],
@@ -260,7 +246,7 @@ class PlotVel(object):
             if self._use_control:
                 PlotVel.__set_control(self)
 
-            axLab = r"$|\mathbf{R}_{\nu}^{(I)}|$ [bohr]"
+            axLab = r"$|\mathbf{R}_{\nu}^{(I)}|$ [%s]" % self.unitsLength[self.units]
             PlotVel.plot_ax.set_ylabel(axLab)
 
     @staticmethod
@@ -339,7 +325,7 @@ class PosStd(object):
             # Will do the plotting
             PosStd.__plot(self)
 
-            PosStd.plot_ax.set_ylabel(r"$\sigma(|\mathbf{R}_{\nu}^{(I)}|)$")
+            PosStd.plot_ax.set_ylabel(r"$\sigma(|\mathbf{R}_{\nu}^{(I)}|)$ [%s]" % self.unitsLength[self.units])
 #            PosStd.plot_ax.set_ylim([5, 1050])
 
     @staticmethod

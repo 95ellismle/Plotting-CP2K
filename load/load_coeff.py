@@ -13,16 +13,16 @@ from load import load_utils as Utils
 
 # Will load a single coefficient file
 def load_coeff(filepath,
-               min_step=0,
-               max_step='all',
+               min_time=0,
+               max_time='all',
                stride=1,
                ignore_steps=[],
                metadata=False):
 
     data, cols, timesteps = XYZ.read_xyz_file(filename=filepath, 
                                               num_data_cols=2, 
-                                              min_step=min_step, 
-                                              max_step=max_step, 
+                                              min_time=min_time, 
+                                              max_time=max_time, 
                                               stride=stride, 
                                               ignore_steps=ignore_steps,
                                               metadata=metadata)
@@ -33,8 +33,8 @@ def load_coeff(filepath,
 
 # Reads all the Qlk files from a given folder
 def load_all_coeff_in_folder(folder,
-                             min_step=0,
-                             max_step='all',
+                             min_time=0,
+                             max_time='all',
                              stride=1,
                              ignore_steps=[],
                              filename_must_not_contain=[],
@@ -43,8 +43,8 @@ def load_all_coeff_in_folder(folder,
 
     return Utils.load_all_in_folder(folder=folder,
                                     func=load_coeff,
-                                    args=[min_step,
-                                          max_step,
+                                    args=[min_time,
+                                          max_time,
                                           stride,
                                           ignore_steps],
                                     filename_must_not_contain=filename_must_not_contain,

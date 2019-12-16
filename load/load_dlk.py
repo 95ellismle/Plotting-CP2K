@@ -15,8 +15,8 @@ import os
 
 # Reads 1 NACV file
 def load_dlk(filepath,
-             min_step=0,
-             max_step='all',
+             min_time=0,
+             max_time='all',
              stride=1,
              ignore_steps=[]):
 
@@ -26,22 +26,28 @@ def load_dlk(filepath,
 
     # Read the data
     df = pd.read_csv(filepath)
+    df = df.dropna()
+    df = df[df['time'] >= min_time]
+    if max_time == "all":
+      return df
+    else:
+      return df[(df['time'] <= max_time)]
 
     return df
 
 
 # Reads all the dlk files from a given folder
 def load_all_dlk_in_folder(folder,
-                           min_step=0,
-                           max_step='all',
+                           min_time=0,
+                           max_time='all',
                            stride=1,
                            ignore_steps=[],
                            reps='all'):
 
     return Utils.load_all_in_folder(folder=folder,
                                     func=load_dlk,
-                                    args=[min_step,
-                                          max_step,
+                                    args=[min_time,
+                                          max_time,
                                           stride,
                                           ignore_steps],
                                     filename_must_contain=['NACV', 'csv'],

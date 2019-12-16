@@ -30,7 +30,7 @@ class QM0_t(object):
 
             QM0_t.plot_all(self)
 
-        QM0_t.plotAx.set_ylabel(r"$|\frac{Q_{\nu}^{(I)}}{M_{\nu}}|$ [$bohr^{-1}$]")
+        QM0_t.plotAx.set_ylabel(r"$|\frac{Q_{\nu}^{(I)}}{M_{\nu}}|$ [$%s^{-1}$]" % self.unitsLength[self.units].strip("$"))
 
     @staticmethod
     def plot_all(self):
@@ -75,7 +75,7 @@ class Qlk_t(object):
 #            if self._use_control:
 #                Qlk_t._set_Qlk_t_control()
 
-            Qlk_t.plotAx.set_ylabel(r"$\frac{Q_{12,\nu}^{(I)}}{M_{\nu}}$ [$\frac{Ha \ s}{l}$]")
+            Qlk_t.plotAx.set_ylabel(r"$\frac{Q_{12,\nu}^{(I)}}{M_{\nu}}$ [$%s^{-1}$]" % self.unitsLength[self.units].strip("$"))
 
     @staticmethod
     def _check_settings_Qlk_t(label):
@@ -242,51 +242,55 @@ class Qlk_t(object):
                data = Qlk_data[mask]
                Qlk_timesteps = data['time']
 
-               QMX = data['Qlk(x)']
-               QMY = data['Qlk(y)']
-               QMZ = data['Qlk(z)']
-               #if all(j not in data.columns for j in ('Qlk(y)','Qlk(z)')):
-               #   moreThan1Dim = False
-               #   QM_mag = QMX
-               #else:
-               #   moreThan1Dim = True
-               #   QM_mag = QMX**2
+               QMX = data['Qlk(x)'][mask]
+               if all(j not in data.columns for j in ('Qlk(y)','Qlk(z)')):
+                  moreThan1Dim = False
+                  QM_mag = QMX
+               else:
+                  moreThan1Dim = True
+                  QM_mag = QMX**2
     
-               #if 'Qlk(y)' in data.columns:
-               #   QMY = data[mask]['Qlk(y)']
-               #   QM_mag += QMY**2
-               #if 'Qlk(z)' in data.columns:
-               #   QMZ = data[mask]['Qlk(z)']
-               #   QM_mag += QMZ**2
+               if 'Qlk(y)' in data.columns:
+                  QMY = data[mask]['Qlk(y)']
+                  QM_mag += QMY**2
+               if 'Qlk(z)' in data.columns:
+                  QMZ = data[mask]['Qlk(z)']
+                  QM_mag += QMZ**2
        
-               #if moreThan1Dim:
-               #   QM_mag = np.sqrt(QM_mag)
+               if moreThan1Dim:
+                  QM_mag = np.sqrt(QM_mag)
 
                ln, = ax.plot(Qlk_timesteps,
-                             QMX,  # /np.max(QM_mag[:, 0]),
+                             QM_mag,  # /np.max(QM_mag[:, 0]),
                              '-',
                              color=self.colors[iatom-1],
                              alpha=self.alpha,
                              lw=0.7)
-               ln, = ax.plot(Qlk_timesteps,
-                             QMY,  # /np.max(QM_mag[:, 0]),
-                             '-',
-                             color=self.colors[iatom-1],
-                             alpha=self.alpha,
-                             lw=0.7)
-               ln, = ax.plot(Qlk_timesteps,
-                             QMZ,  # /np.max(QM_mag[:, 0]),
-                             '-',
-                             color=self.colors[iatom-1],
-                             alpha=self.alpha,
-                             lw=0.7)
+               #ln, = ax.plot(Qlk_timesteps,
+               #              QMX * 21892.890696017184,  
+               #              '-',
+               #              color='r',
+               #              alpha=self.alpha,
+               #              lw=0.7)
+               #ln, = ax.plot(Qlk_timesteps,
+               #              QMY * 21892.890696017184, 
+               #              '-',
+               #              color='g',
+               #              alpha=self.alpha,
+               #              lw=0.7)
+               #ln, = ax.plot(Qlk_timesteps,
+               #              QMZ * 21892.890696017184,
+               #              '-',
+               #              color='b',
+               #              alpha=self.alpha,
+               #              lw=0.7)
                legend_markers.append(plt.Line2D([0, 0], [0, 0], color=self.colors[iatom-1],
                                      alpha=self.alpha, lw=4))
          
         if len(self.atoms_to_plot) < 20:
            ax.legend(legend_markers, [r'C$_{%i}$'%i for i in self.atoms_to_plot], ncol=ncol,
                      fontsize=18)
-        ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$")
+        ax.set_ylabel(r"|Q$_{lk}^{(I)}$|$^2$ [$%s^{-1}$]" % self.unitsLength[self.units].strip('$'))
 
         # Initialise the replica lines
         for atlist in Qlk_t.all_rep_lines:
@@ -320,7 +324,7 @@ class Alpha(object):
 #                Alpha._set_Qlk_t_control()
 
             Alpha.plotAx.set_ylabel(r"$\alpha_{\nu}^{I}$ " +
-                                        r"[$\frac{Ha \ s}{l}$]")
+                                        r"[$%s^{-1}$]" % self.unitsLength[self.units].strip("$"))
 
     @staticmethod
     def _check_settings_Qlk_t(label):
@@ -453,7 +457,7 @@ class Rlk(object):
             # Plotting
             Rlk._plot(self)
 
-            Rlk.plotAx.set_ylabel(r"$|Rlk_{12,\nu}^{I}|^2$ [$\frac{Ha \ s}{l}$]")
+            Rlk.plotAx.set_ylabel(r"$|Rlk_{12,\nu}^{I}|^2$ [$%s^{-1}$]" % self.unitsLength[self.units].strip("$"))
 #            Rlk.plotAx.set_ylim([5, 1050])
 
 
@@ -489,7 +493,13 @@ class Rlk(object):
                Rlk_mag = np.sqrt(Rlk_mag)
 
             # Plot Mag
-            ln, = ax.plot(time, Rlk_mag, '--', color=self.colors[iatom-1])
+            #ln, = ax.plot(time, Rlk_mag, '--', color=self.colors[iatom-1])
+            ln, = ax.plot(time, self.Rlk_data['Rlk(x)'][mask],
+                          '--', color='r')
+            ln, = ax.plot(time, self.Rlk_data['Rlk(y)'][mask],
+                          '--', color='g')
+            ln, = ax.plot(time, self.Rlk_data['Rlk(z)'][mask],
+                          '--', color='b')
 
 
 class QM_R(object):
@@ -515,7 +525,7 @@ class QM_R(object):
             QM_R._set_Qlk_control(self)
             
             QM_R.plotAx.set_xlabel("R [angstrom]", fontsize=28)
-            QM_R.plotAx.set_ylabel(r"${Q^{J}_{12, \nu}}$ [$\frac{Ha \cdot s}{l}$]",
+            QM_R.plotAx.set_ylabel(r"${Q^{J}_{12, \nu}}$ [$%s^{-1}$]" % self.unitsLength[self.units].strip("$"),
                                        fontsize=28)
         
             self.print_timing_info(QM_R.timing_dict, "Qlk vs Pos timings")
@@ -684,7 +694,7 @@ class RI0(object):
    def __init__(self, axes):
       RI0.widgAx, RI0.plotAx = axes
       RI0.__plot_all(self)
-      RI0.plotAx.set_ylabel(r"$\mathbf{R}^{(I)}_{0, \nu}$")
+      RI0.plotAx.set_ylabel(r"$\mathbf{R}^{(I)}_{0, \nu}$ [$%s^{-1}$]" % self.unitsLength[self.units].strip("$"))
 
    # Will plot all positions
    @staticmethod
@@ -694,7 +704,7 @@ class RI0(object):
        """
        for fileName in self.RI0_data:
            data, cols, timesteps = self.RI0_data[fileName]
-           for iat in range(data.shape[1]):
+           for iat in self.atoms_to_plot:
                x = data[:, iat-1, 0]
                y = data[:, iat-1, 1]
                z = data[:, iat-1, 2]
@@ -704,7 +714,7 @@ class RI0(object):
    
                RI0.plotAx.plot(timesteps,
                                mag,
-                               color=self.colors[iat],
+                               color=self.colors[iat-1],
                                alpha=self.alpha,
                                lw=0.5)
    

@@ -58,26 +58,26 @@ def load_all_frc_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_
 
 
 # Reads 1 frc file
-def load_ad_frc(filepath, min_step=0, max_step='all', stride=1, ignore_steps=[]):
+def load_ad_frc(filepath, min_time=0, max_time='all', stride=1, ignore_steps=[]):
     """
     Load adiabatic forces
     """
     df = csv.load_Qlk(filepath=filepath, 
-                      min_step=min_step, 
-                      max_step=max_step, 
+                      min_time=min_time, 
+                      max_time=max_time, 
                       stride=stride, 
                       ignore_steps=ignore_steps)
     return df
 
 
 # Reads all the Qlk files from a given folder
-def load_all_ad_frc_in_folder(folder, min_step=0, max_step='all', stride=1, ignore_steps=[], reps='all'):
+def load_all_ad_frc_in_folder(folder, min_time=0, max_time='all', stride=1, ignore_steps=[], reps='all'):
     """
     Loads all adiabatic forces in a folder
     """
     return Utils.load_all_in_folder(folder=folder, 
                                     func=load_ad_frc, 
-                                    args=[min_step, max_step, stride, ignore_steps], 
+                                    args=[min_time, max_time, stride, ignore_steps], 
                                     filename_must_contain=['frc','csv', 'ad'], 
                                     filename_must_not_contain=[], 
                                     reps=reps)

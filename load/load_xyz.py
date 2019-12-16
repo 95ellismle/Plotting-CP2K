@@ -199,7 +199,7 @@ def get_xyz_step_metadata2(filename, ltxt=False):
 def splitter(i):
     return [j.split() for j in i]
 def read_xyz_file(filename, num_data_cols=False,
-                  min_step=0, max_step='all', stride=1,
+                  min_time=0, max_time='all', stride=1,
                   ignore_steps=[], metadata=False):
     """
     Will read 1 xyz file with a given number of data columns.
@@ -207,8 +207,8 @@ def read_xyz_file(filename, num_data_cols=False,
     Inputs:
         * filename => the path to the file to be read
         * num_data_cols => the number of columns which have data (not metadata)
-        * min_step => step to start reading from
-        * max_step => step to stop reading at
+        * min_time => time to start reading from
+        * max_time => time to stop reading at
         * stride => what stride to take when reading
         * ignore_steps => a list of any step numbers to ignore.
         * metadata => optional dictionary containing the metadata
@@ -216,12 +216,14 @@ def read_xyz_file(filename, num_data_cols=False,
     Outputs:
         * data, cols, timesteps = the data, metadata and timesteps respectively
     """
-    if type(min_step) != int or type(max_step) != int or type(stride) != int:
-        if type(max_step) != str:
-            print("min_step = ", min_step, " type = ", type(min_step))
-            print("max_step = ", max_step, " type = ", type(max_step))
+    # Quick type check of param fed into the func
+    if type(stride) != int and isinstance(min_step, (int, float)):
+            print("min_time = ", min_time, " type = ", type(min_time))
+            print("max_time = ", max_time, " type = ", type(max_time))
             print("stride = ", stride, " type = ", type(stride))
             raise SystemExit("Input parameters are the wrong type!")
+
+    # Get bits of metadata
     if num_data_cols is not False:
        num_data_cols = -num_data_cols
     ltxt = [i for i in open_read(filename).split('\n') if i]
@@ -234,28 +236,37 @@ def read_xyz_file(filename, num_data_cols=False,
     time_ind = metadata['time_ind']
     time_delim = metadata['time_delim']
 
-    abs_max_step = int(len(ltxt)/lines_in_step)
-    if max_step == 'all' or max_step > abs_max_step:
-        max_step = abs_max_step
-    else:
-        max_step += 1  # Actually get right up to the time requested
-    
     # The OrderedDict is actually faster than a list here.
     #   (time speedup at the expense of space)
     step_data = OrderedDict()  # keeps order of frames -Important
-    all_steps = [i for i in range(min_step, max_step, stride)
+    num_steps = len(ltxt) / metadata['lines_in_step']
+    all_steps = [i for i in range(0, num_steps, stride)
                  if i not in ignore_steps]
 
     # Get the timesteps
-    timelines = np.array([ltxt[time_ind+(i*lines_in_step)] for i in all_steps])
+    timelines = [ltxt[time_ind+(i*lines_in_step)] for i in all_steps]
     timesteps = [string_between(line, "time = ", time_delim)
                  for line in timelines]
     timesteps = np.array(timesteps)
     timesteps = timesteps.astype(float)
-    
+
+    # Get the correct steps (from min_time and max_time)
+    all_steps = np.array(all_steps)
+    mask = timesteps >= min_time
+    if type(max_time) == str:
+      if 'all' not in max_time.lower():
+         msg = "You inputted max_time = `%s`\n" % max_time
+         msg += "Only the following are recognised as max_time parameters:\n\t*%s" % '\n\t*'.join(['all'])
+         print(msg)
+         raise SystemExit("Unknown parameter for max_time.\n\n"+msg)
+    else:
+      mask = mask & (timesteps <= max_time)
+    all_steps = all_steps[mask]
+    timesteps = timesteps[mask]
+      
     # Get the actual data (but only up to the max step)
-    min_, max_ = lines_in_step * min_step, lines_in_step * (max_step)
-    all_data = np.array(ltxt)[min_ : max_]
+    min_step, max_step = min(all_steps), max(all_steps)+1
+    all_data = np.array(ltxt)[min_step*metadata['lines_in_step']:max_step*metadata['lines_in_step']]
 
     # get the data from each step in a more usable format
     step_data = np.reshape(all_data, (len(all_steps), lines_in_step))

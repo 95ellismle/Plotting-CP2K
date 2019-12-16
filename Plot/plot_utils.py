@@ -237,6 +237,73 @@ def avg_hist_f_data(all_tintf_data):
     
     return avgData, avgTimesteps
     
+def calc_eqS26(all_adMom, all_aCoeff, all_Qlk):
+   """
+   Will calculate equation S26 from the SI of Min, 17 for each state.
+   """
+   Qkeys = list(all_Qlk.keys())
+   AMkeys = list(all_adMom.keys())
+   ACkeys = list(all_aCoeff.keys())
+
+   # Find some necessary metadata
+   tmp = all_Qlk[Qkeys[0]].columns
+   qlkDims = ['Qlk(%s)' % i for i in ('x', 'y', 'z',) if 'Qlk(%s)' % i in tmp]
+   tmp = all_adMom[AMkeys[0]].columns
+   adMomDims = ['f(%s)' % i for i in ('x', 'y', 'z',) if 'f(%s)' % i in tmp]
+   
+   atoms = all_Qlk[Qkeys[0]]['v'].unique()
+   states_l = all_Qlk[Qkeys[0]]['l'].unique()
+   states_k = all_Qlk[Qkeys[0]]['k'].unique()
+   nstep = len(all_Qlk[Qkeys[0]]['time'].unique())
+
+   min_len = 10000000000000000000000000000000000000
+   for I in range(len(Qkeys)):
+      Qlk = all_Qlk[Qkeys[I]]
+      adMom = all_adMom[AMkeys[I]]
+      C = all_aCoeff[ACkeys[I]]
+
+      # First get only datapoints at the same timestep
+      Qlk, adMom, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
+                                         [adMom, adMom, adMom['time']])
+      Qlk, adMom = Qlk[0], adMom[0]
+
+      Qlk, C, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
+                                     [C[-1], C[1], C[2]])
+      Qlk = Qlk[0]
+
+      Qlk, adMom, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
+                                         [adMom, adMom, adMom['time']])
+      Qlk, adMom = Qlk[0], adMom[0]
+
+      # Allocate array
+      if I == 0:
+         eqS26 = np.zeros((len(C[0]), len(states_l), len(states_k)))
+         
+      # Now do the maths
+      Cstates = C[1][:, :, 0].astype(int)
+      pops = C[0]
+      for v in atoms:
+        qlkv = Qlk[Qlk['v'] == v]
+        fv = adMom[adMom['v'] == v]
+        for il, l in enumerate(states_l):
+          for ik, k in enumerate(states_k):
+            qlk = qlkv[(qlkv['l'] == l) & (qlkv['k'] == k)][qlkDims]
+            qlk.index = range(len(qlk))
+            qlk.columns = ('x', 'y', 'z')[:len(qlkDims)]
+
+            fl  = fv[fv['l'] == l][adMomDims]
+            fl.index = range(len(fl))
+            fl.columns = ('x', 'y', 'z')[:len(adMomDims)]
+            fk  = fv[fv['l'] == k][adMomDims]
+            fk.index = range(len(fk))
+            fk.columns = ('x', 'y', 'z')[:len(adMomDims)]
+
+            Clk = pops[Cstates == l] * pops[Cstates == k]
+            min_len = np.min([min_len, len(eqS26), len(qlk)])
+            eqS26[:min_len, il, ik] += (2*np.sum(qlk * (fk - fl), axis=1) * Clk)[:min_len]
+
+
+   return eqS26[:min_len], Qlk['time'].unique()[:min_len]
    
 def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
     """
@@ -331,6 +398,10 @@ def match_timesteps(DCT1, DCT2):
     Outputs:
         * DCT1 and DCT2 (same as inputs but spliced)
     """
+    # Make sure rounding errors don't influence the mask
+    DCT1[2] = np.round(DCT1[2], 3)
+    DCT2[2] = np.round(DCT2[2], 3)
+
     # Make sure that all data in data1 is in data2
     mask1 = [i in DCT2[2] for i in DCT1[2]]
     DCT1[0] = DCT1[0][mask1]
@@ -401,12 +472,12 @@ def get_coup_data(H_data, key):
 
 
 # Will load the Adiab coeff data or transform it from the diabatic coefficents.
-def load_Acoeff_data(folder, reps, all_ham_data=False, max_step='all', min_step=0, stride=1):
+def load_Acoeff_data(folder, reps, all_ham_data=False, max_time='all', min_time=0, stride=1):
     all_coeff_data = load_coeff.load_all_coeff_in_folder(folder, 
                                                          filename_must_contain=['ad','xyz','coeff'], 
                                                          reps=reps,
-                                                         max_step=max_step, 
-                                                         min_step=min_step, 
+                                                         max_time=max_time, 
+                                                         min_time=min_time, 
                                                          stride=stride)
     # Transform Diabatic
     if not all_coeff_data:
@@ -420,8 +491,8 @@ def load_Acoeff_data(folder, reps, all_ham_data=False, max_step='all', min_step=
                                                               filename_must_contain=['coeff','xyz'], 
                                                               filename_must_not_contain=['ad'], 
                                                               reps=reps,
-                                                              max_step=max_step, 
-                                                              min_step=min_step, 
+                                                              max_time=max_time, 
+                                                              min_time=min_time, 
                                                               stride=stride)
         
         all_Acoeff_data = trans_all_diab_to_adiab(all_Dcoeff_data=all_Dcoeff_data,

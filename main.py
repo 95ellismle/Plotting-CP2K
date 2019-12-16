@@ -21,20 +21,20 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              #"/scratch/mellis/flavoured-cptk/200Rep_2molTully",
-              "/scratch/mellis/flavoured-cptk/200Rep_2mol",
-              #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-16",
+              "/scratch/mellis/flavoured-cptk/200Rep_2molTully",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
+              #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-11",
               #"/scratch/mellis/TestCP2KCTMQC",
               #"/scratch/mellis/TestCP2KImplemetation/NoSmoothing/Simulation_1",
               "",
              ]
              
-plotting_parameters = ["RI0", "rlk", "qm_t"]
-replicas = [1]
+plotting_parameters = ["ad_mom"]
+replicas = 'all'
 plot = True
 min_time = 0
-max_time = 'all'
-#######################################################
+max_time = 'all'                             # in fs
+####################################################
 
 folders = []
 for rootfolder in rootFolder:
