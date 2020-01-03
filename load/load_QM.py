@@ -37,7 +37,7 @@ def load_QM_0(filepath,
     return data, cols, timesteps
 
 
-def load_RI0(filepath, min_step=0, max_step="all",
+def load_RI0(filepath, min_time=0, max_time="all",
              stride=1, ignore_steps=[]):
     """
     Will load a single traj RI0 file (the quantum momentum intercept without
@@ -45,11 +45,11 @@ def load_RI0(filepath, min_step=0, max_step="all",
     """
     data, cols, timesteps = XYZ.read_xyz_file(filename=filepath,
                                               num_data_cols=False,
-                                              min_step=min_step,
-                                              max_step=max_step,
+                                              min_time=min_time,
+                                              max_time=max_time,
                                               stride=stride,
                                               ignore_steps=ignore_steps)
-    return data, cols, timesteps
+    return [data, cols, timesteps]
 
 
 # Reads all the Qlk files from a given folder
@@ -94,15 +94,15 @@ def load_Qlk(filepath,
       return df[(df['time'] <= max_time)]
 
 
-def load_all_RI0_in_folder(folder, min_step=0, max_step="all",
+def load_all_RI0_in_folder(folder, min_time=0, max_time="all",
                            stride=1, ignore_steps=[], reps="all"):
     """
     Will load all the RI0 files in a folder.
     """
     return Utils.load_all_in_folder(folder=folder,
                                     func=load_RI0,
-                                    args=[min_step,
-                                          max_step,
+                                    args=[min_time,
+                                          max_time,
                                           stride,
                                           ignore_steps],
                                     filename_must_contain=['RI0-', 'xyz'],

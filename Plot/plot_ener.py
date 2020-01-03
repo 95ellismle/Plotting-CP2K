@@ -60,13 +60,13 @@ class Ad_State(object):
         for Efilename in self.all_ad_ener_data:
             ad_ener_data = self.all_ad_ener_data[Efilename]
             for i, col in enumerate(self.state_cols_AS):
-                ln, = Ad_State.plot_ax.plot(ad_ener_data['Time'],
+                ln, = Ad_State.plot_ax.plot(ad_ener_data['time'],
                                            ad_ener_data[col],
                                            alpha=self.alpha,
                                            lw=0.7,
                                            color=self.colors[i])
                 self.AS_all_lines.append(ln)
-            Ad_State.plot_ax.plot(ad_ener_data['Time'],
+            Ad_State.plot_ax.plot(ad_ener_data['time'],
                                   ad_ener_data['Pot'], 'k--',
                                   lw = 0.5, alpha=self.alpha)
 
@@ -81,7 +81,7 @@ class Ad_State(object):
         # Plot the lines
         self.AS_avg_lines = []
         for i, col in enumerate(self.state_cols_AS):
-            ln, = Ad_State.plot_ax.plot(self.all_ad_ener_data_avg['Time'],
+            ln, = Ad_State.plot_ax.plot(self.all_ad_ener_data_avg['time'],
                                        self.all_ad_ener_data_avg[col],
                                        color=self.colors[i])
             self.AS_avg_lines.append(ln)
@@ -105,9 +105,9 @@ class Ad_State(object):
             normed_diffs = (y1_y2 - min_diff)/(max_diff - min_diff)
 
             for dt, timestep in enumerate(
-                                         self.all_ad_ener_data_avg['Time'][:-1]
+                                         self.all_ad_ener_data_avg['time'][:-1]
                                           ):
-                T = [timestep, self.all_ad_ener_data_avg['Time'][dt+1]]
+                T = [timestep, self.all_ad_ener_data_avg['time'][dt+1]]
                 y1 = self.all_ad_ener_data_avg[state].iloc[[dt, dt+1]]
                 y2 = self.all_ad_ener_data_avg[
                                                self.state_cols_AS[i+1]
@@ -199,7 +199,7 @@ class Energy_Cons(object):
             alpha = self.alpha + 0.1
             if alpha > 1:
                 alpha = 1
-            ln, = Energy_Cons.plot_ax.plot(data['Time'],
+            ln, = Energy_Cons.plot_ax.plot(data['time'],
                                            data['E_cons'],
                                            'k-',
                                            lw=0.9,
@@ -207,7 +207,7 @@ class Energy_Cons(object):
             Energy_Cons.tot_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
-            ln, = Energy_Cons.plot_ax.plot(data['Time'],
+            ln, = Energy_Cons.plot_ax.plot(data['time'],
                                            data['Kin'],
                                            'r-',
                                            lw=0.9,
@@ -215,7 +215,7 @@ class Energy_Cons(object):
             Energy_Cons.kin_lines.append(ln)
             ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
-            ln, = Energy_Cons.plot_ax.plot(data['Time'],
+            ln, = Energy_Cons.plot_ax.plot(data['time'],
                                            data['Pot'],
                                            'g-',
                                            lw=0.9,
@@ -229,21 +229,21 @@ class Energy_Cons(object):
         Will plot the average energy drift on the Energy_Cons.plot_ax
         """
         Energy_Cons.avg_lines = {}
-        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['time'],
                                        self.tot_ener_mean['E_cons'],
                                        'k-',
                                        lw=1.3)
         Energy_Cons.avg_lines['Total'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.total)
 
-        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['time'],
                                        self.tot_ener_mean['Kin'],
                                        'r-',
                                        lw=1.3)
         Energy_Cons.avg_lines['Kinetic'] = ln
         ln.set_visible(Energy_Cons.plot_all and Energy_Cons.kinetic)
 
-        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['Time'],
+        ln, = Energy_Cons.plot_ax.plot(self.tot_ener_mean['time'],
                                        self.tot_ener_mean['Pot'],
                                        'g-',
                                        lw=1.3)
@@ -320,7 +320,7 @@ class Energy_Cons(object):
             data = self.all_tot_ener[irep]
             for lab in ('E_cons', 'Kin', 'Pot'):
                 # Convert the time units from AU -> fs.
-                fit = np.polyfit(data['Time']*unit_conv, data[lab], 1) 
+                fit = np.polyfit(data['time']*unit_conv, data[lab], 1) 
                 name = lab_to_name_map[lab]
                 # Timestep in fs and Energy in Hartree so x1000 to convert to ps
                 print(self.dt)
@@ -348,11 +348,11 @@ class Energy_Cons(object):
         """
         Will put the average total energy drift on the plot as an annotation
         """
-        minX = np.min(self.tot_ener_mean['Time'])
+        minX = np.min(self.tot_ener_mean['time'])
         minY = np.min(self.tot_ener_mean['E_cons'])
         allTotEner = [self.all_tot_ener[irep]['E_cons']
                       for irep in self.all_tot_ener]
-        rangeX = np.max(self.tot_ener_mean['Time']) - minX
+        rangeX = np.max(self.tot_ener_mean['time']) - minX
         rangeY = np.max([np.max(i) for i in allTotEner]) - minY
 
         x, y = minX + (rangeX * 0.1), minY + (rangeY * 0.9)
@@ -380,7 +380,7 @@ class Energy_Cons(object):
 #         potE = self.all_ad_ener_data[fE]
 #         pos, _, t = self.all_pos_data[fP]
 #
-#         E = potE[potE['Time'] == time]['Pot']
+#         E = potE[potE['time'] == time]['Pot']
 #         pos = pos[t == time]
 #         pos = pos[0, :12, :]
 #         pos = np.mean(pos, axis=0)

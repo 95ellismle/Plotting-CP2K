@@ -495,12 +495,6 @@ class LoadData(Params):
         """
         if '|u|^2' in self.load_params:
             self.load_timings['di coeff'] = time.time()
-            print_step = self.nested_inp_params['FORCE_EVAL']['MIXED']['ADIABATIC']['PRINT']['COEFFICIENTS']['EACH']['MD'][0]
-
-            if type(self.max_step) == str:
-                max_step = self.max_step
-            else:
-                max_step = int(self.max_step/print_step)
 
             tmpList = ['xyz', 'coeff']
             self.all_Dcoeff_data = load_coeff.load_all_coeff_in_folder(
@@ -508,16 +502,18 @@ class LoadData(Params):
                                              filename_must_contain=tmpList,
                                              filename_must_not_contain=['ad'],
                                              reps=self.reps,
-                                             max_step=max_step,
-                                             min_step=self.min_step,
+                                             max_time=self.max_time,
+                                             min_time=self.min_time,
                                              stride=self.quick_stride
                                                                       )
             if self.units == 'au':
                for f in self.all_Dcoeff_data:
                   self.all_Dcoeff_data[f][2] *= 41.34137458
+
             if not self.all_Dcoeff_data:
                 raise SystemExit("Sorry I can't find any coeff data in " +
                                  "folder:\n\n\t$s" % self.folder)
+
             self.load_timings['di coeff'] = time.time() - \
                 self.load_timings['di coeff']
 
@@ -591,7 +587,7 @@ class LoadData(Params):
                                                               )
             if self.units == 'au':
                for f in self.all_ad_ener_data:
-                  self.all_ad_ener_data[f]['Time'] /= 0.0241884254
+                  self.all_ad_ener_data[f]['time'] /= 0.0241884254
 
             if not self.all_ad_ener_data:
                 raise IOError("Can't find any data, please check folder.")
@@ -624,7 +620,7 @@ class LoadData(Params):
 
             if self.units == 'au':
                for f in self.all_tot_ener:
-                  self.all_tot_ener[f]['Time'] /= 0.0241884254
+                  self.all_tot_ener[f]['time'] /= 0.0241884254
 
             # Find metadata
             Keys = list(self.all_tot_ener.keys())
@@ -847,16 +843,11 @@ class LoadData(Params):
         """
         if 'ri0' in self.load_params:
             self.load_timings['RI0'] = time.time()
-            print_step = self.nested_inp_params['MOTION']['CTMQC']['PRINT']['RI0']['EACH']['MD'][0]
-            if type(self.max_step) == str:
-                max_step = self.max_step
-            else:
-                max_step = int(self.max_step/print_step)
             self.RI0_data = load_QM.load_all_RI0_in_folder(
                                                         self.folder,
                                                         reps=self.reps,
-                                                        max_step=self.max_step,
-                                                        min_step=self.min_step,
+                                                        max_time=self.max_time,
+                                                        min_time=self.min_time,
                                                         stride=self.slow_stride
                                                                )
             for f in self.RI0_data:
@@ -1051,6 +1042,7 @@ class LoadData(Params):
        """
        if 'eqs26' in self.plot_params:
            self._calc_eqS26()
+
 
     def _calc_eqS26(self):
        """
@@ -1255,7 +1247,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
        Will plot the equation S26 from SI of Min, 17.
        """
        widgAx, plotAx = axes
-       plotAx.plot(self.eqS26[1], self.eqS26[0][:, 0, 0])
+       plotAx.plot(self.eqS26[0], self.eqS26[1])
 
     def plotAdFrc_vs_dfdt(self, axes):
        """
@@ -1290,7 +1282,7 @@ class Plot(LoadData, Params, plot_norm.Plot_Norm, plot_coeff.Plot_Coeff,
                    else:
                       lnD, = pax.plot(flv.index, np.gradient(flv['f(x)'], flv['time']), color='r',
                                alpha=0.3, label=lab1)
-                   lnA, = pax.plot(Flv.index, Flv['Fad(x)'], color='b', alpha=0.3, label=lab2)
+                   lnA, = pax.plot(Flv.index*self.fs_to_AUt, Flv['Fad(x)'], color='b', alpha=0.3, label=lab2)
                    
                    count += 1
        pax.legend()

@@ -493,13 +493,13 @@ class Rlk(object):
                Rlk_mag = np.sqrt(Rlk_mag)
 
             # Plot Mag
-            #ln, = ax.plot(time, Rlk_mag, '--', color=self.colors[iatom-1])
-            ln, = ax.plot(time, self.Rlk_data['Rlk(x)'][mask],
-                          '--', color='r')
-            ln, = ax.plot(time, self.Rlk_data['Rlk(y)'][mask],
-                          '--', color='g')
-            ln, = ax.plot(time, self.Rlk_data['Rlk(z)'][mask],
-                          '--', color='b')
+            ln, = ax.plot(time, Rlk_mag, '--', color=self.colors[iatom-1])
+            #ln, = ax.plot(time, self.Rlk_data['Rlk(x)'][mask],
+            #              '--', color='r')
+            #ln, = ax.plot(time, self.Rlk_data['Rlk(y)'][mask],
+            #              '--', color='g')
+            #ln, = ax.plot(time, self.Rlk_data['Rlk(z)'][mask],
+            #              '--', color='b')
 
 
 class QM_R(object):

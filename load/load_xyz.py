@@ -235,12 +235,26 @@ def read_xyz_file(filename, num_data_cols=False,
     num_title_lines = metadata['num_title_lines']
     time_ind = metadata['time_ind']
     time_delim = metadata['time_delim']
+    num_steps = len(ltxt) / metadata['lines_in_step']
+
+    # Ignore any badly written steps at the end
+    badEndSteps = 0
+    for i in range(num_steps, 0, -1):
+      stepData = ltxt[(i-1)*lines_in_step:(i)*lines_in_step][num_title_lines:]
+      badStep = False
+      for line in stepData:
+         if '*********************' in line:
+            badEndSteps += 1
+            badStep = True
+            break
+      if badStep is False:
+         break
+            
 
     # The OrderedDict is actually faster than a list here.
     #   (time speedup at the expense of space)
     step_data = OrderedDict()  # keeps order of frames -Important
-    num_steps = len(ltxt) / metadata['lines_in_step']
-    all_steps = [i for i in range(0, num_steps, stride)
+    all_steps = [i for i in range(0, num_steps-badEndSteps, stride)
                  if i not in ignore_steps]
 
     # Get the timesteps

@@ -12,6 +12,7 @@ import itertools as IT
 import json
 
 from load import load_coeff
+from load import load_utils
 
 
 def calc_U_matrix(H):
@@ -237,74 +238,48 @@ def avg_hist_f_data(all_tintf_data):
     
     return avgData, avgTimesteps
     
+
+def getRepsInOrder(keys):
+   """
+   Will get the rep number from the keys in a dict.
+   """
+   return sorted([(load_utils.find_rep_num_in_name(key), key) for key in keys])
+   
+
 def calc_eqS26(all_adMom, all_aCoeff, all_Qlk):
    """
    Will calculate equation S26 from the SI of Min, 17 for each state.
    """
-   Qkeys = list(all_Qlk.keys())
-   AMkeys = list(all_adMom.keys())
-   ACkeys = list(all_aCoeff.keys())
+   # Get rep numbers for each entry
+   coeffSortedKeys = getRepsInOrder(all_aCoeff.keys())
+   QMSortedKeys = getRepsInOrder(all_Qlk.keys())
+   adMomSortedKeys = getRepsInOrder(all_adMom.keys())
 
-   # Find some necessary metadata
-   tmp = all_Qlk[Qkeys[0]].columns
-   qlkDims = ['Qlk(%s)' % i for i in ('x', 'y', 'z',) if 'Qlk(%s)' % i in tmp]
-   tmp = all_adMom[AMkeys[0]].columns
-   adMomDims = ['f(%s)' % i for i in ('x', 'y', 'z',) if 'f(%s)' % i in tmp]
+   nstep = len(all_Qlk[QMSortedKeys[0][1]])
+   nrep = len(all_Qlk)
+   nstate = len(all_aCoeff[coeffSortedKeys[0][1]][0][0])
    
-   atoms = all_Qlk[Qkeys[0]]['v'].unique()
-   states_l = all_Qlk[Qkeys[0]]['l'].unique()
-   states_k = all_Qlk[Qkeys[0]]['k'].unique()
-   nstep = len(all_Qlk[Qkeys[0]]['time'].unique())
+   # Put the data into different containers
+   allQlk = np.zeros((nstep, nrep, nstate, nstate))
+   for irep, f in  QMSortedKeys:
+      allQlk[:, irep-1, 0, 1] = all_Qlk[f]['Qlk(x)']
+   allAdMom = np.zeros((nstep, nrep, nstate))
+   for irep, f in adMomSortedKeys:
+      for l in range(2):
+         allAdMom[:, irep-1, l] = all_adMom[f][all_adMom[f]['l'] == l+1]['f(x)']
+   allPops = np.zeros((nstep, nrep, nstate))
+   for irep, f, in coeffSortedKeys:
+      d = all_aCoeff[f][3]
+      allPops[:, irep-1, :] = d
 
-   min_len = 10000000000000000000000000000000000000
-   for I in range(len(Qkeys)):
-      Qlk = all_Qlk[Qkeys[I]]
-      adMom = all_adMom[AMkeys[I]]
-      C = all_aCoeff[ACkeys[I]]
+   # Now calculate the S26
+   l, k = 0, 1
+   S2612 = 2 * allQlk[:, :, l, k] * (allAdMom[:, :, k] - allAdMom[:, :, l]) * allPops[:, :, k] * allPops[:, :, l]
+   S2612 = np.sum(S2612, axis=1) # sum over reps
 
-      # First get only datapoints at the same timestep
-      Qlk, adMom, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
-                                         [adMom, adMom, adMom['time']])
-      Qlk, adMom = Qlk[0], adMom[0]
-
-      Qlk, C, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
-                                     [C[-1], C[1], C[2]])
-      Qlk = Qlk[0]
-
-      Qlk, adMom, _, _ = match_timesteps([Qlk, Qlk, Qlk['time']],
-                                         [adMom, adMom, adMom['time']])
-      Qlk, adMom = Qlk[0], adMom[0]
-
-      # Allocate array
-      if I == 0:
-         eqS26 = np.zeros((len(C[0]), len(states_l), len(states_k)))
-         
-      # Now do the maths
-      Cstates = C[1][:, :, 0].astype(int)
-      pops = C[0]
-      for v in atoms:
-        qlkv = Qlk[Qlk['v'] == v]
-        fv = adMom[adMom['v'] == v]
-        for il, l in enumerate(states_l):
-          for ik, k in enumerate(states_k):
-            qlk = qlkv[(qlkv['l'] == l) & (qlkv['k'] == k)][qlkDims]
-            qlk.index = range(len(qlk))
-            qlk.columns = ('x', 'y', 'z')[:len(qlkDims)]
-
-            fl  = fv[fv['l'] == l][adMomDims]
-            fl.index = range(len(fl))
-            fl.columns = ('x', 'y', 'z')[:len(adMomDims)]
-            fk  = fv[fv['l'] == k][adMomDims]
-            fk.index = range(len(fk))
-            fk.columns = ('x', 'y', 'z')[:len(adMomDims)]
-
-            Clk = pops[Cstates == l] * pops[Cstates == k]
-            min_len = np.min([min_len, len(eqS26), len(qlk)])
-            eqS26[:min_len, il, ik] += (2*np.sum(qlk * (fk - fl), axis=1) * Clk)[:min_len]
-
-
-   return eqS26[:min_len], Qlk['time'].unique()[:min_len]
+   return all_Qlk[QMSortedKeys[0][1]]['time'], S2612
    
+
 def sum_hist_f_CC_data(all_tintf_data, all_A_coeff_data):
     """
     Will calculate the Ylk/sum(Ylk) data for each replica/atom
@@ -399,8 +374,8 @@ def match_timesteps(DCT1, DCT2):
         * DCT1 and DCT2 (same as inputs but spliced)
     """
     # Make sure rounding errors don't influence the mask
-    DCT1[2] = np.round(DCT1[2], 3)
-    DCT2[2] = np.round(DCT2[2], 3)
+    DCT1[2] = np.array(["%.4g" %i for i in  DCT1[2]]).astype(float)
+    DCT2[2] = np.array(["%.4g" %i for i in  DCT2[2]]).astype(float)
 
     # Make sure that all data in data1 is in data2
     mask1 = [i in DCT2[2] for i in DCT1[2]]

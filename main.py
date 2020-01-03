@@ -21,15 +21,20 @@ from PLOT import Plot
 # Warning if root folder is set to a folder with other folders in it will crawl 
 # the other folders in search of inputs to plot!
 rootFolder = ["",
-              "/scratch/mellis/flavoured-cptk/200Rep_2molTully",
+              #"/scratch/mellis/flavoured-cptk/200Rep_2molTully",
+              #"/scratch/mellis/flavoured-cptk/Model1",
+              #"/scratch/mellis/flavoured-cptk/Model2",
+              #"/scratch/mellis/flavoured-cptk/Model3",
+              #"/scratch/mellis/flavoured-cptk/Model3_bigDT",
+              #"/scratch/mellis/flavoured-cptk/Model4",
               #"/scratch/mellis/flavoured-cptk/200Rep_2mol",
               #"/scratch/mellis/surface_hop/scripts-templates-for-aom-fssh/GENERATOR_FSSH_OS/run-ctmqc-11",
               #"/scratch/mellis/TestCP2KCTMQC",
-              #"/scratch/mellis/TestCP2KImplemetation/NoSmoothing/Simulation_1",
+              "/scratch/mellis/TestCP2KImplemetation/Tully/CTMQCNormDT/RI0/Simulation_0",
               "",
              ]
              
-plotting_parameters = ["ad_mom"]
+plotting_parameters = ["norm", "rlk", "ri0"]
 replicas = 'all'
 plot = True
 min_time = 0
@@ -72,6 +77,7 @@ for f in folders:
                     minTime=min_time,
                     maxTime=max_time
                     )
+
     all_p.append(p)
     #allStats.append({
     #  'ener_cons': np.mean(p.ener_drift_per_rep['Total']),
